@@ -2,7 +2,7 @@ import gsap from "gsap";
 import { addMorale, patch, state } from "../state";
 import { setScene, view as artView } from "../art";
 import { soundOn, sfx } from "../sound";
-import { $, T, h, reduce, rerender, setLabel, show } from "../ui";
+import { $, T, h, reduce, rerender, setBack, setLabel, show } from "../ui";
 
 type Item = { label: string; run: () => void };
 
@@ -185,8 +185,9 @@ function playIntro(done: () => void, back: () => void): void {
   }, 400);
 }
 
-export function prologue(next: () => void): void {
+export function prologue(next: () => void, back?: () => void): void {
   setScene("home");
+  setBack(back ?? null);
   setLabel(() => T().prologue.tag);
   show((p) => {
     const t = T().prologue;

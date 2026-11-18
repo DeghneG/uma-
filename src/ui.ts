@@ -51,6 +51,7 @@ export function renderHud(): void {
   $("lbl").textContent = label();
   $("title").textContent = t.title;
   $("subtitle").textContent = t.subtitle;
+  $("back").textContent = t.start.menu.back;
   $("snd").textContent = soundOn() ? t.hud.soundOn : t.hud.soundOff;
   $("snd").setAttribute("aria-pressed", String(soundOn()));
 }
@@ -78,6 +79,21 @@ export function initPanelInput(): void {
   });
 }
 
+/** A Back button at the top left (also Backspace or the left arrow). Pass null to hide it. */
+let backFn: (() => void) | null = null;
+const onBackKey = (e: KeyboardEvent): void => {
+  if (e.key === "Backspace" || e.key === "ArrowLeft") {
+    e.preventDefault();
+    backFn?.();
+  }
+};
+export function setBack(fn: (() => void) | null): void {
+  backFn = fn;
+  $("back").hidden = !fn;
+  document.removeEventListener("keydown", onBackKey);
+  if (fn) document.addEventListener("keydown", onBackKey);
+}
+
 /** Screen mode: the title screen has no panel or buttons bar; the stats bar only shows in story mode. */
 export function setMode(m: { title: boolean; story: boolean }): void {
   $("game").classList.toggle("title", m.title);
@@ -86,6 +102,10 @@ export function setMode(m: { title: boolean; story: boolean }): void {
 
 let lastMoney = state.money;
 export function initHud(): void {
+  $("back").addEventListener("click", () => {
+    sfx("click");
+    backFn?.();
+  });
   onChange(() => {
     const d = state.money - lastMoney;
     lastMoney = state.money;

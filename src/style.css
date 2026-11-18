@@ -121,6 +121,12 @@ h3{font:600 14px var(--font-body);letter-spacing:.08em;text-transform:uppercase;
   background:url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 8 8%27 shape-rendering=%27crispEdges%27><path fill=%27%23f4efe0%27 d=%27M3 0h1v1h1v1H4v1h4v2H4v1h1v1H4v1H3V7H2V6H1V5H0V3h1V2h1V1h1z%27/></svg>") center/contain no-repeat}
 .intro .back:hover{background:#f4efe0;color:#1a1208;text-shadow:none}
 .intro .back:focus-visible{outline:4px solid #ffe27a;outline-offset:3px}
+.backbtn{position:absolute;left:40px;top:28px;z-index:6;background:rgba(5,9,7,.6);border:3px solid #f4efe0;color:#f4efe0;font:700 26px var(--font-display);padding:8px 22px 8px 50px;cursor:pointer;text-shadow:2px 2px 0 #000}
+.backbtn[hidden]{display:none}
+.backbtn::before{content:"";position:absolute;left:14px;top:50%;width:24px;height:24px;margin-top:-12px;image-rendering:pixelated;
+  background:url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 8 8%27 shape-rendering=%27crispEdges%27><path fill=%27%23f4efe0%27 d=%27M3 0h1v1h1v1H4v1h4v2H4v1h1v1H4v1H3V7H2V6H1V5H0V3h1V2h1V1h1z%27/></svg>") center/contain no-repeat}
+.backbtn:hover{background:#f4efe0;color:#1a1208;text-shadow:none}
+.backbtn:focus-visible{outline:4px solid #ffe27a;outline-offset:3px}
 .intro .skip{position:absolute;right:48px;bottom:36px;font:500 18px var(--font-body);color:#9db292}
 .menu button,.intro .line,.goal-row b,.delta,.stars,h1{font-kerning:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

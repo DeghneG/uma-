@@ -2,7 +2,7 @@ import "./style.css";
 import { fieldAtWeek, initArt } from "./art";
 import { toggleSound } from "./sound";
 import { patch, resetGame, type Lang } from "./state";
-import { $, initHud, initPanelInput, renderHud, rerender, setMode } from "./ui";
+import { $, initHud, initPanelInput, renderHud, rerender, setBack, setMode } from "./ui";
 import { prologue, title } from "./scenes/intro";
 import { week1 } from "./scenes/week1";
 import { week2 } from "./scenes/week2";
@@ -11,7 +11,7 @@ import { week4 } from "./scenes/week4";
 import { market } from "./scenes/market";
 import { summary } from "./scenes/summary";
 
-const steps: ((next: () => void) => void)[] = [title, prologue, week1, week2, week3, week4, market, summary];
+const steps: ((next: () => void, back?: () => void) => void)[] = [title, prologue, week1, week2, week3, week4, market, summary];
 const names = ["title", "prologue", "week1", "week2", "week3", "week4", "market", "summary"];
 // Dev shortcut: open /#week3 to start at that scene.
 let i = Math.max(0, names.indexOf(location.hash.slice(1)));
@@ -21,14 +21,21 @@ if (wk) fieldAtWeek(Number(wk[1]) - 1);
 function run(): void {
   // story mode starts when the family goes to the field (week 1); the title and prologue have no stats bar
   setMode({ title: i === 0, story: i >= names.indexOf("week1") });
-  steps[i](() => {
-    i++;
-    if (i >= steps.length) {
-      resetGame();
+  setBack(null);
+  steps[i](
+    () => {
+      i++;
+      if (i >= steps.length) {
+        resetGame();
+        i = 0;
+      }
+      run();
+    },
+    () => {
       i = 0;
-    }
-    run();
-  });
+      run();
+    },
+  );
 }
 
 function setLang(lang: Lang): void {
