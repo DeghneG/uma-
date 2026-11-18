@@ -104,6 +104,7 @@ const loadSprite = (name: string, fallback: (x: number, y: number) => void): ((x
 };
 const kid = loadSprite("kid", (x, y) => person(x, y, "#d96f9a", false));
 const tatay = loadSprite("tatay", (x, y) => person(x, y, "#c25a3a"));
+const nanay = loadSprite("nanay", (x, y) => person(x, y, "#3f7bb0", false));
 
 const person = (x: number, y: number, shirt: string, hat = true): void => {
   const pal: Record<string, string> = {
@@ -133,7 +134,7 @@ function home(): void {
   R(34, 31, 4, 4, "#d9ecf2");
   R(24, 40, 2, 6, "#7b5836");
   tatay(58, 38);
-  person(74, 40, "#3f7bb0", false);
+  nanay(74, 40);
 }
 
 function fieldScene(t: number): void {
@@ -239,7 +240,7 @@ function market(): void {
     R(33 + i * 7, 27, 6, 6, "#e7d9a8");
     R(35 + i * 7, 26, 2, 1, "#9a8a58");
   }
-  person(74, 36, "#3f7bb0", false);
+  nanay(74, 36);
   tatay(14, 36);
 }
 
