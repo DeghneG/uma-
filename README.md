@@ -20,7 +20,7 @@ npm run build    # type-check + production build into dist/
 |---|---|
 | `src/state.ts` | Game state, constants (goal, prices) and the rice sack rule |
 | `src/text.ts` | All English and Filipino text, one object per language |
-| `src/art.ts` | Placeholder pixel art drawn on a 96x54 canvas |
+| `src/art.ts` | Pixel scenes drawn in code on a 640x360 grid (shown at 3x in a 1920x1080 frame); hand-drawn sprites load from public/sprites |
 | `src/ui.ts` | Savings/morale HUD, panel rendering, GSAP motion helpers |
 | `src/scenes/` | One file per scene: intro, week1 to week4, market, summary |
 | `src/main.ts` | Scene order and language toggle |

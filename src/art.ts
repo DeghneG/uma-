@@ -1,4 +1,8 @@
-/** Placeholder pixel art drawn in code on a 96x54 canvas. Swap for real sprites later. */
+/**
+ * Scenes drawn in code on a 640x360 pixel grid. The game frame is 1920x1080, so every pixel here
+ * is shown at exactly 3x. Hand-drawn character sprites (public/sprites) are drawn 1:1 on this grid.
+ * Swap any scene for a painted background later without touching the game logic.
+ */
 export type SceneKind = "home" | "field" | "market";
 
 /**
@@ -36,46 +40,99 @@ export function fieldAtWeek(week: number): void {
 }
 
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const W = 640;
+const H = 360;
 let cx: CanvasRenderingContext2D;
 
+/* ---------- drawing helpers ---------- */
 const R = (x: number, y: number, w: number, h: number, c: string): void => {
   cx.fillStyle = c;
-  cx.fillRect(Math.round(x), Math.round(y), w, h);
+  cx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
 };
-const sky = (a: string, b: string): void => {
-  R(0, 0, 96, 30, a);
-  R(0, 30, 96, 24, b);
+/** Deterministic pseudo random 0..1 so scenery does not flicker between frames. */
+const rnd = (n: number): number => {
+  const s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
+  return s - Math.floor(s);
+};
+const rgb = (c: string): number[] => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+const mix = (a: string, b: string, t: number): string => {
+  const A = rgb(a);
+  const B = rgb(b);
+  return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(",")})`;
+};
+const disc = (x: number, y: number, r: number, c: string): void => {
+  for (let j = -r; j <= r; j++) {
+    const w = Math.floor(Math.sqrt(r * r - j * j));
+    R(x - w, y + j, w * 2 + 1, 1, c);
+  }
+};
+/** Banded vertical gradient, the classic pixel-art sky. */
+const sky = (top: string, bottom: string, y1: number): void => {
+  for (let y = 0; y < y1; y += 4) R(0, y, W, 4, mix(top, bottom, y / y1));
 };
 const sun = (x: number, y: number): void => {
-  R(x, y, 6, 6, "#f6d155");
-  R(x + 1, y - 1, 4, 8, "#f6d155");
+  disc(x, y, 34, "rgba(255,244,190,0.16)");
+  disc(x, y, 26, "rgba(255,244,190,0.28)");
+  disc(x, y, 18, "#ffeea0");
+  disc(x, y, 14, "#fff7c8");
 };
-const hills = (): void => {
-  R(0, 22, 96, 8, "#5a8a6a");
-  R(10, 18, 22, 6, "#4d7a5c");
-  R(60, 16, 26, 8, "#4d7a5c");
+const CLOUD: [number, number][] = [[14, 20], [6, 36], [0, 52], [4, 46], [12, 30]];
+const cloud = (x: number, y: number, s: number, t: number, speed: number): void => {
+  const px = ((x + t * speed) % (W + 160)) - 80;
+  CLOUD.forEach(([o, w], r) => R(px + o * s, y + r * 4 * s, w * s, 4 * s, r >= 3 ? "#cfe3f1" : "#ffffff"));
 };
+const hills = (base: number, a1: number, f1: number, a2: number, f2: number, ph: number, col: string, hi: string): void => {
+  for (let x = 0; x < W; x++) {
+    const y = Math.round(base + Math.sin(x * f1 + ph) * a1 + Math.sin(x * f2 + ph * 2) * a2);
+    R(x, y, 1, H - y, col);
+    R(x, y, 1, 2, hi);
+  }
+};
+const tuft = (x: number, y: number, c1: string, c2: string): void => {
+  R(x, y - 6, 1, 6, c1);
+  R(x - 2, y - 4, 1, 4, c2);
+  R(x + 2, y - 5, 1, 5, c2);
+};
+const palm = (x: number, base: number, h: number, t: number, lean = 1): void => {
+  const sway = reduce ? 0 : Math.sin(t / 900 + x) * 2;
+  let tx = x;
+  let ty = base;
+  for (let i = 0; i < h; i += 2) {
+    const p = i / h;
+    tx = x + lean * Math.sin(p * 1.3) * h * 0.12 + sway * p;
+    ty = base - i;
+    R(tx - 2, ty, 5, 2, i % 8 < 4 ? "#7b5a3a" : "#6a4a2e");
+    R(tx + 1, ty, 1, 2, "#9a7550");
+  }
+  for (const d of [-1, -0.7, -0.38, 0.38, 0.7, 1]) {
+    for (let k = 0; k < 24; k++) {
+      const fx = tx + d * k * 2.1;
+      const fy = ty - 4 + k * (0.5 - Math.abs(d) * 0.25) + k * k * 0.028 + d * sway * 0.3;
+      R(fx, fy, 4, 3, k % 6 < 3 ? "#438f3f" : "#2f6f33");
+      if (k % 3 === 0) R(fx, fy + 3, 2, 2, "#438f3f");
+    }
+  }
+  disc(tx - 3, ty + 3, 3, "#6a4a2e");
+  disc(tx + 3, ty + 4, 3, "#5a3d26");
+};
+const smoke = (x: number, y: number, t: number): void => {
+  for (let k = 0; k < 6; k++) {
+    const age = reduce ? k * 10 : (t / 40 + k * 14) % 84;
+    disc(x + Math.sin(age / 12 + k) * 4 + age * 0.15, y - age * 0.55, 3 + age / 14, `rgba(214,214,220,${0.6 - age / 160})`);
+  }
+};
+const flowers = (x0: number, x1: number, y0: number, y1: number, n: number, seed: number): void => {
+  const cols = ["#f6e05a", "#ffffff", "#f08ab0", "#f2994a"];
+  for (let i = 0; i < n; i++) R(x0 + rnd(seed + i) * (x1 - x0), y0 + rnd(seed + i + 50) * (y1 - y0), 2, 2, cols[i % 4]);
+};
+
+/* ---------- people ---------- */
 /**
- * Chibi villager sprite, 13x16 cells, big head and black outline.
+ * Code-drawn villager (13x16 cells, drawn at 2x): used until a hand-drawn sprite exists for that person.
  * K outline, H hat, h hat shade, B hat band, D hair, S skin, T shirt, P shorts.
- * (x, y) keep the old meaning: x is the body centre, y the top of the old 11px figure.
  */
-const HAT = [
-  "....KKKKK....",
-  "..KKHHHHHKK..",
-  ".KHHHHHHHHHK.",
-  ".KBBBBBBBBBK.",
-  "KHHHHHHHHHHhK",
-  "KKKKKKKKKKKKK",
-];
-const HAIR = [
-  "....KKKKK....",
-  "..KKDDDDDKK..",
-  ".KDDDDDDDDDK.",
-  ".KDDDDDDDDDK.",
-  ".KDDDDDDDDDK.",
-  ".KDDDDDDDDDK.",
-];
+const HAT = ["....KKKKK....", "..KKHHHHHKK..", ".KHHHHHHHHHK.", ".KBBBBBBBBBK.", "KHHHHHHHHHHhK", "KKKKKKKKKKKKK"];
+const HAIR = ["....KKKKK....", "..KKDDDDDKK..", ".KDDDDDDDDDK.", ".KDDDDDDDDDK.", ".KDDDDDDDDDK.", ".KDDDDDDDDDK."];
 const BODY = [
   ".KDSSSSSSSDK.",
   ".KSSSSSSSSSK.",
@@ -88,180 +145,326 @@ const BODY = [
   "...KPK.KPK...",
   "...KKK.KKK...",
 ];
-/**
- * The canvas is 192x108 (SCALE x the 96x54 scene units). Scenery and code-drawn people are drawn in
- * scene units through a 2x transform; hand-drawn sprites in public/sprites/<name>.png are drawn
- * pixel for pixel (1 PNG pixel = 1 canvas pixel) anchored at the feet, falling back to `fallback`.
- */
-const SCALE = 2;
-const loadSprite = (
-  name: string,
-  fallback: (x: number, y: number) => void,
-  lowRes = false,
-): ((x: number, y: number) => void) => {
+const person = (x: number, feet: number, shirt: string, hat = true): void => {
+  const pal: Record<string, string> = {
+    K: "#1b1410", H: "#eebc3c", h: "#c98a1f", B: shirt, D: "#2a1c14", S: "#f0c79c", T: shirt, P: "#3f5fa0",
+  };
+  const rows = [...(hat ? HAT : HAIR), ...BODY];
+  const s = 2;
+  const ox = x - 13 * s * 0.5;
+  const oy = feet - rows.length * s;
+  rows.forEach((row, j) => {
+    for (let i = 0; i < row.length; i++) if (row[i] !== ".") R(ox + i * s, oy + j * s, s, s, pal[row[i]]);
+  });
+};
+/** Loads public/sprites/<name>.png (hand-drawn, drawn 1:1); returns draw(x centre, y of feet). */
+const loadSprite = (name: string, fallback: (x: number, feet: number) => void): ((x: number, feet: number) => void) => {
   const img = new Image();
   let ready = false;
   img.onload = (): void => {
     ready = true;
   };
   img.src = `/sprites/${name}.png`;
-  return (x, y) => {
-    if (!ready) return fallback(x, y);
-    if (lowRes) {
-      cx.drawImage(img, Math.round(x - img.width / 2), Math.round(y + 11 - img.height));
-      return;
-    }
-    cx.setTransform(1, 0, 0, 1, 0, 0);
-    cx.drawImage(img, Math.round(x * SCALE - img.width / 2), Math.round((y + 11) * SCALE - img.height));
-    cx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+  return (x, feet) => {
+    if (!ready) return fallback(x, feet);
+    cx.drawImage(img, Math.round(x - img.width / 2), Math.round(feet - img.height));
   };
 };
-const kid = loadSprite("kid", (x, y) => person(x, y, "#d96f9a", false));
-const tatay = loadSprite("tatay", (x, y) => person(x, y, "#c25a3a"));
-const nanay = loadSprite("nanay", (x, y) => person(x, y, "#3f7bb0", false));
+const kid = loadSprite("kid", (x, f) => person(x, f, "#d96f9a", false));
+const tatay = loadSprite("tatay", (x, f) => person(x, f, "#c25a3a"));
+const nanay = loadSprite("nanay", (x, f) => person(x, f, "#3f7bb0", false));
+/** soft ground shadow under a character */
+const shadow = (x: number, y: number, w = 26): void => R(x - w / 2, y - 1, w, 3, "rgba(0,0,0,0.22)");
 
-const person = (x: number, y: number, shirt: string, hat = true): void => {
-  const pal: Record<string, string> = {
-    K: "#1b1410", H: "#eebc3c", h: "#c98a1f", B: shirt, D: "#2a1c14",
-    S: "#f0c79c", T: shirt, P: "#3f5fa0",
-  };
-  const rows = [...(hat ? HAT : HAIR), ...BODY];
-  const ox = x - 5;
-  const oy = y - 5;
-  rows.forEach((row, j) => {
-    for (let i = 0; i < row.length; i++) {
-      const k = row[i];
-      if (k !== ".") R(ox + i, oy + j, 1, 1, pal[k]);
-    }
-  });
-};
+/* ---------- scenes ---------- */
+function backdrop(t: number, horizon: number): void {
+  sky("#4aa6e6", "#d3ecf6", horizon);
+  sun(430, 84);
+  cloud(20, 56, 1.5, t, 0.012);
+  cloud(190, 86, 1, t, 0.018);
+  cloud(330, 52, 2, t, 0.008);
+  cloud(520, 96, 1.2, t, 0.014);
+  hills(horizon - 34, 18, 0.011, 7, 0.03, 1, "#6f9fba", "#8cb8cb");
+  hills(horizon - 14, 12, 0.016, 5, 0.05, 3, "#4f8a72", "#6aa588");
+  hills(horizon - 2, 6, 0.02, 3, 0.07, 5, "#3f7a50", "#5a9a62");
+}
 
-function home(): void {
-  sky("#9fd3ee", "#6fae5a");
-  sun(78, 6);
-  hills();
-  R(0, 36, 96, 18, "#6fae5a");
-  R(30, 28, 24, 16, "#8a6a43");
-  R(28, 24, 28, 5, "#b8582f");
-  R(30, 22, 24, 3, "#b8582f");
-  R(40, 34, 6, 10, "#4a321c");
-  R(34, 31, 4, 4, "#d9ecf2");
-  R(24, 40, 2, 6, "#7b5836");
-  tatay(58, 38);
-  nanay(74, 40);
+function home(t: number): void {
+  backdrop(t, 150);
+  // far rice terraces
+  for (let i = 0; i < 6; i++) {
+    R(0, 152 + i * 5, W, 5, i % 2 ? "#7cc05a" : "#5fa84a");
+    R(0, 152 + i * 5, W, 1, "#9ad46f");
+  }
+  // grass
+  R(0, 184, W, H - 184, "#5fa84a");
+  for (let y = 184; y < H; y += 6) R(0, y, W, 3, y % 12 ? "#68b250" : "#5aa045");
+  // dirt path to the hut
+  for (let i = 0; i < 70; i++) R(150 + i * 1.2 + (i % 5), 262 + i * 1.4, 70 - i * 0.2, 2, i % 3 ? "#b89a62" : "#a98b55");
+  palm(46, 292, 150, t, 1);
+  palm(404, 270, 118, t, -1);
+  hut(210, 268);
+  // fence
+  for (let x = 4; x < 140; x += 14) {
+    R(x, 246, 3, 22, "#8a6a43");
+    R(x, 246, 3, 2, "#a8844f");
+  }
+  R(4, 252, 136, 2, "#8a6a43");
+  R(4, 260, 136, 2, "#8a6a43");
+  for (let i = 0; i < 70; i++) tuft(8 + rnd(i) * 620, 300 + rnd(i + 90) * 54, "#3f8a3f", "#4aa045");
+  flowers(0, 640, 286, 356, 36, 7);
+  shadow(330, 305, 40);
+  shadow(402, 311, 40);
+  tatay(330, 304);
+  nanay(402, 310);
+}
+
+function hut(x: number, g: number): void {
+  for (const dx of [-42, -14, 14, 42]) R(x + dx - 2, g - 34, 4, 34, "#6b4a2c");
+  R(x - 52, g - 38, 104, 5, "#8a6a43");
+  R(x - 46, g - 78, 92, 40, "#d3b678");
+  for (let i = 0; i < 92; i += 6) R(x - 46 + i, g - 78, 1, 40, "#b99a5c");
+  R(x - 46, g - 60, 92, 2, "#a68a50");
+  R(x - 10, g - 72, 20, 34, "#4a321c");
+  R(x - 10, g - 72, 20, 2, "#6b4a2c");
+  R(x + 22, g - 70, 18, 16, "#2d3a2a");
+  R(x + 22, g - 71, 18, 2, "#8a6a43");
+  R(x - 40, g - 70, 18, 16, "#2d3a2a");
+  R(x - 40, g - 71, 18, 2, "#8a6a43");
+  for (let r = 0; r < 44; r++) {
+    const w = 14 + r * 3.2;
+    R(x - w / 2, g - 122 + r, w, 1, r % 4 < 2 ? "#c9a14a" : "#b58a36");
+    if (r % 4 === 0) for (let i = -w / 2; i < w / 2; i += 7) R(x + i, g - 122 + r, 1, 3, "#8f6a24");
+  }
+  R(x - 80, g - 79, 160, 2, "#7d5a1e");
+  R(x - 62, g - 38, 3, 38, "#6b4a2c");
+  R(x - 56, g - 38, 3, 38, "#6b4a2c");
+  for (let k = 0; k < 5; k++) R(x - 62, g - 34 + k * 8, 9, 2, "#8a6a43");
+  // a few chickens
+  for (const cxp of [130, 160]) {
+    R(cxp, g - 6, 8, 5, "#f0e6d0");
+    R(cxp + 6, g - 9, 3, 3, "#f0e6d0");
+    R(cxp + 8, g - 8, 2, 1, "#e07a2e");
+    R(cxp + 7, g - 10, 1, 1, "#d23a2e");
+  }
+}
+
+/* rice field geometry */
+const ROWS = 6;
+const ROW0 = 182;
+const ROWH = 25;
+
+function plantTuft(x: number, base: number, h: number, ripe: boolean, lift: number): void {
+  if (ripe) {
+    R(x, base - h + lift, 2, h - lift, "#c9a43a");
+    R(x - 3, base - h + 4, 2, h - 4, "#bf9a34");
+    R(x + 3, base - h + 4, 2, h - 4, "#bf9a34");
+    R(x - 2, base - h + lift, 6, 4, "#e6bf3c");
+    R(x + 2, base - h + lift + 3, 2, 3, "#e6bf3c");
+  } else {
+    R(x, base - h + lift, 2, h - lift, "#4fb04a");
+    R(x - 3, base - h + 3, 2, h - 3, "#3f9a40");
+    R(x + 3, base - h + 3, 2, h - 3, "#3f9a40");
+    R(x, base - h + lift, 2, 2, "#8ae06a");
+  }
 }
 
 function fieldScene(t: number): void {
-  sky("#aadbf0", "#8a6a43");
-  sun(78, 5);
-  hills();
+  const wet = field.water > 0.5;
+  backdrop(t, 150);
 
-  // soil, cracks (fade as water arrives), water spreading from the left
-  R(0, 30, 96, 24, field.water > 0.5 ? "#5b4630" : "#b08a55");
-  if (field.water < 0.6) {
-    for (let i = 0; i < 12; i++) {
-      R(i * 8 + 2, 32 + ((i * 5) % 18), 5, 1, "#7a5c34");
-      R(i * 8 + 5, 34 + ((i * 7) % 16), 1, 4, "#7a5c34");
+  // far: factory with smokestacks
+  R(340, 108, 96, 44, "#8f949b");
+  R(340, 108, 96, 4, "#a5aab0");
+  for (let i = 0; i < 6; i++) R(346 + i * 15, 118, 8, 12, "#6e747c");
+  R(352, 64, 12, 46, "#7d838b");
+  R(352, 78, 12, 4, "#c0453a");
+  R(352, 64, 12, 3, "#9aa0a6");
+  R(392, 80, 10, 30, "#7d838b");
+  R(392, 90, 10, 3, "#c0453a");
+  smoke(358, 62, t);
+  smoke(397, 78, t + 400);
+
+  // bank, road, bank
+  R(0, 150, W, H - 150, "#5d9a48");
+  R(0, 158, W, 14, "#8d8a80");
+  R(0, 158, W, 2, "#a29f94");
+  for (let x = 6; x < W; x += 34) R(x, 164, 16, 2, "#e8e4cc");
+  for (let i = 0; i < 40; i++) tuft(6 + rnd(i) * 628, 176, "#3f8a3f", "#4aa045");
+
+  // pump and pipe
+  R(42, 152, 18, 24, "#7a7f86");
+  R(38, 148, 26, 6, "#9aa0a6");
+  R(58, 162, 14, 5, "#9aa0a6");
+  R(70, 166, 4, 10, field.water > 0.3 ? "#4aa0b8" : "#9aa0a6");
+
+  // field rows
+  for (let j = 0; j < ROWS; j++) {
+    const top = ROW0 + j * ROWH;
+    R(0, top, W, 22, wet ? "#6a4d33" : "#b58f58");
+    R(0, top + 20, W, 2, wet ? "#573e29" : "#9c7a47");
+    R(0, top + 22, W, 3, "#7a5a36");
+    R(0, top + 22, W, 1, "#8f7144");
+    for (let i = 0; i < 90; i++) R(rnd(i + j * 17) * W, top + 1 + rnd(i * 3 + j) * 19, 2, 1, rnd(i + j) > 0.5 ? (wet ? "#7a5a3c" : "#c4a068") : (wet ? "#5a4029" : "#a07d4a"));
+    if (field.water < 0.6) {
+      for (let i = 0; i < 18; i++) {
+        const cxp = rnd(i + j * 31) * (W - 12);
+        R(cxp, top + 5 + rnd(i + j) * 12, 6, 1, "#7a5c34");
+        R(cxp + 3, top + 7 + rnd(i + 5 + j) * 10, 1, 4, "#7a5c34");
+      }
     }
-  }
-  for (let j = 0; j < 5; j++) {
-    const f = Math.min(1, Math.max(0, field.water * 5 - j));
-    if (f > 0) R(0, 32 + j * 4, 96 * f, 3, "#4aa0b8");
-  }
-
-  // weeds: tall olive tufts with yellow tips, removed one by one
-  const weeds = Math.round(22 * field.weeds);
-  for (let i = 0; i < weeds; i++) {
-    const wx = (i * 11) % 92;
-    const wy = 32 + ((i * 7) % 18);
-    R(wx, wy - 2, 2, 6, "#6b7a2a");
-    R(wx + 2, wy, 1, 4, "#85962f");
-    R(wx - 1, wy, 1, 4, "#85962f");
-    R(wx, wy - 3, 2, 1, "#d6c24a");
-  }
-
-  // rice: bright rows when green, gold when ripe, stubble and bundles where cut
-  const ripe = field.week >= 3;
-  const cols = Math.round(24 * field.plant);
-  const rowsCut = Math.round((field.cut / 3) * 5);
-  for (let j = 0; j < 5; j++) {
-    for (let i = 0; i < cols; i++) {
-      const x = i * 4 + (j % 2) * 2;
-      if (ripe && j < rowsCut) {
-        R(x, 33 + j * 4, 2, 1, "#a88a3a");
-        if (i % 6 === 0) {
-          R(x, 30 + j * 4, 3, 4, "#c9a43a");
-          R(x, 32 + j * 4, 3, 1, "#7b5836");
-        }
-      } else {
-        const s = reduce ? 0 : Math.sin(t / 500 + i + j) > 0.6 ? 1 : 0;
-        R(x, (ripe ? 29 : 31) + j * 4 - s, 2, ripe ? 5 : 3, ripe ? "#d9b43a" : "#4fb04a");
+    const frac = Math.min(1, Math.max(0, field.water * ROWS - j));
+    if (frac > 0) {
+      R(0, top + 1, W * frac, 20, "#4aa0b8");
+      R(0, top + 1, W * frac, 2, "#7cc6d8");
+      for (let k = 0; k < 14; k++) {
+        const x = (k * 53 + (reduce ? 0 : t / 50)) % W;
+        if (x < W * frac) R(x, top + 7 + (k % 3) * 5, 10, 1, "#a8dde8");
       }
     }
   }
 
-  // pests (week 2): snail eggs, a rat, yellow blight patches on the rows
-  if (field.week === 1) {
-    for (let i = 0; i < Math.round(8 * field.pests[0]); i++) R(8 + i * 10, 36 + ((i * 5) % 12), 2, 2, "#e75480");
-    if (field.pests[1] > 0.5) {
-      R(60, 46, 5, 2, "#6b6b6b");
-      R(64, 45, 2, 1, "#6b6b6b");
+  // weeds, then rice
+  const weeds = Math.round(36 * field.weeds);
+  for (let i = 0; i < weeds; i++) {
+    const wj = i % ROWS;
+    const x = (i * 47 + 13) % 600;
+    const b = ROW0 + wj * ROWH + 20;
+    R(x, b - 14, 3, 14, "#6b7a2a");
+    R(x + 3, b - 10, 2, 10, "#85962f");
+    R(x - 2, b - 9, 2, 9, "#85962f");
+    R(x, b - 16, 3, 2, "#d6c24a");
+  }
+  const ripe = field.week >= 3;
+  const cols = Math.round(30 * field.plant);
+  const rowsCut = Math.round((field.cut / 3) * ROWS);
+  for (let j = 0; j < ROWS; j++) {
+    const base = ROW0 + j * ROWH + 20;
+    for (let i = 0; i < cols; i++) {
+      const x = i * 20 + 10 + (j % 2) * 10;
+      if (ripe && j < rowsCut) {
+        R(x - 1, base - 2, 4, 2, "#a88a3a");
+        if (i % 5 === 0) {
+          R(x - 4, base - 12, 9, 10, "#c9a43a");
+          R(x - 4, base - 8, 9, 2, "#7b5836");
+        }
+      } else {
+        const lift = reduce ? 0 : Math.sin(t / 500 + i + j) > 0.6 ? 1 : 0;
+        plantTuft(x, base, ripe ? 17 + j : 10 + j, ripe, lift);
+      }
     }
-    for (let k = 0; k < Math.round(6 * field.pests[2]); k++) R(10 + k * 14, 34 + (k % 3) * 4, 3, 3, "#e6d24a");
   }
 
-  // dry spell: the canal at the bottom is cracked
+  // pests (week 2): snail eggs, a rat, yellow blight patches
+  if (field.week === 1) {
+    for (let i = 0; i < Math.round(9 * field.pests[0]); i++) {
+      const b = ROW0 + (i % ROWS) * ROWH + 14;
+      R(20 + i * 44, b, 4, 4, "#e75480");
+      R(23 + i * 44, b + 2, 3, 3, "#f08ab0");
+    }
+    if (field.pests[1] > 0.5) {
+      R(326, 262, 14, 6, "#6b6b6b");
+      R(338, 260, 5, 4, "#6b6b6b");
+      R(322, 266, 6, 1, "#4b4b4b");
+    }
+    for (let k = 0; k < Math.round(7 * field.pests[2]); k++) {
+      R(30 + k * 58, ROW0 + (k % ROWS) * ROWH + 8, 7, 7, "#e6d24a");
+      R(32 + k * 58, ROW0 + (k % ROWS) * ROWH + 10, 3, 3, "#b89a2a");
+    }
+  }
+
+  // irrigation canal at the front: dry and cracked in the dry spell
+  const canalY = ROW0 + ROWS * ROWH + 2;
   if (field.week === 2) {
-    R(0, 50, 96, 4, "#a07840");
-    for (let i = 0; i < 10; i++) R(i * 10 + 3, 50 + (i % 2), 4, 1, "#6f5128");
+    R(0, canalY, W, 14, "#a07840");
+    for (let i = 0; i < 24; i++) R(i * 27 + 5, canalY + 4 + (i % 2) * 4, 10, 1, "#6f5128");
+  } else {
+    R(0, canalY, W, 14, "#4aa0b8");
+    R(0, canalY, W, 2, "#7cc6d8");
+    for (let k = 0; k < 10; k++) R((k * 71 + (reduce ? 0 : t / 40)) % W, canalY + 6, 14, 1, "#a8dde8");
   }
+  R(0, canalY + 14, W, H - canalY - 14, "#5d9a48");
+  for (let i = 0; i < 40; i++) tuft(6 + rnd(i + 300) * 628, canalY + 22 + rnd(i + 400) * 10, "#3f8a3f", "#4aa045");
+  flowers(0, 640, canalY + 16, 356, 20, 11);
 
-  // pump and factory smokestacks
-  R(36, 22, 7, 9, "#7a7f86");
-  R(33, 24, 4, 2, "#9aa0a6");
-  R(42, 28, 3, 3, "#4aa0b8");
-  R(84, 10, 4, 13, "#8a8f96");
-  R(84, 8, 4, 2, "#b9bec4");
-  R(90, 14, 3, 9, "#8a8f96");
-
-  // the SUV and agent are only there for the notice
+  // the SUV and the agent are only there for the notice
   if (field.week === 0) {
-    R(62, 26, 24, 6, "#f4f4f2");
-    R(66, 22, 15, 5, "#f4f4f2");
-    R(68, 23, 5, 3, "#8fb7c9");
-    R(75, 23, 5, 3, "#8fb7c9");
-    R(66, 32, 4, 3, "#222222");
-    R(79, 32, 4, 3, "#222222");
-    person(88, 25, "#2f4a6b", false);
+    R(150, 140, 80, 20, "#f4f4f2");
+    R(164, 124, 50, 18, "#f4f4f2");
+    R(168, 128, 18, 11, "#8fb7c9");
+    R(190, 128, 18, 11, "#8fb7c9");
+    R(156, 156, 14, 9, "#222222");
+    R(206, 156, 14, 9, "#222222");
+    shadow(300, 280, 28);
+    person(300, 280, "#2f4a6b", false);
   }
 
-  // Tatay works with a small bob; Mang Ben joins from week 3
-  const bob = field.working && !reduce ? Math.round(Math.sin(t / 180)) : 0;
-  tatay(14, 24 + bob);
-  if (field.ben) person(26, 26 - bob, "#6f9a3f");
-  if (field.ben && field.week === 3) kid(40, 28 + bob);
+  // Bert works with a small bob; Mang Ben joins from week 3, with a child at the harvest
+  const bob = field.working && !reduce ? Math.round(Math.sin(t / 180) * 2) : 0;
+  shadow(92, 276);
+  tatay(92, 276 + bob);
+  if (field.ben) {
+    shadow(176, 282, 30);
+    person(176, 282 - bob, "#6f9a3f");
+  }
+  if (field.ben && field.week === 3) {
+    shadow(250, 292);
+    kid(250, 292 + bob);
+  }
 }
 
-function market(): void {
-  sky("#bfe3f0", "#b99a6f");
-  R(0, 34, 96, 20, "#b99a6f");
-  R(28, 16, 40, 5, "#d0452d");
-  for (let s = 0; s < 8; s++) R(28 + s * 5, 16, 3, 5, "#f3ecd2");
-  R(30, 21, 2, 18, "#7b5836");
-  R(64, 21, 2, 18, "#7b5836");
-  R(30, 32, 36, 4, "#8a6a43");
-  for (let i = 0; i < view.sacks; i++) {
-    R(33 + i * 7, 27, 6, 6, "#e7d9a8");
-    R(35 + i * 7, 26, 2, 1, "#9a8a58");
+function market(t: number): void {
+  backdrop(t, 132);
+  // shop fronts
+  const roofs = ["#b8582f", "#7a8a94", "#4f7a8a", "#b8582f", "#8a6a43"];
+  for (let i = 0; i < 5; i++) {
+    const x = i * 132 - 10;
+    R(x, 118, 126, 12, roofs[i]);
+    R(x, 130, 126, 54, i % 2 ? "#d8c79a" : "#cfbf8e");
+    R(x + 18, 146, 34, 38, "#4a321c");
+    R(x + 70, 142, 36, 22, "#2d3a2a");
+    R(x, 118, 126, 2, "#00000022");
   }
-  nanay(74, 36);
-  tatay(14, 36);
+  // cobbled ground
+  R(0, 184, W, H - 184, "#b99a6f");
+  for (let y = 184; y < H; y += 8) for (let x = (y / 8) % 2 ? 0 : 8; x < W; x += 16) R(x, y, 14, 6, (x + y) % 3 ? "#c4a678" : "#ad8f65");
+  // stall: posts, striped awning, counter
+  R(112, 176, 5, 70, "#7b5836");
+  R(300, 176, 5, 70, "#7b5836");
+  R(104, 160, 208, 18, "#d0452d");
+  for (let s = 0; s < 13; s++) R(104 + s * 16, 160, 8, 18, "#f3ecd2");
+  R(104, 178, 208, 3, "#00000030");
+  R(112, 226, 192, 22, "#8a6a43");
+  R(112, 226, 192, 3, "#a8844f");
+  R(112, 246, 192, 3, "#00000030");
+  for (let i = 0; i < view.sacks; i++) {
+    const sx = 126 + i * 34;
+    R(sx, 200, 28, 26, "#e7d9a8");
+    R(sx + 4, 196, 20, 5, "#e7d9a8");
+    R(sx + 8, 214, 12, 3, "#9a8a58");
+    R(sx, 220, 28, 6, "#cdbf8c");
+  }
+  // crates and baskets
+  R(330, 218, 32, 28, "#9a7a48");
+  R(330, 218, 32, 4, "#b8955a");
+  R(334, 200, 24, 18, "#d99a3a");
+  R(40, 224, 28, 22, "#b88a4a");
+  disc(54, 222, 11, "#7aa24a");
+  palm(580, 240, 110, t, -1);
+  // vendor behind the counter, family in front
+  shadow(208, 226, 30);
+  person(208, 226, "#8a4a9a");
+  shadow(92, 298, 40);
+  tatay(92, 298);
+  shadow(372, 304, 40);
+  nanay(372, 304);
+  for (let i = 0; i < 30; i++) tuft(8 + rnd(i + 5) * 620, 330 + rnd(i + 70) * 24, "#8a9a50", "#6a7a3a");
 }
 
 function draw(t: number): void {
-  if (view.scene === "home") home();
+  if (view.scene === "home") home(t);
   else if (view.scene === "field") fieldScene(t);
-  else market();
+  else market(t);
 }
 
 export function initArt(canvas: HTMLCanvasElement): void {
@@ -270,7 +473,6 @@ export function initArt(canvas: HTMLCanvasElement): void {
   cx = ctx;
   cx.imageSmoothingEnabled = false;
   const frame = (t: number): void => {
-    cx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
     draw(reduce ? 0 : t);
     requestAnimationFrame(frame);
   };

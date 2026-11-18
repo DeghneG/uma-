@@ -50,6 +50,14 @@ try {
   /* storage blocked */
 }
 
+/** The game is a fixed 1920x1080 frame; scale it to fit the window and letterbox the rest. */
+function fit(): void {
+  const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+  $("game").style.setProperty("--s", String(s));
+}
+window.addEventListener("resize", fit);
+fit();
+
 initArt($<HTMLCanvasElement>("cv"));
 initHud();
 initPanelInput();
