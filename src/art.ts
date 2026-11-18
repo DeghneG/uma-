@@ -1045,45 +1045,62 @@ function titleScene(t: number): void {
   });
   birds(t);
   for (let y = 222; y < H; y += 5) for (let x = (y / 5) % 2 ? 0 : 6; x < W; x += 12) R(x + rnd(x * y) * 5, y, 3, 1, rnd(x + y) > 0.5 ? "#2f6e33" : "#4d9a46");
-  // the whole farm on one screen: rice terraces, sugarcane, coconut grove, vegetable beds
+  // the whole farm on one screen: the bahay kubo and its animals, then every crop
   riceTerraces(t);
-  // sugarcane plantation (left): rows from back to front
+  // sugarcane plantation (behind, left of centre): rows from back to front
   for (let r = 0; r < 4; r++) {
-    const g = 246 + r * 16;
+    const g = 246 + r * 14;
     const h = 34 + r * 7;
-    for (let k = 0; k < 20 - r; k++) cane(-4 + k * (11 + r) + (r % 2) * 5, g, h, t, k + r * 5);
+    const step = 11 + r;
+    for (let k = 0; 180 + k * step < 338; k++) cane(180 + k * step + (r % 2) * 5, g, h, t, k + r * 5);
   }
-  // coconut grove (middle back)
-  for (const sx of [236, 284, 338, 392, 436]) {
+  // coconut grove (middle right), with soft shadows and fallen nuts
+  for (const sx of [352, 392, 428, 456]) {
     disc(sx + 4, 266, 14, "rgba(20,60,25,0.16)");
     disc(sx + 4, 266, 9, "rgba(20,60,25,0.16)");
   }
-  cocoPalm(236, 262, 120, t, 1);
-  cocoPalm(284, 252, 92, t, -1);
-  cocoPalm(338, 264, 132, t, 1);
-  cocoPalm(392, 254, 100, t, -1);
-  cocoPalm(436, 262, 116, t, 1);
-  for (const f of [[258, 270], [310, 268], [362, 274], [412, 270]]) disc(f[0], f[1], 2, "#6a4a2e");
-  // fence between the fields and the garden
-  for (let x = 0; x < 452; x += 14) {
+  cocoPalm(352, 262, 124, t, 1);
+  cocoPalm(392, 252, 96, t, -1);
+  cocoPalm(428, 264, 134, t, 1);
+  cocoPalm(458, 254, 104, t, -1);
+  for (const f of [[372, 270], [408, 268], [442, 274]]) disc(f[0], f[1], 2, "#6a4a2e");
+  // the bahay kubo on the left, smoke from the kitchen, and its animal yard
+  hut(88, 262);
+  smoke(88, 142, t);
+  for (let x = 4; x < 150; x += 14) {
+    R(x, 272, 3, 22, "#8a6a43");
+    R(x, 272, 3, 2, "#a8844f");
+  }
+  R(4, 278, 146, 2, "#8a6a43");
+  R(4, 288, 146, 2, "#8a6a43");
+  pig(36, 294, t, 1);
+  pig(98, 292, t, 4);
+  pig(68, 296, t, 7, 0.55);
+  pig(128, 296, t, 2, 0.55);
+  goat(72, 322, t, 3);
+  hen(18, 332, t, 5);
+  hen(138, 330, t, 8, "#a8452a");
+  rooster(104, 336, t, 2);
+  chick(48, 334, t, 1);
+  chick(58, 338, t, 2);
+  chick(122, 340, t, 3);
+  // fence, then the vegetable plantation (front): raised beds, a trellis with gourds
+  for (let x = 178; x < 452; x += 14) {
     R(x, 276, 3, 12, "#8a6a43");
     R(x, 276, 3, 2, "#a8844f");
   }
-  R(0, 280, 452, 2, "#8a6a43");
-  // vegetable plantation (front): raised beds, a trellis with gourds
-  vegBed(291, 0, 452, 0, 1);
-  vegBed(304, 0, 452, 1, 1);
-  vegBed(317, 0, 452, 2, 1);
-  vegBed(330, 0, 452, 3, 1);
+  R(178, 280, 274, 2, "#8a6a43");
+  vegBed(291, 178, 452, 0, 1);
+  vegBed(304, 178, 452, 1, 1);
+  vegBed(317, 178, 452, 2, 1);
+  vegBed(330, 178, 452, 3, 1);
   trellis(396, 314);
-  scarecrow(24, 312);
-  butterfly(120, 290, t, "#f2c94c");
-  butterfly(300, 296, t, "#ffffff");
-  butterfly(60, 304, t, "#e07aa8");
-  hen(190, 346, t, 2);
-  chick(206, 348, t, 1);
+  scarecrow(188, 312);
+  butterfly(220, 290, t, "#f2c94c");
+  butterfly(330, 296, t, "#ffffff");
+  butterfly(60, 270, t, "#e07aa8");
   carabao(452, 344, t);
-  flowers(0, 452, 290, 350, 26, 3);
+  flowers(0, 176, 296, 350, 12, 3);
   kid(592, 232);
   bigTree(630, 366, 220, 60, t, 4);
   palm(-4, 396, 250, t, 1, 34);
