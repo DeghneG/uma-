@@ -1030,18 +1030,6 @@ function fieldScene(t: number): void {
   const wet = field.water > 0.5;
   backdrop(t, 150);
 
-  // far: factory with smokestacks
-  R(340, 108, 96, 44, "#8f949b");
-  R(340, 108, 96, 4, "#a5aab0");
-  for (let i = 0; i < 6; i++) R(346 + i * 15, 118, 8, 12, "#6e747c");
-  R(352, 64, 12, 46, "#7d838b");
-  R(352, 78, 12, 4, "#c0453a");
-  R(352, 64, 12, 3, "#9aa0a6");
-  R(392, 80, 10, 30, "#7d838b");
-  R(392, 90, 10, 3, "#c0453a");
-  smoke(358, 62, t);
-  smoke(397, 78, t + 400);
-
   // bank, road, bank
   R(0, 150, W, H - 150, "#5d9a48");
   R(0, 158, W, 14, "#8d8a80");

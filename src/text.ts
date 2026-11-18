@@ -58,8 +58,8 @@ const en = {
   },
   w1: {
     h: "The Notice",
-    p: "A white SUV is parked at the edge of the paddy. A man in a clean polo from the Sevilla family reads the notice aloud: the land is theirs, the factory is coming, and your family has five months. No payment. Whatever this paddy earns before then is all you leave with. But El Niño has cracked the soil, the weeds are thick, and the planting window is closing. Three jobs need doing, and the order matters. You decide which one comes first.",
-    s: "Eviction without payment: the family farms land it does not own, so the owners can clear it with a few months' warning. The harvest is the only savings the family will ever have.",
+    p: "A white SUV is parked at the edge of the paddy. A man from the Sevilla family reads the notice: the land is theirs, and your family has five months. No payment. El Niño has cracked the soil and the weeds are thick, so three jobs need doing in the right order.",
+    s: "The family farms land it does not own, so it can be cleared with a few months' warning. The harvest is their only savings.",
     go: "Prepare the field",
     ben: "The Sevilla people gave all of us the same five months. We are planting like it is our last season. It is.",
     intro: "Tatay Bert: Five months. Plant, harvest, sell. That is all the time and all the money we have, so do it in the right order.",
@@ -231,8 +231,8 @@ const fil: typeof en = {
   },
   w1: {
     h: "Ang Abiso",
-    p: "May nakaparadang puting SUV sa gilid ng palayan. Binasa nang malakas ng lalaking naka-polo mula sa pamilya Sevilla ang abiso: kanila ang lupa, darating ang pabrika, at limang buwan ang ibinibigay sa pamilya mo. Walang bayad. Ang anumang kitain ng palayang ito bago iyon ang tanging madadala ninyo. Pero basag na ang lupa dahil sa El Niño, makapal ang damo, at paubos na ang panahon ng pagtatanim. Tatlong gawain ang kailangan, at mahalaga ang pagkakasunod-sunod. Ikaw ang pipili kung alin ang una.",
-    s: "Pagpapalayas nang walang bayad: nagsasaka ang pamilya sa lupang hindi kanila, kaya maaari itong linisin ng may-ari nang ilang buwan lang ang abiso. Ang ani ang nag-iisang ipon na mapapasakamay ng pamilya.",
+    p: "May nakaparadang puting SUV sa gilid ng palayan. Binasa ng lalaki mula sa pamilya Sevilla ang abiso: kanila ang lupa, at limang buwan ang ibinibigay sa pamilya mo. Walang bayad. Basag ang lupa dahil sa El Niño at makapal ang damo, kaya tatlong gawain ang kailangang gawin sa tamang pagkakasunod-sunod.",
+    s: "Nagsasaka ang pamilya sa lupang hindi kanila, kaya maaari silang paalisin nang ilang buwan lang ang abiso. Ang ani ang tanging ipon nila.",
     go: "Ihanda ang bukid",
     ben: "Parehong limang buwan ang ibinigay ng mga Sevilla sa ating lahat. Nagtatanim tayo na parang huling panahon na. Huli na nga.",
     intro: "Tatay Bert: Limang buwan. Magtanim, mag-ani, magbenta. Iyan lang ang oras at pera natin, kaya gawin nang tama ang pagkakasunod-sunod.",
