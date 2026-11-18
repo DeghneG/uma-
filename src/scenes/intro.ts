@@ -70,7 +70,7 @@ export function title(next: () => void): void {
   };
 
   const onKey = (e: KeyboardEvent): void => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.key === "ArrowDown" || e.key === "s") sel = (sel + 1) % items.length;
     else if (e.key === "ArrowUp" || e.key === "w") sel = (sel + items.length - 1) % items.length;
     else if (e.key === "Enter" || e.key === " ") {
@@ -164,6 +164,7 @@ function playIntro(done: () => void, back: () => void): void {
   }
 
   function onKey(e: KeyboardEvent): void {
+    if (e.repeat) return;
     if (e.key === "Escape") finish();
     else if (e.key === "Backspace" || e.key === "ArrowLeft") {
       e.preventDefault();

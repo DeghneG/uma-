@@ -70,7 +70,7 @@ export function initPanelInput(): void {
     if ((e.target as HTMLElement).closest("button")) sfx("click");
   });
   document.addEventListener("keydown", (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return; // a held key must not pick every card
     const n = Number(e.key);
     if (!Number.isInteger(n) || n < 1 || n > 9) return;
     const cards = [...document.querySelectorAll<HTMLButtonElement>("#panel .card")];
@@ -82,6 +82,7 @@ export function initPanelInput(): void {
 /** A Back button at the top left (also Backspace or the left arrow). Pass null to hide it. */
 let backFn: (() => void) | null = null;
 const onBackKey = (e: KeyboardEvent): void => {
+  if (e.repeat) return;
   if (e.key === "Backspace" || e.key === "ArrowLeft") {
     e.preventDefault();
     backFn?.();

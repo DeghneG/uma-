@@ -100,6 +100,7 @@ export function week4(next: () => void): void {
         }
       };
       onKey = (e: KeyboardEvent): void => {
+        if (e.repeat) return; // holding Space must not cut every round
         if (e.code === "Space") {
           e.preventDefault();
           onHit();
