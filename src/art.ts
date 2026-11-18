@@ -22,6 +22,34 @@ export const field = {
   ben: false,
   working: false,
 };
+/** Weed clumps in the paddy (week 1). `t` is 0 while standing, else the time it was snipped. */
+export const weedPatch: { x: number; y: number; t: number }[] = [];
+/** The grass shears the player holds while weeding (canvas coordinates). */
+export const shears = { on: false, x: 320, y: 250, snip: 0 };
+const WEED_ROWS = 6;
+const WEED_PER_ROW = 4;
+function makeWeeds(): void {
+  weedPatch.length = 0;
+  for (let j = 0; j < WEED_ROWS; j++)
+    for (let i = 0; i < WEED_PER_ROW; i++) {
+      const k = j * WEED_PER_ROW + i;
+      weedPatch.push({ x: 30 + i * 150 + rnd(k + 9) * 90, y: 182 + j * 25 + 19 + rnd(k + 41) * 3, t: 0 });
+    }
+}
+/** Snip every standing weed within `r` canvas pixels of (x, y); returns how many fell. */
+export function snipWeeds(x: number, y: number, r: number): number {
+  let n = 0;
+  for (const w of weedPatch) {
+    if (w.t === 0 && Math.hypot(w.x - x, w.y - 10 - y) <= r) {
+      w.t = performance.now();
+      n++;
+    }
+  }
+  field.weeds = weedPatch.length ? weedPatch.filter((w) => w.t === 0).length / weedPatch.length : 0;
+  return n;
+}
+export const weedsLeft = (): number => weedPatch.filter((w) => w.t === 0).length;
+export const weedsTotal = (): number => weedPatch.length;
 export const view: { scene: SceneKind; sacks: number; logoA: number } = { scene: "home", sacks: 0, logoA: 1 };
 export const setScene = (k: SceneKind): void => {
   view.scene = k;
@@ -43,9 +71,15 @@ export function fieldAtWeek(week: number): void {
   field.pests = [1, 1, 1];
   field.cut = 0;
   field.ben = week >= 2;
-  if (week === 0) Object.assign(field, { weeds: 1, water: 0, plant: 0 });
-  // the dry spell (week 3) leaves only a little water in the field
-  else Object.assign(field, { weeds: 0, water: week === 2 ? 0.25 : 1, plant: 1 });
+  shears.on = false;
+  if (week === 0) {
+    Object.assign(field, { weeds: 1, water: 0, plant: 0 });
+    makeWeeds();
+  } else {
+    weedPatch.length = 0;
+    // the dry spell (week 3) leaves only a little water in the field
+    Object.assign(field, { weeds: 0, water: week === 2 ? 0.25 : 1, plant: 1 });
+  }
 }
 
 const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -925,6 +959,58 @@ const ROWS = 6;
 const ROW0 = 182;
 const ROWH = 25;
 
+/** One clump of grassy weeds: tall bright blades with yellow seed heads, swaying. */
+function weedClump(x: number, b: number, t: number): void {
+  const sway = reduce ? 0 : Math.round(Math.sin(t / 420 + x * 0.13));
+  R(x - 8, b - 1, 17, 2, "#00000040");
+  R(x - 7, b - 4, 15, 4, "#2f7a1f");
+  for (let k = 0; k < 7; k++) {
+    const bx = x - 7 + k * 2;
+    const hgt = 14 + ((k * 5) % 4) * 3 + (k === 3 ? 4 : 0);
+    R(bx - 1, b - hgt - 1, 4, hgt + 1, "#1f4a14");
+    R(bx, b - hgt, 2, hgt, k % 2 ? "#59b32f" : "#86d13a");
+    R(bx + Math.round((k - 3) * 0.5) + sway, b - hgt - 2, 2, 3, "#a7e04a");
+    if (k % 3 === 0) {
+      R(bx + sway - 1, b - hgt - 6, 4, 5, "#1f4a14");
+      R(bx + sway, b - hgt - 5, 2, 4, "#f0dc4a");
+    }
+  }
+}
+
+/** A snipped clump: the blades fly apart and fade out. */
+function weedCut(x: number, b: number, dt: number): void {
+  const f = dt / 450;
+  cx.globalAlpha = 1 - f;
+  R(x - 6, b - 3, 13, 3, "#2f7a1f");
+  for (let k = 0; k < 6; k++) {
+    const dx = (k - 2.5) * 9 * f;
+    const dy = -12 * f + 26 * f * f;
+    R(x + dx - 1, b - 12 + dy - (k % 2) * 4, 2, 8, k % 2 ? "#59b32f" : "#86d13a");
+  }
+  cx.globalAlpha = 1;
+}
+
+/** The grass shears in the player's hand; the tip is at (x, y) and the blades snap shut on a cut. */
+function drawShears(x: number, y: number, snip: number): void {
+  const L = 12;
+  const sp = Math.round(7 * (1 - Math.min(1, snip)));
+  const px = x + L;
+  const py = y - L;
+  const bar = (x0: number, y0: number, x1: number, y1: number, w: number, c: string): void => {
+    const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
+    for (let i = 0; i <= n; i++) R(x0 + ((x1 - x0) * i) / n, y0 + ((y1 - y0) * i) / n, w, w, c);
+  };
+  bar(px, py, px + 10, py - 10 + sp, 4, "#1c0d08");
+  bar(px, py, px + 10 - sp, py - 10, 4, "#1c0d08");
+  bar(px + 1, py - 1, px + 10, py - 10 + sp, 2, "#d9432e");
+  bar(px + 1, py - 1, px + 10 - sp, py - 10, 2, "#e8644a");
+  bar(x, y + sp, px, py, 4, "#1c0d08");
+  bar(x + sp, y, px, py, 4, "#1c0d08");
+  bar(x, y + sp, px, py, 2, "#e4edf1");
+  bar(x + sp, y, px, py, 2, "#aab6bd");
+  R(px - 1, py - 1, 4, 4, "#f2c94c");
+}
+
 function plantTuft(x: number, base: number, h: number, ripe: boolean, lift: number): void {
   if (ripe) {
     R(x, base - h + lift, 2, h - lift, "#c9a43a");
@@ -1005,16 +1091,11 @@ function fieldScene(t: number): void {
     }
   }
 
-  // weeds, then rice
-  const weeds = Math.round(36 * field.weeds);
-  for (let i = 0; i < weeds; i++) {
-    const wj = i % ROWS;
-    const x = (i * 47 + 13) % 600;
-    const b = ROW0 + wj * ROWH + 20;
-    R(x, b - 14, 3, 14, "#6b7a2a");
-    R(x + 3, b - 10, 2, 10, "#85962f");
-    R(x - 2, b - 9, 2, 9, "#85962f");
-    R(x, b - 16, 3, 2, "#d6c24a");
+  // weeds (big, bright, clearly in the way), then rice
+  const nowMs = performance.now();
+  for (const w of weedPatch) {
+    if (w.t === 0) weedClump(w.x, w.y, t);
+    else if (nowMs - w.t < 450) weedCut(w.x, w.y, nowMs - w.t);
   }
   const ripe = field.week >= 3;
   const cols = Math.round(30 * field.plant);
@@ -1107,6 +1188,7 @@ function fieldScene(t: number): void {
   }
   bigTree(-16, 384, 200, 54, t, 5);
   fgBushes(21, 9);
+  if (shears.on) drawShears(Math.round(shears.x), Math.round(shears.y), shears.snip);
 }
 
 function market(t: number): void {
