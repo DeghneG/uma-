@@ -1,0 +1,560 @@
+<title>Ani Game Walkthrough</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: one column. Pixel scene on top, year rail, stats, then the chapter panel. */
+:root{
+  --bg:#e8efe1; --surface:#f6f9f1; --fg:#1d2a1c; --muted:#56664f; --line:#c5d3bb;
+  --accent:#2d7a4c; --accent-fg:#ffffff; --gold:#c8931a; --bad:#b8452d; --soil:#6b4a2e;
+  --font-display:"Pixelify Sans","Courier New",monospace;
+  --font-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#101812; --surface:#18231a; --fg:#e4eddc; --muted:#9db292; --line:#2c3d2e;
+  --accent:#5fc487; --accent-fg:#0c1a10; --gold:#e3b64a; --bad:#ef7c62; --soil:#a8805a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101812; --surface:#18231a; --fg:#e4eddc; --muted:#9db292; --line:#2c3d2e;
+  --accent:#5fc487; --accent-fg:#0c1a10; --gold:#e3b64a; --bad:#ef7c62; --soil:#a8805a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:16px;line-height:1.55;
+  padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--font-display);font-weight:700;font-size:clamp(26px,5vw,38px);line-height:1.1;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0;font-size:14px}
+.seg{display:inline-flex;border:2px solid var(--fg);}
+.seg button{font:600 13px var(--font-body);background:transparent;color:var(--fg);border:0;padding:6px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.scene{border:3px solid var(--fg);background:#000;line-height:0}
+canvas{width:100%;height:auto;aspect-ratio:16/9;image-rendering:pixelated;display:block}
+.rail{display:flex;gap:6px;flex-wrap:wrap}
+.rail button{flex:1 1 90px;min-width:0;font:500 12px var(--font-body);text-align:left;padding:6px 8px;background:var(--surface);
+  color:var(--muted);border:2px solid var(--line);cursor:pointer}
+.rail button[aria-current="step"]{border-color:var(--fg);color:var(--fg);background:var(--surface)}
+.rail button.done{color:var(--fg);border-color:var(--accent)}
+.rail b{display:block;font-family:var(--font-display);font-size:14px;font-weight:500;overflow-wrap:anywhere}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat{display:flex;flex-direction:column;gap:4px}
+.stat span{font:600 12px var(--font-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
+.bar{height:14px;background:var(--surface);border:2px solid var(--fg);position:relative}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .5s}
+.bar.time i{background:var(--gold)}
+.prodwrap{display:flex;flex-direction:column;gap:6px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.goal{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--bg);padding:8px 0 10px;border-bottom:2px solid var(--fg);display:flex;flex-direction:column;gap:5px}
+.goal-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.goal-row span{font:600 12px var(--font-body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.goal-row b{font-family:var(--font-display);font-size:24px;font-variant-numeric:tabular-nums}
+.goal .bar{height:16px}
+.goal .bar i{background:var(--gold)}
+.goal-sub{font-size:13px;color:var(--muted)}
+.rail small{display:block;font-size:11px;color:var(--muted);font-weight:400}
+.bar.goal::after{content:"";position:absolute;left:66.7%;top:-4px;bottom:-4px;width:3px;background:var(--gold)}
+.panel{background:var(--surface);border:2px solid var(--fg);padding:20px;display:flex;flex-direction:column;gap:14px}
+.tag{font:600 12px var(--font-body);letter-spacing:.06em;text-transform:uppercase;color:var(--bad)}
+h2{font-family:var(--font-display);font-weight:700;font-size:26px;margin:0;line-height:1.15}
+.panel p{margin:0;max-width:65ch}
+.struggle{border-left:4px solid var(--bad);padding-left:12px;color:var(--muted);font-size:15px}
+.btn{font:600 15px var(--font-body);background:var(--accent);color:var(--accent-fg);border:2px solid var(--fg);padding:10px 18px;cursor:pointer;align-self:flex-start}
+.btn.alt{background:transparent;color:var(--fg)}
+.btn:active{transform:translate(1px,1px)}
+.choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.choice{text-align:left;font:500 15px var(--font-body);background:var(--bg);color:var(--fg);border:2px solid var(--fg);padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+.choice:hover{background:var(--surface);border-color:var(--accent)}
+.choice small{color:var(--muted);font-size:13px}
+.kind{font:600 11px var(--font-body);letter-spacing:.08em;text-transform:uppercase;align-self:flex-start;padding:2px 6px;border:2px solid currentColor}
+.kind.he{color:var(--accent)}
+.kind.ex{color:var(--gold)}
+.tasks{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.choice:disabled{opacity:.45;cursor:default;border-style:dashed}
+.fb{padding:10px 12px;border-left:4px solid var(--accent);background:var(--bg);margin:0}
+.fb.bad{border-color:var(--bad)}
+.pad{display:grid;grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,44px);gap:4px}
+.pad button,.act{font:700 16px var(--font-body);background:var(--bg);color:var(--fg);border:2px solid var(--fg);cursor:pointer;touch-action:none;user-select:none}
+.pad .u{grid-column:2;grid-row:1}.pad .l{grid-column:1;grid-row:2}.pad .d{grid-column:2;grid-row:2}.pad .r{grid-column:3;grid-row:2}
+.controls{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap}
+.act{height:44px;padding:0 18px;background:var(--accent);color:var(--accent-fg)}
+.legend{font-size:13px;color:var(--muted)}
+.roam-msg{min-height:3em;margin:0;padding:10px 12px;border-left:4px solid var(--gold);background:var(--bg)}
+canvas#cvw{aspect-ratio:16/9}
+.timing{position:relative;height:38px;border:2px solid var(--fg);background:var(--bg)}
+.zone{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--accent) 45%,transparent);border-inline:2px solid var(--accent)}
+.mark{position:absolute;top:-4px;bottom:-4px;width:6px;background:var(--fg);left:0}
+.stars{font-family:var(--font-display);font-size:22px;color:var(--gold);letter-spacing:.1em}
+.note{font-size:13px;color:var(--muted)}
+.end-q{font-family:var(--font-display);font-size:22px;line-height:1.3;border-top:2px solid var(--line);padding-top:12px}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1 id="t-title">Ani: A Year on the Farm</h1>
+      <p class="sub" id="t-sub">Playable storyboard of the planned game. Every chapter is one crop, one mini-game, one hard choice.</p>
+    </div>
+    <div class="seg" role="group" aria-label="Language">
+      <button id="l-en" aria-pressed="true">EN</button><button id="l-fil" aria-pressed="false">FIL</button>
+    </div>
+  </header>
+
+  <section class="goal" aria-label="Savings goal">
+    <div class="goal-row"><span id="g-l">Family savings</span><b id="g-v">₱4,000 / ₱20,000</b></div>
+    <div class="bar"><i id="g-b"></i></div>
+    <div class="goal-sub" id="g-s"></div>
+  </section>
+  <div class="scene"><canvas id="cv" width="96" height="54" role="img" aria-label="Pixel art scene for the current chapter"></canvas><canvas id="cvw" width="160" height="90" hidden role="img" aria-label="Free roam map of the farm area"></canvas></div>
+  <nav class="rail" id="rail" aria-label="Chapters"></nav>
+
+  <section class="stats" aria-label="Stats">
+    <div class="stat"><span><em id="s-morale">Family morale</em><b id="v-morale">60</b></span><div class="bar"><i id="b-morale"></i></div></div>
+    <div class="stat"><span><em id="s-pull">Months left</em><b id="v-pull">5</b></span><div class="bar time"><i id="b-pull"></i></div></div>
+  </section>
+
+  <section class="prodwrap" aria-label="Harvest in storage"><div class="note" id="prod-h"></div><div class="stats" id="prod"></div></section>
+  <section class="panel" id="panel" aria-live="polite"></section>
+  <p class="note" id="t-note">Prototype for planning only. Numbers and story beats are placeholders; real farmer statistics will be added from sourced data.</p>
+</div>
+
+<script>
+(function(){
+var UI={
+ en:{title:"Ani: A Year on the Farm",sub:"Playable storyboard of the planned game. Every chapter is one crop, one mini-game, one hard choice.",
+  money:"Money",morale:"Family morale",yield:"Land and yield",pull:"Months left",begin:"Begin the year",play:"Play the mini-game",
+  tap:"Tap now",round:"Round",hits:"Hits",result:"Result",cont:"Continue to the choice",choose:"What do you do?",again:"Play again",
+  struggle:"The struggle",stars:"stars",endTag:"Epilogue",
+  note:"Prototype for planning only. Numbers and story beats are placeholders; real farmer statistics will be added from sourced data.",
+  hint:"Press Space or tap the button when the marker is inside the green zone. Three rounds."},
+ fil:{title:"Ani: Isang Taon sa Bukid",sub:"Mapaglarong storyboard ng binabalak na laro. Bawat kabanata ay isang pananim, isang mini-game, at isang mahirap na desisyon.",
+  money:"Pera",morale:"Morale ng pamilya",yield:"Lupa at ani",pull:"Buwan na natitira",begin:"Simulan ang taon",play:"Laruin ang mini-game",
+  tap:"Pindutin",round:"Ikot",hits:"Tama",result:"Resulta",cont:"Ituloy sa desisyon",choose:"Ano ang gagawin mo?",again:"Maglaro ulit",
+  struggle:"Ang hirap",stars:"bituin",endTag:"Epilogo",
+  note:"Prototype para sa pagpaplano lamang. Placeholder ang mga numero at kuwento; dadagdagan ng totoong datos mula sa mapagkakatiwalaang sources.",
+  hint:"Pindutin ang Space o ang button kapag nasa berdeng zone ang marker. Tatlong ikot."}
+};
+var CH=[
+ {k:"home",en:{n:"Home",h:"Umaga sa Barrio",p:"Rooster crow. Nanay is already in the kitchen and Tatay is sharpening the bolo. On the table sits a notice from the Sevilla family, who own the land: in five months the paddy will be cleared for a factory. No payment, only time. Tatay says the only way through is to plant, harvest and sell enough to start over in the city. Your cousin in Cebu has a room for you.",s:"",game:"",
+   c:[{t:"Help Tatay in the field",d:"Story mode. Five months to plant, harvest and sell before you must leave. Your choices count.",e:{morale:10,pull:-10}},{t:"Explore the whole area first",d:"Free roam from the rice field to the market. Talk to people, tend animals, try farming. Nothing here is recorded in the story.",e:{},roam:true}]},
+  fil:{n:"Bahay",h:"Umaga sa Barrio",p:"Tilaok ng manok. Gising na si Nanay sa kusina at hinahasa ni Tatay ang itak. Sa mesa, may abiso mula sa pamilya Sevilla, ang may-ari ng lupa: sa loob ng limang buwan, lilinisin ang palayan para sa pabrika. Walang bayad, panahon lang. Sabi ni Tatay, ang tanging paraan ay magtanim, mag-ani at magbenta nang sapat para magsimulang muli sa lungsod. May kuwarto para sa iyo ang pinsan mo sa Cebu.",s:"",game:"",
+   c:[{t:"Tulungan si Tatay sa bukid",d:"Story mode. Limang buwan para magtanim, mag-ani at magbenta bago kayo umalis. Mahalaga ang mga desisyon mo.",e:{morale:10,pull:-10}},{t:"Libutin muna ang buong lugar",d:"Malayang maglakad mula palayan hanggang palengke. Makipag-usap, mag-alaga ng hayop, subukang magsaka. Walang maitatala sa kuwento.",e:{},roam:true}]}},
+ {k:"rice",tasks:true,en:{n:"Palay",h:"Month 1, Week 1: The Notice",p:"A white SUV is parked at the edge of the paddy. A man in a clean polo from the Sevilla family reads the notice aloud: the land is theirs, the factory is coming, and your family has five months. No payment. Whatever this paddy earns before then is all you leave with. But El Niño has cracked the soil, the weeds are thick, and the planting window is closing. Three jobs need doing, and the order matters. You decide which one comes first.",s:"Eviction without payment: the family farms land it does not own, so the owners can clear it with a few months' warning. The harvest is the only savings the family will ever have.",game:"Prepare the field",
+   c:[{t:"Buy fuel and run the pump every night",d:"Costs ₱800. Failed seedlings get replaced, so one earlier mistake will not cost you rice.",e:{money:-800},buf:1},{t:"Take turns at the canal with the neighbors",d:"Slower and less water, but everyone shares the load. The neighbors will help at harvest.",e:{morale:5},nb:true},{t:"Plant fewer rows to stretch the water",d:"Saves ₱300, but the harvest can be at most 4 sacks. Tatay frowns at the empty rows.",e:{money:300,morale:-3},cap:4}]},
+  fil:{n:"Palay",h:"Buwan 1, Linggo 1: Ang Abiso",p:"May nakaparadang puting SUV sa gilid ng palayan. Binasa nang malakas ng lalaking naka-polo mula sa pamilya Sevilla ang abiso: kanila ang lupa, darating ang pabrika, at limang buwan ang ibinibigay sa pamilya mo. Walang bayad. Ang anumang kitain ng palayang ito bago iyon ang tanging madadala ninyo. Pero basag na ang lupa dahil sa El Niño, makapal ang damo, at paubos na ang panahon ng pagtatanim. Tatlong gawain ang kailangan, at mahalaga ang pagkakasunod-sunod. Ikaw ang pipili kung alin ang una.",s:"Pagpapalayas nang walang bayad: nagsasaka ang pamilya sa lupang hindi kanila, kaya maaari itong linisin ng may-ari nang ilang buwan lang ang abiso. Ang ani ang nag-iisang ipon na mapapasakamay ng pamilya.",game:"Ihanda ang bukid",
+   c:[{t:"Bumili ng gasolina at i-andar ang pump gabi-gabi",d:"Gastos na ₱800. Napapalitan ang namatay na punla, kaya hindi ka mawawalan ng palay sa isang naunang pagkakamali.",e:{money:-800},buf:1},{t:"Magpalitan sa kanal kasama ang mga kapitbahay",d:"Mas mabagal at mas kaunting tubig, pero magkabahagi ang pasanin. Tutulong ang mga kapitbahay sa ani.",e:{morale:5},nb:true},{t:"Magtanim ng mas kaunting hanay para tipirin ang tubig",d:"Makakatipid ng ₱300, pero hanggang 4 na sako lang ang ani. Sumimangot si Tatay sa mga bakanteng hanay.",e:{money:300,morale:-3},cap:4}]}},
+ {k:"cane",en:{n:"Tubo",h:"Month 2, Sugarcane: Cutting Season",p:"Hot, sharp leaves and a long line of carts. You cut and load cane. The mill truck is waiting, and the price on the board changes by the hour. You cannot sell yet: the family needs every crop on the cart for market day.",s:"Low farm-gate price: what the mill pays barely covers the cost of growing. The buyers set the number.",game:"Cut cane",
+   c:[{t:"Work the long days to cut more cane",d:"More cane for market day, but everyone is exhausted.",e:{yield:10,morale:-6}},{t:"Share the cutting crew with the neighbors",d:"Less cane cut, but the heavy work gets lighter and spirits rise.",e:{yield:4,morale:5}}]},
+  fil:{n:"Tubo",h:"Buwan 2, Tubo: Panahon ng Pagputol",p:"Mainit, matalas ang dahon, at mahaba ang pila ng kariton. Pumuputol at nagkakarga ka ng tubo. Naghihintay ang trak ng gilingan, at nagbabago bawat oras ang presyo sa pisara. Hindi mo pa ito maibebenta: kailangan ng pamilya ang bawat ani sa kariton sa araw ng palengke.",s:"Mababang presyo sa bukid: halos hindi sapat ang bayad ng gilingan sa gastos sa pagtatanim. Ang mga bumibili ang nagtatakda ng presyo.",game:"Magputol",
+   c:[{t:"Magtrabaho nang mahabang oras para makaputol ng mas maraming tubo",d:"Mas maraming tubo para sa palengke, pero pagod na ang lahat.",e:{yield:10,morale:-6}},{t:"Makibahagi sa pagputol kasama ang mga kapitbahay",d:"Mas kaunting tubo, pero gumagaan ang trabaho at sumisigla ang loob.",e:{yield:4,morale:5}}]}},
+ {k:"animals",en:{n:"Hayop",h:"Month 3, Livestock: The Sick Carabao",p:"Your carabao stops eating. You feed the chickens, herd the pigs, and sit beside the animal that has pulled the plow since before you could walk.",s:"Rising costs: a vet visit costs more than a week of earnings, and no one in the barrio has savings to spare.",game:"Herd animals",
+   c:[{t:"Pay the vet from savings",d:"The carabao recovers. Costs ₱1,600.",e:{money:-1600,morale:8,yield:5}},{t:"Use herbal remedies and wait",d:"Costs ₱200, but Tatay looks worried all night.",e:{money:-200,morale:-6,yield:-4}}]},
+  fil:{n:"Hayop",h:"Buwan 3, Hayop: Ang May Sakit na Kalabaw",p:"Hindi na kumakain ang kalabaw mo. Pinapakain mo ang mga manok, tinitipon ang mga baboy, at tumatabi ka sa hayop na nag-aararo mula pa bago ka natutong maglakad.",s:"Tumataas na gastos: mas mahal ang bayad sa beterinaryo kaysa kita ng isang linggo, at walang sobrang ipon ang mga kapitbahay.",game:"Mag-alaga",
+   c:[{t:"Bayaran ang beterinaryo mula sa ipon",d:"Gagaling ang kalabaw. Gastos na ₱1,600.",e:{money:-1600,morale:8,yield:5}},{t:"Gumamit ng halamang gamot at maghintay",d:"Gastos na ₱200, pero balisa si Tatay buong gabi.",e:{money:-200,morale:-6,yield:-4}}]}},
+ {k:"typhoon",en:{n:"Bagyo",h:"Month 4, Coconut and Vegetables: Typhoon Warning",p:"The radio crackles. Signal No. 3. The coconut trees bend and the vegetable plot is days from harvest. You have a few hours.",s:"Typhoons and climate: storms come stronger and earlier, and no insurance covers a small plot.",game:"Secure it",
+   c:[{t:"Harvest the vegetables early",d:"Lose some of the crop, keep the family fed.",e:{yield:-6,morale:4}},{t:"Reinforce the house and the kalabaw shed",d:"The garden may be lost. Everyone is safe.",e:{yield:-12,morale:8,pull:-3}}]},
+  fil:{n:"Bagyo",h:"Buwan 4, Niyog at Gulay: Babala ng Bagyo",p:"Sumisitsit ang radyo. Signal No. 3. Yumuyuko ang mga puno ng niyog at ilang araw na lang bago anihin ang gulayan. Ilang oras lang ang mayroon ka.",s:"Bagyo at klima: mas malakas at mas maaga ang mga bagyo, at walang insurance na sumasaklaw sa maliit na lupa.",game:"Iligtas",
+   c:[{t:"Anihin nang maaga ang gulay",d:"Mababawasan ang ani, pero may kakainin ang pamilya.",e:{yield:-6,morale:4}},{t:"Palakasin ang bahay at kulungan ng kalabaw",d:"Maaaring mawala ang taniman. Ligtas ang lahat.",e:{yield:-12,morale:8,pull:-3}}]}},
+ {k:"home",en:{n:"Last Week",h:"Month 5: The Last Week",p:"Every crop has been sold and the fields are cleared. The notice runs out at the end of the week. You count what is in the jar. The last days are yours to spend.",s:"No safety net: after the last sale, whatever is left is all the family has to begin again.",game:"",
+   c:[{t:"Take day work on a neighbor's farm",d:"A week of wages: +₱1,500. Tiring, but every peso goes in the jar.",e:{money:1500,morale:-4}},{t:"Sell the plow and the carabao cart",d:"+₱2,500 right now. Tatay will not talk about it.",e:{money:2500,morale:-10}},{t:"Spend the week saying goodbye",d:"Pack, share a last meal with the neighbors. Nothing is earned.",e:{morale:10}}]},
+  fil:{n:"Huling Linggo",h:"Buwan 5: Ang Huling Linggo",p:"Naibenta na ang bawat ani at nalinis na ang mga bukid. Matatapos ang abiso sa katapusan ng linggo. Binibilang mo ang laman ng garapon. Sa iyo ang mga huling araw.",s:"Walang sandigan: pagkatapos ng huling benta, ang matitira ang tanging panimula ng pamilya.",game:"",
+   c:[{t:"Magtrabaho sa bukid ng kapitbahay",d:"Sahod ng isang linggo: +₱1,500. Nakakapagod, pero lahat ay pupunta sa garapon.",e:{money:1500,morale:-4}},{t:"Ibenta ang araro at kariton ng kalabaw",d:"+₱2,500 agad. Hindi ito pag-uusapan ni Tatay.",e:{money:2500,morale:-10}},{t:"Gugulin ang linggo sa pamamaalam",d:"Mag-impake, magsalo sa huling hapunan kasama ang mga kapitbahay. Walang kikitain.",e:{morale:10}}]}},
+ {k:"bus",en:{n:"Bus Stop",h:"Epilogue: The Bus Stop",p:"Dawn at the terminal. The five months are up. The bus to the city idles. Behind you the fields run all the way to the mountain. One of them has a surveyor's flag standing in it.",s:"",game:"",c:[]},
+  fil:{n:"Terminal",h:"Epilogo: Ang Terminal",p:"Madaling-araw sa terminal. Tapos na ang limang buwan. Umaandar ang bus papuntang lungsod. Sa likod mo, abot hanggang bundok ang mga bukid. May nakatayong watawat ng surveyor sa isa sa mga ito.",s:"",game:"",c:[]}}
+];
+var lang="en",st,ci,step,tg,res={hits:0,stars:1};
+
+var PK=[null,"rice","cane","stock","veg",null,null];
+var GOAL=20000,PR={rice:1000,cane:190,stock:190,veg:200},COOP=1.4,FEE=200;
+function peso(n){return "₱"+Math.round(n).toLocaleString("en-US")}
+var PN={en:{h:"Crops (each is sold at the market right after its harvest)",rice:"Rice",cane:"Sugarcane",stock:"Livestock",veg:"Coconut and veg"},
+        fil:{h:"Mga pananim (ibinebenta sa palengke pagkatapos ng bawat ani)",rice:"Palay",cane:"Tubo",stock:"Hayop",veg:"Niyog at gulay"}};
+function unitOf(k){return k==="rice"?(lang==="en"?"sacks":"sako"):(lang==="en"?"units":"yunit")}
+var RL={en:["Prologue","Month 1","Month 2","Month 3","Month 4","Month 5","Epilogue"],fil:["Pambungad","Buwan 1","Buwan 2","Buwan 3","Buwan 4","Buwan 5","Epilogo"]};
+var rw=0,nb=false;
+function reset(){st={money:4000,morale:60,rice:0,cane:0,stock:0,veg:0,wmist:0,pmist:0,rbuf:0,rcap:5,sold:{}};rw=0;nb=false;riceReset();ci=-1;step="title";tg=null;}
+function advance(){if(ci===1&&rw<3){rw++}else{ci++;rw=0}step="story";render()}
+reset();
+
+/* ---------- pixel scene ---------- */
+var cv=document.getElementById("cv"),cx=cv.getContext("2d");
+var reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+function R(x,y,w,h,c){cx.fillStyle=c;cx.fillRect(x,y,w,h)}
+function sky(a,b){R(0,0,96,30,a);R(0,30,96,24,b)}
+function sun(x,y){R(x,y,6,6,"#f6d155");R(x+1,y-1,4,8,"#f6d155")}
+function hills(){R(0,22,96,8,"#5a8a6a");R(10,18,22,6,"#4d7a5c");R(60,16,26,8,"#4d7a5c")}
+function sprouts(t){for(var j=0;j<5;j++){R(0,32+j*4,96,3,"#4aa0b8");for(var i=0;i<24;i++){var s=Math.sin(t/500+i+j)>0.6?1:0;R(i*4+(j%2)*2,31+j*4-s,2,3,"#3f9a45")}}}
+function person(x,y,c){R(x,y,3,3,"#e3b48d");R(x-1,y+3,5,5,c);R(x,y+8,1,3,"#3a2a1c");R(x+2,y+8,1,3,"#3a2a1c");R(x-2,y-1,7,1,"#e1c15a")}
+function carabao(x,y){R(x,y,12,6,"#3b3b44");R(x+10,y-2,4,4,"#3b3b44");R(x+13,y-3,2,2,"#999");R(x+1,y+6,2,4,"#2b2b33");R(x+8,y+6,2,4,"#2b2b33")}
+function tree(x,y,sw){R(x,y,2,16,"#7b5836");for(var i=-3;i<=3;i++){R(x+i*2+sw,y-2+Math.abs(i),4,1,"#2e7d46")}R(x-1+sw,y-3,6,2,"#2e7d46")}
+var rice={w:false,wa:false,p:false,wrong:0},fb=null;
+function riceReset(){rice={w:false,wa:false,p:false,wrong:0};fb=null}
+function riceScene(t){
+ sky("#aadbf0","#8a6a43");sun(78,5);hills();
+ R(0,30,96,24,rice.wa?"#5b4630":"#b08a55");
+ var i,j;
+ if(!rice.wa){for(i=0;i<12;i++){R(i*8+2,32+(i*5%18),5,1,"#7a5c34");R(i*8+5,34+(i*7%16),1,4,"#7a5c34")}}
+ else{for(j=0;j<5;j++)R(0,32+j*4,96,3,"#4aa0b8")}
+ if(!rice.w){for(i=0;i<22;i++){var wx=(i*11)%92,wy=32+(i*7)%18;R(wx,wy,2,4,"#5d9a2c");R(wx+2,wy+1,1,3,"#7bbd3c");R(wx-1,wy+1,1,3,"#7bbd3c")}}
+ if(rice.p){var gold=rw>=3;for(j=0;j<5;j++)for(i=0;i<24;i++){var s=reduce?0:(Math.sin(t/500+i+j)>0.6?1:0);R(i*4+(j%2)*2,(gold?29:31)+j*4-s,2,gold?5:3,gold?"#d9b43a":"#3f9a45")}}
+ if(rw===1){for(i=0;i<8;i++)R(8+i*10,36+(i*5%12),2,2,"#e75480");R(60,46,5,2,"#6b6b6b");R(64,45,2,1,"#6b6b6b")}
+ if(rw===2){R(0,50,96,4,"#a07840");for(i=0;i<10;i++)R(i*10+3,50+(i%2),4,1,"#6f5128")}
+ R(36,22,7,9,"#7a7f86");R(33,24,4,2,"#9aa0a6");R(42,28,3,3,"#4aa0b8");
+ R(84,10,4,13,"#8a8f96");R(84,8,4,2,"#b9bec4");R(90,14,3,9,"#8a8f96");
+ R(62,26,24,6,"#f4f4f2");R(66,22,15,5,"#f4f4f2");R(68,23,5,3,"#8fb7c9");R(75,23,5,3,"#8fb7c9");R(66,32,4,3,"#222");R(79,32,4,3,"#222");
+ person(88,25,"#2f4a6b");
+ person(14,24,"#c25a3a");
+}
+function draw(t){
+ var k=step==="sale"?"market":(ci<0?"home":CH[ci].k),sw=reduce?0:Math.round(Math.sin(t/400)*1);
+ if(k==="home"){sky("#9fd3ee","#6fae5a");sun(78,6);hills();R(0,36,96,18,"#6fae5a");
+  R(30,28,24,16,"#8a6a43");R(28,24,28,5,"#b8582f");R(30,22,24,3,"#b8582f");R(40,34,6,10,"#4a321c");R(34,31,4,4,"#d9ecf2");R(24,40,2,6,"#7b5836");person(62,38,"#c25a3a");person(68,40,"#3f7bb0")}
+ else if(k==="rice"){riceScene(t)}
+ else if(k==="cane"){sky("#f2cf8b","#c99a4a");sun(76,6);R(0,30,96,24,"#a97d3a");
+  for(var i=0;i<14;i++){var h=18+(i*7%6);R(i*7+2,34-h/2,2,h,"#6c9a3a");R(i*7+1,34-h/2,4,2,"#8cba4a");R(i*7+4,34-h/2+3,3,1,"#8cba4a")}
+  R(70,38,18,6,"#6b4a2e");R(72,44,4,4,"#222");R(82,44,4,4,"#222");person(60,34,"#c25a3a")}
+ else if(k==="animals"){sky("#b9e0f0","#7fbd5a");sun(78,5);hills();carabao(20,34);
+  var b=reduce?0:Math.round(Math.sin(t/300));for(var c=0;c<3;c++){R(50+c*8,42-b*(c%2),4,3,"#f3ecd2");R(53+c*8,41-b*(c%2),2,2,"#d0452d")}
+  R(66,36,10,6,"#e7a1b4");R(74,35,3,3,"#e7a1b4");R(0,44,96,2,"#8a6a43");for(var f=0;f<12;f++)R(f*8,40,1,6,"#8a6a43")}
+ else if(k==="typhoon"){sky("#3f4b57","#2f4338");R(0,30,96,24,"#2f4338");tree(24,18,sw*2);tree(66,16,-sw*2);
+  for(var g=0;g<4;g++)R(36+g*5,44,3,3,"#4a8a46");
+  if(!reduce||true){for(var r=0;r<46;r++){var rx=(r*13+Math.floor(t/12))%96,ry=(r*29+Math.floor(t/5))%54;R(rx,ry,1,3,"#b9d4e6")}}}
+ else if(k==="market"){sky("#bfe3f0","#b99a6f");R(0,34,96,20,"#b99a6f");
+  R(28,16,40,5,"#d0452d");for(var s=0;s<8;s++)R(28+s*5,16,3,5,"#f3ecd2");R(30,21,2,18,"#7b5836");R(64,21,2,18,"#7b5836");R(30,32,36,4,"#8a6a43");
+  R(34,28,8,6,"#e7d9a8");R(46,28,8,6,"#e7d9a8");R(58,28,6,6,"#e7d9a8");person(74,36,"#3f7bb0");person(14,36,"#c25a3a")}
+ else if(k==="bus"){sky("#f6b98a","#6b6b73");R(0,34,96,20,"#55555d");R(0,43,96,1,"#e1c15a");hills();R(0,22,96,8,"#6b8a6a");
+  R(46,26,30,14,"#2f7d9a");R(48,28,26,5,"#d7eef6");R(46,36,30,2,"#e1c15a");R(52,40,5,5,"#111");R(66,40,5,5,"#111");
+  R(14,20,2,22,"#444");R(10,18,10,5,"#e1c15a");person(24,36,"#c25a3a");R(20,42,6,5,"#4a6aa0")}
+}
+function loop(t){draw(t);if(!reduce||ci===4)requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+if(reduce)draw(0);
+
+/* ---------- UI ---------- */
+var $=function(i){return document.getElementById(i)};
+function clamp(v){return Math.max(0,Math.min(100,v))}
+function renderStats(){
+ var u=UI[lang];
+ var m=st.money,en=lang==="en";
+ $("g-l").textContent=en?"Family savings":"Ipon ng pamilya";
+ $("g-v").textContent=peso(m)+" / "+peso(GOAL);
+ $("g-b").style.width=Math.min(100,m/GOAL*100)+"%";
+ $("g-s").textContent=m>=GOAL?(en?"Goal reached: enough to start over in the city.":"Naabot ang target: sapat para magsimulang muli sa lungsod."):(en?peso(GOAL-m)+" still needed to start over in the city.":peso(GOAL-m)+" pa ang kailangan para magsimulang muli sa lungsod.");
+ $("s-morale").textContent=u.morale;$("s-pull").textContent=u.pull;
+ $("v-morale").textContent=Math.round(st.morale);$("b-morale").style.width=clamp(st.morale)+"%";
+ var pn=PN[lang];$("prod-h").textContent=pn.h;
+ $("prod").innerHTML=["rice","cane","stock","veg"].map(function(k){
+  var sold=st.sold[k],val=sold!=null?peso(sold):(st[k]>0?st[k]+" "+unitOf(k):"-");
+  return "<div class='stat'><span><em>"+pn[k]+"</em><b>"+val+"</b></span><div class='bar'><i style='width:"+(sold!=null?Math.min(100,sold/70):0)+"%'></i></div></div>"}).join("");
+ var mo=[5,5,4,3,2,1,0][Math.max(0,ci)];
+ $("v-pull").textContent=mo;$("b-pull").style.width=(mo/5*100)+"%";
+}
+function renderRail(){
+ var r=$("rail");r.innerHTML="";
+ CH.forEach(function(c,i){var b=document.createElement("button");
+  b.innerHTML="<b>"+c[lang].n+"</b><small>"+RL[lang][i]+"</small>";
+  if(i===ci)b.setAttribute("aria-current","step");
+  if(i<ci)b.classList.add("done");
+  b.disabled=true;r.appendChild(b)});
+}
+function setText(){var u=UI[lang];$("t-title").textContent=u.title;$("t-sub").textContent=u.sub;$("t-note").textContent=u.note;
+ $("l-en").setAttribute("aria-pressed",lang==="en");$("l-fil").setAttribute("aria-pressed",lang==="fil");document.documentElement.lang=lang==="en"?"en":"fil"}
+
+function el(tag,cls,html){var e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e}
+function stopGame(){if(tg&&tg.raf)cancelAnimationFrame(tg.raf);cancelAnimationFrame(wraf);document.onkeydown=null;document.onkeyup=null;W.k={};tg=null}
+var wv=$("cvw"),wc=wv.getContext("2d"),wraf=0,W={x:76,y:48,k:{},plots:null,idx:{},lastMsg:""};
+
+var TK={
+ en:{weeds:["Clean the grassy weeds","Pull them out by hand and with the bolo."],water:["Run the pump irrigation","El Niño left the soil almost dry. Pump water in from the canal."],plant:["Plant the rice seedlings","Set the seedlings in even rows."],
+  ok:{weeds:"The field is clear. The soil can take water now.",water:"The cracked soil drinks it in. Now it is ready for seedlings.",plant:"The seedlings stand in neat rows."},
+  bad:{waterFirst:"The weeds drink most of the water. Clean them first.",plantWeeds:"Weeds would choke the seedlings. Clean the field first.",plantDry:"Seedlings on dry, cracked soil wilt. Water the soil first."},
+  intro:"Tatay: Five months. Plant, harvest, sell. That is all the time and all the money we have, so do it in the right order.",head:"Which job comes first?",left:"Jobs left",mist:"Mistakes",hint:"Pick the next job. Each wrong pick costs a star."},
+ fil:{weeds:["Linisin ang damo","Bunutin gamit ang kamay at itak."],water:["I-andar ang pump irrigation","Halos tuyo ang lupa dahil sa El Niño. Magpump ng tubig mula sa kanal."],plant:["Itanim ang punla ng palay","Ayusin ang punla nang pantay-pantay."],
+  ok:{weeds:"Malinis na ang bukid. Kaya na nitong tumanggap ng tubig.",water:"Sumisipsip ng tubig ang basag na lupa. Handa na ito para sa punla.",plant:"Nakahanay nang maayos ang mga punla."},
+  bad:{waterFirst:"Ang damo ang sumisipsip ng karamihan sa tubig. Linisin muna.",plantWeeds:"Masasakal ng damo ang punla. Linisin muna ang bukid.",plantDry:"Nalalanta ang punla sa tuyo at basag na lupa. Diligan muna ang lupa."},
+  intro:"Tatay: Limang buwan. Magtanim, mag-ani, magbenta. Iyan lang ang oras at pera natin, kaya gawin nang tama ang pagkakasunod-sunod.",head:"Alin ang unang gawain?",left:"Natitirang gawain",mist:"Mali",hint:"Piliin ang susunod na gawain. Bawas na bituin ang bawat maling pili."}
+};
+var ORDER=["weeds","water","plant"];
+function riceDone(){return (rice.w?1:0)+(rice.wa?1:0)+(rice.p?1:0)}
+function taskScreen(p,c){
+ var T=TK[lang],u=UI[lang];
+ p.appendChild(el("div","tag",c.game));p.appendChild(el("h2",null,T.head));
+ p.appendChild(el("p",null,T.intro));
+ p.appendChild(el("p","note",T.hint+"  |  "+T.left+": "+(3-riceDone())+"  |  "+T.mist+": "+rice.wrong));
+ var g=el("div","tasks");
+ var flag={weeds:"w",water:"wa",plant:"p"};
+ ORDER.forEach(function(id){
+  var b=el("button","choice","<b>"+T[id][0]+"</b><small>"+T[id][1]+"</small>");
+  if(rice[flag[id]])b.disabled=true;
+  b.onclick=function(){pickTask(id)};g.appendChild(b)});
+ p.appendChild(g);
+ if(fb)p.appendChild(el("p","fb"+(fb.bad?" bad":""),fb.t));
+}
+function pickTask(id){
+ var T=TK[lang],exp=ORDER[riceDone()];
+ if(id===exp){
+  rice[{weeds:"w",water:"wa",plant:"p"}[id]]=true;fb={t:T.ok[id],bad:false};
+  if(riceDone()===3){var stars=rice.wrong===0?3:(rice.wrong===1?2:1);res={mistakes:rice.wrong,stars:stars};st.wmist=Math.min(3,rice.wrong);fb=null;step="result"}
+ }else{
+  rice.wrong++;
+  fb={bad:true,t:id==="water"?T.bad.waterFirst:(rice.w?T.bad.plantDry:T.bad.plantWeeds)};
+ }
+ render();
+}
+
+var RWK={
+ en:[null,
+  {h:"Month 1, Week 2: Pests in the Seedlings",p:"Green shoots at last. Then pink egg clusters on the stalks, a rat's trail along the dike, and yellow spots spreading on the leaves. You cannot afford to lose a single row, and you cannot afford every remedy either. Match each pest to the right fix.",s:"Rising input costs: pesticides and traps cost cash the family does not have, and the cheap fix is often the wrong one.",game:"Protect the seedlings"},
+  {h:"Month 1, Week 3: The Dry Spell",p:"No rain for three weeks. The canal is a trickle and the whole barrio watches the same pump. Mang Ben's family needs the water on the same nights you do. Tatay says nothing. Nanay counts the pesos in the fuel jar.",s:"Shared water: El Niño turns the canal into a competition between families who are all in the same trouble.",game:""},
+  {h:"Month 1, Week 4: Harvest",p:"The paddy turns gold. Everyone in the barrio cuts at once, because the rains or the bulldozers could come first. You cut, bundle and thresh.",s:"Every bundle counts. The rice is only one of four crops the family will carry to market, and the notice clock is still running.",game:"Harvest",
+   nbY:" Mang Ben's family comes over to help, because you shared the canal.",nbN:" You do most of it alone. The neighbors have their own fields to save."}],
+ fil:[null,
+  {h:"Buwan 1, Linggo 2: Peste sa Punla",p:"May berdeng usbong na sa wakas. Pagkatapos, may kulay-rosas na itlog sa mga tangkay, bakas ng daga sa pilapil, at dilaw na batik sa mga dahon. Hindi ninyo kayang mawalan ng kahit isang hanay, at hindi rin ninyo kayang bilhin ang bawat lunas. Itugma ang bawat peste sa tamang paraan.",s:"Tumataas na gastos sa gamit: may bayad ang pestisidyo at bitag na wala sa pamilya, at madalas mali ang murang paraan.",game:"Protektahan ang punla"},
+  {h:"Buwan 1, Linggo 3: Ang Tagtuyot",p:"Tatlong linggo nang walang ulan. Mahina na ang agos ng kanal at iisang pump ang binabantayan ng buong barrio. Kailangan din ng pamilya ni Mang Ben ang tubig sa parehong gabi. Walang sinasabi si Tatay. Binibilang ni Nanay ang pera sa garapon ng gasolina.",s:"Pinaghahatiang tubig: ginagawang paligsahan ng El Niño ang kanal ng mga pamilyang pare-parehong nahihirapan.",game:""},
+  {h:"Buwan 1, Linggo 4: Ani",p:"Naging ginto ang palayan. Sabay-sabay ang pag-ani ng buong barrio, dahil baka maunahan ng ulan o ng bulldozer. Gagapas ka, magtatali at mag-iipil.",s:"Mahalaga ang bawat tali. Isa lang ang palay sa apat na ani na dadalhin ng pamilya sa palengke, at tumatakbo pa rin ang orasan ng abiso.",game:"Mag-ani",
+   nbY:" Dumating ang pamilya ni Mang Ben para tumulong, dahil nagbahagi ka sa kanal.",nbN:" Halos mag-isa mong gagawin ito. May sarili ring bukid na iniligtas ang mga kapitbahay."}]
+};
+function riceWeek(w,c){var d=RWK[lang][w];return {h:d.h,p:d.p+(w===3?(nb?d.nbY:d.nbN):""),s:d.s,game:d.game,c:(w===2?c.c:[])}}
+
+function saleScreen(p){
+ var k=PK[ci],q=st[k],pn=PN[lang],en=lang==="en",name=pn[k].toLowerCase();
+ p.appendChild(el("div","tag",en?"Market day":"Araw ng palengke"));
+ p.appendChild(el("h2",null,en?"Sell the "+name+" harvest":"Ibenta ang ani: "+name));
+ function settle(amt,mor){st.money+=amt;st.morale=clamp(st.morale+mor);st.sold[k]=amt;advance()}
+ if(q<=0){
+  p.appendChild(el("p",null,en?"There is nothing to sell this month. The cart goes home empty, and the family looks at the savings jar.":"Walang maibebenta ngayong buwan. Uuwing walang laman ang kariton, at titingnan ng pamilya ang garapon ng ipon."));
+  var z=el("button","btn",en?"Continue":"Magpatuloy");z.onclick=function(){settle(0,-6)};p.appendChild(z);return}
+ var tr=q*PR[k],co=Math.round(q*PR[k]*COOP)-FEE;
+ p.appendChild(el("p",null,(en?"You carry ":"Dala mo ang ")+q+" "+unitOf(k)+(en?" of "+name+" to town. The trader's scale is right there. A neighbor says the cooperative two towns over pays better.":" ng "+name+" sa bayan. Nandiyan na ang timbangan ng negosyante. Sabi ng kapitbahay, mas mataas ang bayad ng kooperatiba sa kabilang bayan.")));
+ var g=el("div","choices");
+ var b1=el("button","choice","<b>"+(en?"Sell to the trader: ":"Ibenta sa negosyante: ")+peso(tr)+"</b><small>"+(en?"Paid today, one price, no questions. Morale -3.":"Bayad agad, isang presyo, walang tanong. Morale -3.")+"</small>");
+ b1.onclick=function(){settle(tr,-3)};
+ var b2=el("button","choice","<b>"+(en?"Take it to the cooperative: ":"Dalhin sa kooperatiba: ")+peso(co)+"</b><small>"+(en?"A day lost and "+peso(FEE)+" for the ride, but about 40% more for the crop. Morale +3.":"Nawalang isang araw at "+peso(FEE)+" na pamasahe, pero halos 40% na mas mataas ang bayad. Morale +3.")+"</small>");
+ b2.onclick=function(){settle(co,3)};
+ g.appendChild(b1);g.appendChild(b2);p.appendChild(g);
+}
+function u0(k){return UI[lang][k]}
+
+var PZ=null;
+var PEST={
+ en:[{n:"Golden snail eggs",d:"Pink clusters on the stalks. The snails eat seedlings overnight.",tip:"Snails and their eggs are easiest to remove by hand.",rank:{hand:0,trap:1,spray:2}},
+     {n:"Rats along the dike",d:"Gnawed stalks and fresh trails. They come back every night.",tip:"Traps along the dike catch rats where they run.",rank:{trap:0,spray:1,hand:2}},
+     {n:"Yellow leaf spots",d:"A disease spreading across three rows. Hands cannot stop it.",tip:"Only a spray stops a disease that spreads on the leaf.",rank:{spray:0,hand:1,trap:2}}],
+ fil:[{n:"Itlog ng golden snail",d:"Kulay-rosas na kumpol sa mga tangkay. Inuubos ng suso ang punla magdamag.",tip:"Pinakamadaling alisin ang suso at itlog nito gamit ang kamay.",rank:{hand:0,trap:1,spray:2}},
+      {n:"Daga sa pilapil",d:"Nginatngat na tangkay at sariwang bakas. Bumabalik sila gabi-gabi.",tip:"Nahuhuli ng bitag sa pilapil ang daga sa daanan nila.",rank:{trap:0,spray:1,hand:2}},
+      {n:"Dilaw na batik sa dahon",d:"Sakit na kumakalat sa tatlong hanay. Hindi ito mapipigil ng kamay.",tip:"Sprey lang ang pumipigil sa sakit na kumakalat sa dahon.",rank:{spray:0,hand:1,trap:2}}]};
+var TL={en:{hand:["Hand-pick and crush","Free, but slow and tiring. Morale -2."],trap:["Set cheap traps","Scrap and bait. ₱200."],spray:["Spray pesticide","Strong, but costly. ₱500."],r:["That worked.","It helped, but some got through.","It barely made a dent."],round:"Pest",hint:"Choose the fix that fits the pest. A poor match costs rice."},
+        fil:{hand:["Pumulot at durugin","Libre, pero mabagal at nakakapagod. Morale -2."],trap:["Maglagay ng murang bitag","Kalawang na yero at pain. ₱200."],spray:["Mag-spray ng pestisidyo","Malakas, pero magastos. ₱500."],r:["Epektibo.","Nakatulong, pero may nakalusot.","Halos walang epekto."],round:"Peste",hint:"Piliin ang lunas na akma sa peste. Nawawalan ng palay kapag mali ang tugma."}};
+function pestScreen(p){
+ var P=PEST[lang][PZ.i],T=TL[lang];
+ p.appendChild(el("div","tag",RWK[lang][1].game));p.appendChild(el("h2",null,P.n));p.appendChild(el("p",null,P.d));
+ p.appendChild(el("p","note",T.hint+"  |  "+T.round+" "+(PZ.i+1)+" / 3  |  "+TK[lang].mist+": "+PZ.mist));
+ var g=el("div","tasks");
+ ["hand","trap","spray"].forEach(function(k){var b=el("button","choice","<b>"+T[k][0]+"</b><small>"+T[k][1]+"</small>");b.onclick=function(){pickPest(k)};g.appendChild(b)});
+ p.appendChild(g);
+ if(PZ.fb)p.appendChild(el("p","fb"+(PZ.fb.bad?" bad":""),PZ.fb.t));
+}
+function pickPest(k){
+ var P=PEST[lang][PZ.i],T=TL[lang],r=P.rank[k];
+ if(k==="hand")st.morale=clamp(st.morale-2);else if(k==="trap")st.money=Math.max(0,st.money-200);else st.money=Math.max(0,st.money-500);
+ PZ.loss+=r;if(r>0)PZ.mist++;
+ PZ.fb={bad:r>0,t:T.r[r]+" "+P.tip};PZ.i++;
+ if(PZ.i>=3){var stars=PZ.loss<=1?3:(PZ.loss<=3?2:1);res={mistakes:PZ.mist,stars:stars,note:PZ.fb.t};st.pmist=PZ.mist;step="result"}
+ render();
+}
+
+function render(){
+ stopGame();setText();renderStats();renderRail();if(reduce)draw(0);
+ cv.hidden=(step==="roam");wv.hidden=(step!=="roam");
+ var u=UI[lang],p=$("panel");p.innerHTML="";
+ if(step==="title"){
+  p.appendChild(el("h2",null,lang==="en"?"A teenager, one year, one decision":"Isang tinedyer, isang taon, isang desisyon"));
+  p.appendChild(el("p",null,lang==="en"?"Your family farms rice on land it does not own. The wealthy family who owns it will build a factory here and has given you five months, with no payment. The family has ₱4,000 saved and needs ₱20,000 to start over in the city. After every harvest, take the crop to market and sell it.":"Nagsasaka ang pamilya mo ng palay sa lupang hindi nila pag-aari. Magtatayo ng pabrika ang mayamang may-ari at limang buwan ang ibinigay, walang bayad. May ipon ang pamilya na ₱4,000 at kailangan nila ng ₱20,000 para magsimulang muli sa lungsod. Pagkatapos ng bawat ani, dalhin ito sa palengke at ibenta."));
+  var b=el("button","btn",u.begin);b.onclick=function(){ci=0;step="story";render()};p.appendChild(b);return}
+ var c=CH[ci][lang];
+ var src=(ci===1&&rw>0)?riceWeek(rw,c):c;
+ if(step==="story"){
+  p.appendChild(el("div","tag",RL[lang][ci]+(ci===1?" · "+(lang==="en"?"Week ":"Linggo ")+(rw+1)+" / 4":"")));
+  p.appendChild(el("h2",null,src.h));p.appendChild(el("p",null,src.p));
+  if(src.s)p.appendChild(el("div","struggle","<b>"+u.struggle+":</b> "+src.s));
+  if(ci===6)p.appendChild(el("p","note",(lang==="en"?"Savings at the terminal: ":"Ipon sa terminal: ")+peso(st.money)+" / "+peso(GOAL)));
+  var b2=el("button","btn",src.game?u.play+": "+src.game:(src.c.length?u.choose:u.cont));
+  if(src.game){b2.onclick=function(){if(ci===1&&rw===0){riceReset();step="tasks"}else if(ci===1&&rw===1){PZ={i:0,loss:0,mist:0,fb:null};step="pests"}else step="game";render()}}
+  else if(src.c.length){b2.onclick=function(){step="choice";render()}}
+  else{b2.textContent=lang==="en"?"See how the year ended":"Tingnan ang kinalabasan";b2.onclick=function(){step="end";render()}}
+  p.appendChild(b2);return}
+ if(step==="game"){startGame(p,src);return}
+ if(step==="pests"){pestScreen(p);return}
+ if(step==="tasks"){taskScreen(p,c);return}
+ if(step==="roam"){roamScreen(p);return}
+ if(step==="result"){
+  p.appendChild(el("h2",null,u.result));
+  p.appendChild(el("div","stars",new Array(res.stars+1).join("★")+new Array(4-res.stars).join("☆")));
+  p.appendChild(el("p",null,(res.mistakes!=null?TK[lang].mist+": "+res.mistakes:u.hits+": "+res.hits+" / 3")+" → "+res.stars+" "+u.stars+". "+(ci===1?"":(lang==="en"?"Your harvest grows with each star.":"Lumalaki ang ani sa bawat bituin."))));
+  if(res.note)p.appendChild(el("p","fb",res.note));
+  if(res.sacks!=null)p.appendChild(el("p","fb"+(res.sacks<3?" bad":""),(lang==="en"?"Sacks of rice this month: "+res.sacks+" of 5 (mistakes across the month: "+res.total+").":"Sako ng palay ngayong buwan: "+res.sacks+" sa 5 (kabuuang mali sa buwan: "+res.total+").")));
+  var b3=el("button","btn",res.sacks!=null?(lang==="en"?"Take the rice to market":"Dalhin ang palay sa palengke"):u.cont);b3.onclick=function(){if(ci===1){if(rw===3){step="sale";render()}else advance()}else{step="choice";render()}};p.appendChild(b3);return}
+ if(step==="sale"){saleScreen(p);return}
+ if(step==="choice"){
+  p.appendChild(el("h2",null,u.choose));
+  var g=el("div","choices");
+  c.c.forEach(function(o,oi){var badge=ci===0?"<span class='kind "+(oi?"ex":"he")+"'>"+(oi?(lang==="en"?"Explore":"Mag-explore"):(lang==="en"?"Help":"Tumulong"))+"</span>":"";var b=el("button","choice",badge+"<b>"+o.t+"</b><small>"+o.d+"</small>");
+   b.onclick=function(){if(o.roam){step="roam";render();return}var pk=PK[ci];
+    Object.keys(o.e).forEach(function(k){if(k==="yield"){if(pk)st[pk]=Math.max(0,st[pk]+o.e[k])}else if(k==="money"||k==="morale")st[k]+=o.e[k]});
+    if(o.nb)nb=true;if(o.buf)st.rbuf=o.buf;if(o.cap)st.rcap=o.cap;
+    st.money=Math.max(0,st.money);st.morale=clamp(st.morale);
+    if(ci>=2&&ci<=4){step="sale";render()}else advance()};g.appendChild(b)});
+  p.appendChild(g);return}
+ if(step==="end"){endScreen(p);return}
+}
+
+/* ---------- free roam (nothing here is saved to the story) ---------- */
+var RM={
+ en:{tag:"Free roam",h:"Explore the whole area",p:"Walk anywhere from the rice paddy to the market. Talk to people, tend the animals, try farming. Nothing here is recorded in the story.",
+  legend:"Top: rice paddy, sugarcane, market. Bottom: home, livestock pen, coconut and vegetables. Move with arrow keys or WASD, interact with E or Space.",
+  interact:"Interact (E)",start:"Start the story",none:"Walk up to an animal, a person or a plot, then interact.",
+  plots:["Pulled the weeds.","Pumped water into the soil.","Planted seedlings.","Still growing. Come back soon.","Harvested! Not saved: this is free roam."]},
+ fil:{tag:"Malayang paglalakad",h:"Libutin ang buong lugar",p:"Maglakad kahit saan mula palayan hanggang palengke. Makipag-usap, mag-alaga ng hayop, subukang magsaka. Walang maitatala sa kuwento.",
+  legend:"Itaas: palayan, tubuhan, palengke. Ibaba: bahay, kulungan ng hayop, niyog at gulayan. Gumalaw gamit ang arrow keys o WASD, mag-interact gamit ang E o Space.",
+  interact:"Interact (E)",start:"Simulan ang kuwento",none:"Lumapit sa hayop, tao o taniman, saka mag-interact.",
+  plots:["Nabunot ang damo.","Napuno ng tubig ang lupa.","Naitanim ang punla.","Lumalaki pa. Bumalik ka mamaya.","Naani! Hindi ito itatala: free roam ito."]}
+};
+var NP=[
+ {x:58,y:68,c:"carabao",en:["Your kalabaw snorts and leans into your hand.","It has pulled the plow since before you could walk."],fil:["Humihinga nang malakas ang kalabaw at sumandal sa kamay mo.","Hinihila na nito ang araro bago ka pa natutong maglakad."]},
+ {x:74,y:76,c:"hen",en:["The chickens crowd around. You scatter some feed.","One hen is sitting on eggs and will not move."],fil:["Nagkumpulan ang mga manok. Nagkalat ka ng pakain.","May inahing nakaupo sa itlog at ayaw gumalaw."]},
+ {x:50,y:78,c:"pig",en:["The pig grunts for its supper.","Selling this one could pay for next term's school fees."],fil:["Umungol ang baboy, gutom na.","Kapag naibenta ito, baka mabayaran ang matrikula sa susunod na termino."]},
+ {x:22,y:78,c:"nanay",en:["Nanay: Eat first, then go to the field.","Nanay: Five months. I am already counting every sack."],fil:["Nanay: Kumain ka muna bago pumunta sa bukid.","Nanay: Limang buwan. Binibilang ko na ang bawat sako."]},
+ {x:128,y:48,c:"ben",en:["Mang Ben: Two typhoons last year. The coconuts lasted, the vegetables did not.","Mang Ben: The Sevilla people gave all of us the same five months. We are planting like it is our last season. It is."],fil:["Mang Ben: Dalawang bagyo noong nakaraang taon. Nakaligtas ang niyog, hindi ang gulay.","Mang Ben: Parehong limang buwan ang ibinigay ng mga Sevilla sa ating lahat. Nagtatanim tayo na parang huling panahon na. Huli na nga."]},
+ {x:134,y:26,c:"trader",en:["Ka Tonyo: Sacks go on the scale. The price is the price.","Ka Tonyo: In the city, this rice sells for much more. I carry it there, so I keep the difference."],fil:["Ka Tonyo: Sa timbangan ang mga sako. Ang presyo ay presyo.","Ka Tonyo: Sa lungsod, mas mataas ang benta nito. Ako ang nagdadala, kaya akin ang pagkakaiba."]},
+ {x:98,y:38,c:"mill",en:["Mill worker: Trucks line up all night during milling season.","Mill worker: The board price changes by the hour. We just load."],fil:["Manggagawa sa gilingan: Magdamag ang pila ng trak kapag panahon ng giling.","Manggagawa sa gilingan: Bawat oras nagbabago ang presyo sa pisara. Kami ay nagkakarga lang."]},
+ {x:86,y:24,c:"cane",en:["You cut a stalk and chew it. Sweet, and tough on the teeth.","Tall cane hides everything. Easy to get lost in."],fil:["Pumutol ka ng tubo at nginuya. Matamis, pero matigas sa ngipin.","Natatakpan ng matataas na tubo ang lahat. Madaling maligaw."]},
+ {x:150,y:68,c:"coco",en:["A coconut thuds down. Nobody is hurt, this time.","These trees survived the last storm. Barely."],fil:["May nalaglag na niyog. Walang nasaktan, ngayon.","Nakaligtas ang mga punong ito sa huling bagyo. Halos hindi."]},
+ {x:60,y:12,c:"pump",en:["The irrigation pump hums. With El Niño, the canal runs low.","Everyone shares this pump. Everyone waits their turn."],fil:["Umuugong ang pump irrigation. Dahil sa El Niño, mababa ang tubig sa kanal.","Iisang pump ang gamit ng lahat. Naghihintay ng turn ang bawat isa."]}
+];
+W.plots=(function(){var a=[],i,j;
+ for(j=0;j<2;j++)for(i=0;i<3;i++)a.push({x:6+i*18,y:14+j*14,w:15,h:11,s:0,t:0,v:0});
+ for(j=0;j<2;j++)for(i=0;i<2;i++)a.push({x:102+i*22,y:58+j*14,w:18,h:10,s:0,t:0,v:1});
+ return a})();
+function nearest(){var best=null,bd=14;
+ NP.forEach(function(o){var d=Math.hypot(o.x-W.x,o.y-W.y);if(d<bd){bd=d;best={kind:"np",o:o}}});
+ W.plots.forEach(function(p){var d=Math.hypot(p.x+p.w/2-W.x,p.y+p.h/2-W.y);if(d<bd){bd=d;best={kind:"plot",o:p}}});
+ return best}
+function interact(){
+ var m=$("rmsg");if(!m)return;var rr=RM[lang],n=nearest();
+ if(!n){m.textContent=rr.none;return}
+ if(n.kind==="np"){var o=n.o,a=o[lang],i=W.idx[o.c]||0;m.textContent=a[i%a.length];W.idx[o.c]=i+1;return}
+ var p=n.o;
+ if(p.s===3&&Date.now()-p.t>4000)p.s=4;
+ if(p.s===3){m.textContent=rr.plots[3]}
+ else if(p.s===4){p.s=0;m.textContent=rr.plots[4]}
+ else{p.s++;if(p.s===3)p.t=Date.now();m.textContent=rr.plots[p.s-1]}
+}
+function spr(c,x,y,t){
+ x=Math.round(x);y=Math.round(y);
+ if(c==="carabao")carabao(x-6,y-3);
+ else if(c==="hen"){R(x-3,y,5,3,"#f3ecd2");R(x+1,y-2,2,2,"#f3ecd2");R(x+2,y-2,1,1,"#d0452d");R(x+7,y+1,4,2,"#f3ecd2");R(x+8,y-1,2,2,"#f3ecd2")}
+ else if(c==="pig"){R(x-5,y-1,10,5,"#e7a1b4");R(x+4,y,3,3,"#e7a1b4");R(x-4,y+4,2,2,"#c47e92");R(x+2,y+4,2,2,"#c47e92")}
+ else if(c==="nanay")person(x-1,y-5,"#d96f9a");
+ else if(c==="ben")person(x-1,y-5,"#6f9a3f");
+ else if(c==="trader")person(x-1,y-5,"#555555");
+ else if(c==="mill")person(x-1,y-5,"#e1a33a");
+ else if(c==="cane"){for(var i=0;i<4;i++)R(x-5+i*3,y-8,2,13,"#6c9a3a")}
+ else if(c==="coco")tree(x,y-14,reduce?0:Math.round(Math.sin(t/400)));
+ else if(c==="pump"){R(x-3,y-4,7,9,"#7a7f86");R(x-6,y-2,4,2,"#9aa0a6")}
+}
+function drawWorld(t){
+ var old=cx;cx=wc;var i,j;
+ R(0,0,160,90,"#6fae5a");R(0,44,160,8,"#c9a56b");R(62,0,8,52,"#c9a56b");
+ R(2,8,56,34,"#8a6a43");
+ R(74,8,30,32,"#a97d3a");for(i=0;i<8;i++)for(j=0;j<3;j++){R(76+i*3.5|0,10+j*10,2,9,"#6c9a3a")}
+ R(110,8,44,28,"#b99a6f");R(114,12,36,4,"#d0452d");for(i=0;i<6;i++)R(114+i*6,12,3,4,"#f3ecd2");R(116,28,32,4,"#8a6a43");R(120,22,6,6,"#e7d9a8");R(130,22,6,6,"#e7d9a8");
+ R(6,56,30,16,"#8a6a43");R(4,52,34,5,"#b8582f");R(18,62,6,10,"#4a321c");R(9,60,5,5,"#d9ecf2");R(28,60,5,5,"#d9ecf2");
+ R(44,56,46,30,"#8a7f3a");R(44,56,46,1,"#7b5836");R(44,85,46,1,"#7b5836");R(44,56,1,30,"#7b5836");R(89,56,1,30,"#7b5836");for(i=0;i<6;i++)R(44+i*9,54,2,4,"#7b5836");
+ R(98,54,52,34,"#7a5a34");
+ W.plots.forEach(function(p){
+  if(p.s===3&&Date.now()-p.t>4000)p.s=4;
+  var base=p.s===2||p.s===3?"#4aa0b8":(p.s===4?(p.v?"#d0452d":"#e1c15a"):(p.v?"#6b4a2e":"#b08a55"));
+  R(p.x,p.y,p.w,p.h,base);
+  if(p.s===0){for(var q=0;q<4;q++){R(p.x+2+q*4,p.y+2+(q%2)*4,2,4,"#5d9a2c");R(p.x+3+q*4,p.y+4+(q%2)*4,1,2,"#7bbd3c")}}
+  if(p.s===3){for(var q2=0;q2<4;q2++)R(p.x+2+q2*3,p.y+3,1,4,"#3f9a45")}
+  if(p.s===4&&!p.v){for(var q3=0;q3<5;q3++)R(p.x+2+q3*3,p.y+2,1,7,"#b8941a")}
+ });
+ NP.forEach(function(o){spr(o.c,o.x,o.y,t)});
+ person(Math.round(W.x)-1,Math.round(W.y)-5,"#3f7bb0");
+ var n=nearest();
+ if(n){var tx=n.kind==="np"?n.o.x:n.o.x+n.o.w/2,ty=n.kind==="np"?n.o.y-14:n.o.y-6;R(Math.round(tx)-1,Math.round(ty),3,5,"#f6d155");R(Math.round(tx)-1,Math.round(ty)+6,3,2,"#f6d155")}
+ cx=old;
+}
+function roamLoop(t){
+ var dx=(W.k.right?1:0)-(W.k.left?1:0),dy=(W.k.down?1:0)-(W.k.up?1:0);
+ var dt=W.last?Math.min(40,t-W.last):16;W.last=t;
+ if(dx||dy){var l=Math.hypot(dx,dy);W.x+=dx/l*dt*0.045;W.y+=dy/l*dt*0.045}
+ W.x=Math.max(3,Math.min(156,W.x));W.y=Math.max(6,Math.min(82,W.y));
+ drawWorld(t);wraf=requestAnimationFrame(roamLoop);
+}
+function roamScreen(p){
+ var r=RM[lang];
+ p.appendChild(el("div","tag",r.tag));p.appendChild(el("h2",null,r.h));p.appendChild(el("p",null,r.p));
+ p.appendChild(el("p","legend",r.legend));
+ var m=el("p","roam-msg",r.none);m.id="rmsg";p.appendChild(m);
+ var ctl=el("div","controls"),pad=el("div","pad");
+ [["u","▲","up"],["l","◄","left"],["d","▼","down"],["r","►","right"]].forEach(function(a){
+  var b=el("button",a[0],a[1]);b.setAttribute("aria-label",a[2]);
+  var off=function(){W.k[a[2]]=false};
+  b.onpointerdown=function(e){e.preventDefault();W.k[a[2]]=true};b.onpointerup=off;b.onpointerleave=off;b.onpointercancel=off;pad.appendChild(b)});
+ var act=el("button","act",r.interact);act.onclick=interact;
+ ctl.appendChild(pad);ctl.appendChild(act);p.appendChild(ctl);
+ var go=el("button","btn alt",r.start);go.onclick=function(){ci=1;step="story";render()};p.appendChild(go);
+ var map={ArrowUp:"up",KeyW:"up",ArrowDown:"down",KeyS:"down",ArrowLeft:"left",KeyA:"left",ArrowRight:"right",KeyD:"right"};
+ document.onkeydown=function(e){if(map[e.code]){e.preventDefault();W.k[map[e.code]]=true}else if(e.code==="KeyE"||e.code==="Space"){e.preventDefault();interact()}};
+ document.onkeyup=function(e){if(map[e.code])W.k[map[e.code]]=false};
+ W.last=0;wraf=requestAnimationFrame(roamLoop);
+}
+
+function startGame(p,c){
+ var u=UI[lang];
+ tg={round:0,hits:0,stars:1,pos:0,dir:1,raf:0};
+ var zw=22-ci*1.5+(ci===1&&nb?8:0),zx=30+(ci*11)%40;
+ p.appendChild(el("div","tag",c.game));p.appendChild(el("h2",null,c.h));
+ p.appendChild(el("p","note",u.hint));
+ var info=el("div",null,"");var track=el("div","timing");var z=el("div","zone");z.style.left=zx+"%";z.style.width=zw+"%";
+ var m=el("div","mark");track.appendChild(z);track.appendChild(m);
+ var btn=el("button","btn",u.tap);
+ p.appendChild(info);p.appendChild(track);p.appendChild(btn);
+ function upd(){info.textContent=u.round+" "+(tg.round+1)+" / 3  |  "+u.hits+": "+tg.hits}
+ upd();
+ var last=0;
+ function tick(t){var dt=last?t-last:16;last=t;tg.pos+=tg.dir*dt*0.055*(1+ci*0.12);
+  if(tg.pos>=100){tg.pos=100;tg.dir=-1}if(tg.pos<=0){tg.pos=0;tg.dir=1}
+  m.style.left="calc("+tg.pos+"% - "+(tg.pos*0.06)+"px)";tg.raf=requestAnimationFrame(tick)}
+ tg.raf=requestAnimationFrame(tick);
+ function hit(){if(!tg)return;if(tg.pos>=zx&&tg.pos<=zx+zw)tg.hits++;tg.round++;
+  if(tg.round>=3){var stars=Math.max(1,tg.hits);res={hits:tg.hits,stars:stars};
+   if(ci===1){var M=Math.min(3,st.wmist)+st.pmist+(3-tg.hits);M=Math.max(0,M-st.rbuf);var sk=M<=1?5:(M<=4?3:(M<=8?2:0));sk=Math.min(sk,st.rcap);st.rice=sk;res.sacks=sk;res.total=M}
+   else if(PK[ci])st[PK[ci]]+=stars*7;
+   step="result";render()}else upd()}
+ btn.onclick=hit;
+ document.onkeydown=function(e){if(e.code==="Space"){e.preventDefault();hit()}};
+}
+
+function endScreen(p){
+ var mny=st.money,leaning=mny>=GOAL?"enough":(mny>=14000?"short":"low");
+ var T={
+  en:{enough:["You have enough to start over.","The harvest sold well. There is a rented room, a deposit, and a month of rice. It is not the life the farm gave you, but it is a start. Behind you, the paddy is already being cleared."],
+      short:["You are a little short.","The money covers the bus and the first month. After that, it is your cousin's floor, borrowed money and any job that will have you. The family leaves together, and tired."],
+      low:["You leave with almost nothing.","The harvest was not enough. The family arrives in the city with bags, a few thousand pesos and a stranger's address. The land that fed them is somebody else's factory."],
+      q:"When the land is taken, what is five months' notice worth?",tag:"Epilogue"},
+  fil:{enough:["May sapat kayo para magsimulang muli.","Maganda ang benta ng ani. May inuupahang kuwarto, paunang bayad, at isang buwang bigas. Hindi ito ang buhay na ibinigay ng bukid, pero simula ito. Sa likod mo, nililinis na ang palayan."],
+      short:["Medyo kulang ang pera ninyo.","Sapat ang pera sa pamasahe at unang buwan. Pagkatapos noon, sahig ng pinsan mo, utang, at anumang trabahong tatanggap sa inyo. Sabay-sabay kayong aalis, pagod na."],
+      low:["Halos wala kayong dala.","Hindi sapat ang ani. Dumarating ang pamilya sa lungsod na may mga bag, ilang libong piso at address ng estranghero. Ang lupang nagpakain sa kanila ay pabrika na ng iba."],
+      q:"Kapag kinuha ang lupa, ano ang halaga ng limang buwang abiso?",tag:"Epilogo"}};
+ var x=T[lang];
+ p.appendChild(el("div","tag",x.tag));p.appendChild(el("h2",null,x[leaning][0]));p.appendChild(el("p",null,x[leaning][1]));
+ p.appendChild(el("p","note",(lang==="en"?"Savings ":"Ipon ")+peso(st.money)+" / "+peso(GOAL)+"  |  "+UI[lang].morale+": "+Math.round(st.morale)));
+ p.appendChild(el("div","end-q",x.q));
+ var b=el("button","btn alt",UI[lang].again);b.onclick=function(){reset();render()};p.appendChild(b);
+}
+
+$("l-en").onclick=function(){lang="en";render()};
+$("l-fil").onclick=function(){lang="fil";render()};
+render();
+})();
+</script>
