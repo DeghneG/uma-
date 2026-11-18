@@ -3,7 +3,7 @@
  * is shown at exactly 3x. Hand-drawn character sprites (public/sprites) are drawn 1:1 on this grid.
  * Swap any scene for a painted background later without touching the game logic.
  */
-export type SceneKind = "title" | "home" | "field" | "market";
+export type SceneKind = "title" | "home" | "field" | "market" | "weeding";
 
 /**
  * Field state. Numbers are 0..1 fractions so GSAP can tween them for visible progress
@@ -23,7 +23,7 @@ export const field = {
   working: false,
 };
 /** Weed clumps in the paddy (week 1). `t` is 0 while standing, else the time it was snipped. */
-export const weedPatch: { x: number; y: number; t: number }[] = [];
+export const weedPatch: { x: number; y: number; t: number; cx: number; cy: number; s: number }[] = [];
 /** The grass shears the player holds while weeding (canvas coordinates). */
 export const shears = { on: false, x: 320, y: 250, snip: 0 };
 const WEED_ROWS = 6;
@@ -33,14 +33,24 @@ function makeWeeds(): void {
   for (let j = 0; j < WEED_ROWS; j++)
     for (let i = 0; i < WEED_PER_ROW; i++) {
       const k = j * WEED_PER_ROW + i;
-      weedPatch.push({ x: 30 + i * 150 + rnd(k + 9) * 90, y: 182 + j * 25 + 19 + rnd(k + 41) * 3, t: 0 });
+      // x, y: place in the wide field view. cx, cy, s: place and scale in the close-up (rows nearer the player are bigger).
+      weedPatch.push({
+        x: 30 + i * 150 + rnd(k + 9) * 90,
+        y: 182 + j * 25 + 19 + rnd(k + 41) * 3,
+        t: 0,
+        cx: 70 + i * 150 + (j % 2) * 50 + rnd(k + 9) * 40,
+        cy: 150 + j * 38 + rnd(k + 41) * 6,
+        s: 1.5 + j * 0.38,
+        });
     }
 }
 /** Snip every standing weed within `r` canvas pixels of (x, y); returns how many fell. */
 export function snipWeeds(x: number, y: number, r: number): number {
   let n = 0;
   for (const w of weedPatch) {
-    if (w.t === 0 && Math.hypot(w.x - x, w.y - 10 - y) <= r) {
+    const close = view.scene === "weeding";
+    const hit = close ? Math.hypot(w.cx - x, w.cy - 11 * w.s - y) <= r + 7 * w.s : Math.hypot(w.x - x, w.y - 10 - y) <= r;
+    if (w.t === 0 && hit) {
       w.t = performance.now();
       n++;
     }
@@ -1182,6 +1192,44 @@ function fieldScene(t: number): void {
   if (shears.on) drawShears(Math.round(shears.x), Math.round(shears.y), shears.snip);
 }
 
+/** Close-up for the weeding job: bare cracked soil, big weed clumps, and the shears in hand. */
+function weeding(t: number): void {
+  backdrop(t, 104);
+  R(0, 104, W, 12, "#5d9a48");
+  R(0, 116, W, H - 116, "#b58f58");
+  // furrows get wider apart toward the player
+  for (let k = 0; k < 7; k++) {
+    const y = 116 + Math.round(244 * Math.pow(k / 7, 1.25));
+    R(0, y, W, 2 + k, "#7a5a36");
+    R(0, y + 2 + k, W, 1, "#c4a068");
+  }
+  for (let i = 0; i < 70; i++) {
+    const y = 124 + rnd(i + 5) * 230;
+    const k = 1 + (y - 116) / 90;
+    const x = rnd(i * 3 + 1) * W;
+    R(x, y, 7 * k, k, "#7a5c34");
+    R(x + 3 * k, y + k, k, 3 * k, "#7a5c34");
+  }
+  const order = [...weedPatch].sort((a, b) => a.cy - b.cy);
+  const now = performance.now();
+  for (const w of order) {
+    if (w.t !== 0 && now - w.t >= 450) continue;
+    cx.save();
+    cx.translate(Math.round(w.cx), Math.round(w.cy));
+    cx.scale(w.s, w.s);
+    if (w.t === 0) weedClump(0, 0, t + w.cx * 3);
+    else weedCut(0, 0, now - w.t);
+    cx.restore();
+  }
+  if (shears.on) {
+    cx.save();
+    cx.translate(Math.round(shears.x), Math.round(shears.y));
+    cx.scale(2, 2);
+    drawShears(0, 0, shears.snip);
+    cx.restore();
+  }
+}
+
 function market(t: number): void {
   backdrop(t, 132);
   // shop fronts
@@ -1457,6 +1505,7 @@ function draw(t: number): void {
   if (view.scene === "title") titleScene(t);
   else if (view.scene === "home") home(t);
   else if (view.scene === "field") fieldScene(t);
+  else if (view.scene === "weeding") weeding(t);
   else market(t);
 }
 

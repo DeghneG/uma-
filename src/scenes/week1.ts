@@ -2,7 +2,7 @@ import gsap from "gsap";
 import { field, fieldAtWeek, setScene, shears, snipWeeds, weedsLeft } from "../art";
 import { sfx } from "../sound";
 import { patch } from "../state";
-import { T, h, resultPanel, setLabel, shake, show, starsFor, statusRow, storyPanel, tweenField } from "../ui";
+import { T, h, reduce, resultPanel, setLabel, shake, show, starsFor, statusRow, storyPanel, tweenField } from "../ui";
 
 type Job = "weeds" | "water" | "plant";
 const ORDER: Job[] = ["weeds", "water", "plant"];
@@ -95,6 +95,8 @@ export function week1(next: () => void): void {
     };
 
     const cut = (): void => {
+      setScene("weeding");
+      if (!reduce) gsap.fromTo("#cv", { scale: 1.2, filter: "brightness(1.6)" }, { scale: 1, filter: "brightness(1)", duration: 0.5, ease: "power3.out", clearProps: "transform,filter" });
       shears.on = true;
       shears.snip = 0;
       shears.x = 320;
@@ -127,6 +129,8 @@ export function week1(next: () => void): void {
           cleanup();
           setTimeout(() => {
             shears.on = false;
+            setScene("field");
+            if (!reduce) gsap.fromTo("#cv", { scale: 1.1 }, { scale: 1, duration: 0.5, ease: "power2.out", clearProps: "transform" });
             field.working = false;
             field.weeds = 0;
             done.push("weeds");
