@@ -5,7 +5,7 @@ let ctx: AudioContext | null = null;
 let enabled = true;
 
 try {
-  enabled = localStorage.getItem("ani-sound") !== "off";
+  enabled = localStorage.getItem("uma-sound") !== "off";
 } catch {
   /* storage blocked: stay on */
 }
@@ -15,7 +15,7 @@ export const soundOn = (): boolean => enabled;
 export function toggleSound(): boolean {
   enabled = !enabled;
   try {
-    localStorage.setItem("ani-sound", enabled ? "on" : "off");
+    localStorage.setItem("uma-sound", enabled ? "on" : "off");
   } catch {
     /* ignore */
   }

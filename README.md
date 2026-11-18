@@ -1,4 +1,4 @@
-# Ani (working title)
+# Uma
 
 A top-down pixel-art web game about a tenant farming family in the Visayas. They have five months' notice and no payment before the landowner clears the paddy for a factory. They have ₱4,000 and need ₱20,000 to start over in the city. See [PLAN.md](PLAN.md) for the full design.
 

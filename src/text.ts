@@ -1,7 +1,7 @@
 import type { Lang } from "./state";
 
 const en = {
-  title: "Ani",
+  title: "Uma",
   subtitle: "A farming family has five months.",
   hud: {
     savings: "Family savings",
@@ -151,7 +151,7 @@ const en = {
 };
 
 const fil: typeof en = {
-  title: "Ani",
+  title: "Uma",
   subtitle: "Limang buwan ang pamilya ng magsasaka.",
   hud: {
     savings: "Ipon ng pamilya",

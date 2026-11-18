@@ -1,4 +1,4 @@
-# Game Plan (working title: "Uwi" / "Ani" - TBD)
+# Game Plan (title: "Uma")
 
 ## Pitch
 A top-down pixel-art web game about a teenager on a farm in the Visayas (Iloilo / Negros / Leyte) who spends one year helping their parents, and has to decide: stay on the land or leave for the city. A 15-20 minute playthrough. The goal is to raise awareness of the real struggles farmers face, with a warm, balanced tone (cozy daily life plus real hardship). It ends openly and reflectively, with no "right" answer.

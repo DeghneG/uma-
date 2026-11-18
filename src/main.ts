@@ -33,7 +33,7 @@ function setLang(lang: Lang): void {
   $("l-en").setAttribute("aria-pressed", String(lang === "en"));
   $("l-fil").setAttribute("aria-pressed", String(lang === "fil"));
   try {
-    localStorage.setItem("ani-lang", lang);
+    localStorage.setItem("uma-lang", lang);
   } catch {
     /* storage blocked */
   }
@@ -43,7 +43,7 @@ function setLang(lang: Lang): void {
 
 let saved: Lang = "en";
 try {
-  if (localStorage.getItem("ani-lang") === "fil") saved = "fil";
+  if (localStorage.getItem("uma-lang") === "fil") saved = "fil";
 } catch {
   /* storage blocked */
 }
