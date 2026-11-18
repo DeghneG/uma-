@@ -6,6 +6,9 @@ import { $, T, h, reduce, rerender, setLabel, show } from "../ui";
 
 type Item = { label: string; run: () => void };
 
+/** Dev shortcut /#intro plays the intro once; the Back button must not re-trigger it. */
+let devIntro = location.hash === "#intro";
+
 /** Title screen: logo and a two-item menu drawn over the scene, then the intro caption cards. */
 export function title(next: () => void): void {
   setScene("title");
@@ -24,7 +27,7 @@ export function title(next: () => void): void {
 
   const startGame = (): void => {
     leave();
-    playIntro(next);
+    playIntro(next, () => title(next));
   };
 
   const build = (menu: HTMLElement): void => {
@@ -95,11 +98,14 @@ export function title(next: () => void): void {
 
   show(build, true, $("menu"));
   // dev shortcut: /#intro plays the intro cards straight away
-  if (location.hash === "#intro") queueMicrotask(startGame);
+  if (devIntro) {
+    devIntro = false;
+    queueMicrotask(startGame);
+  }
 }
 
 /** Story intro as full-screen caption cards over a darkened scene. Click or Space advances, Esc skips. */
-function playIntro(done: () => void): void {
+function playIntro(done: () => void, back: () => void): void {
   const game = $("game");
   const box = $("intro");
   const t = T().start;
@@ -113,6 +119,12 @@ function playIntro(done: () => void): void {
     const el = h("div", last ? "head" : "line", last ? t.h : t.beats[n]);
     box.appendChild(el);
     box.appendChild(h("div", "skip", t.skip));
+    const bk = h("button", "back", t.menu.back);
+    bk.addEventListener("click", (e) => {
+      e.stopPropagation();
+      goBack();
+    });
+    box.appendChild(bk);
     if (last) box.appendChild(h("div", "hint", t.press));
     gsap.fromTo(el, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: reduce ? 0 : 0.7 });
     if (!last) timer = gsap.delayedCall(4, advance);
@@ -126,7 +138,13 @@ function playIntro(done: () => void): void {
     else card(k);
   }
 
-  function finish(): void {
+  function goBack(): void {
+    if (finished) return;
+    gsap.to(artView, { logoA: 1, duration: reduce ? 0 : 0.6 });
+    finish(back);
+  }
+
+  function finish(then: () => void = done): void {
     if (finished) return;
     finished = true;
     timer?.kill();
@@ -139,7 +157,7 @@ function playIntro(done: () => void): void {
         game.classList.remove("intro-on");
         box.innerHTML = "";
         box.style.backgroundColor = "";
-        done();
+        then();
       },
     });
     gsap.to(box.children, { autoAlpha: 0, duration: reduce ? 0 : 0.4 });
@@ -147,7 +165,10 @@ function playIntro(done: () => void): void {
 
   function onKey(e: KeyboardEvent): void {
     if (e.key === "Escape") finish();
-    else if (e.key === " " || e.key === "Enter") {
+    else if (e.key === "Backspace" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      goBack();
+    } else if (e.key === " " || e.key === "Enter") {
       e.preventDefault();
       advance();
     }
