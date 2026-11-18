@@ -31,13 +31,23 @@ export function renderHud(): void {
   $("g-l").textContent = t.hud.savings;
   $("g-v").textContent = `${peso(m)} / ${peso(GOAL)}`;
   $("g-b").style.width = `${Math.min(100, (m / GOAL) * 100)}%`;
+  $("g-b").parentElement?.classList.toggle("done", state.money >= GOAL);
   $("g-s").textContent = state.money >= GOAL ? t.hud.reached : t.hud.needed(peso(GOAL - state.money));
+  $("g-p").textContent = `${Math.min(100, Math.floor((m / GOAL) * 100))}%`;
   $("m-l").textContent = t.hud.morale;
   $("m-v").textContent = String(Math.round(shown.morale));
   $("m-b").style.width = `${shown.morale}%`;
-  $("mo-l").textContent = t.hud.monthsLeft;
-  $("mo-v").textContent = String(state.monthsLeft);
-  $("mo-b").style.width = `${(state.monthsLeft / 5) * 100}%`;
+  $("m-s").textContent = t.hud.moods[shown.morale >= 70 ? 2 : shown.morale >= 40 ? 1 : 0];
+  // month tracker: five pips, the finished months filled and the current one blinking
+  const cur = Math.min(5, Math.max(1, 6 - state.monthsLeft));
+  $("mo-l").textContent = t.hud.month(cur, t.hud.crops[cur - 1]);
+  $("mo-v").textContent = t.hud.left(state.monthsLeft);
+  $("mo-s").textContent = cur < 5 ? `→ ${t.hud.crops[cur]}` : "";
+  const pips = $("mo-p");
+  while (pips.children.length < 5) pips.appendChild(document.createElement("i"));
+  [...pips.children].forEach((p, i) => {
+    p.className = i + 1 < cur ? "done" : i + 1 === cur ? "cur" : "";
+  });
   $("lbl").textContent = label();
   $("title").textContent = t.title;
   $("subtitle").textContent = t.subtitle;
@@ -68,8 +78,22 @@ export function initPanelInput(): void {
   });
 }
 
+/** The stats bar only shows in story mode (explore mode and the title screen have none). */
+export function setStory(on: boolean): void {
+  $("game").classList.toggle("story", on);
+}
+
+let lastMoney = state.money;
 export function initHud(): void {
   onChange(() => {
+    const d = state.money - lastMoney;
+    lastMoney = state.money;
+    if (d !== 0) {
+      const el = $("g-d");
+      el.textContent = `${d > 0 ? "+" : "−"}${peso(Math.abs(d))}`;
+      el.className = `delta ${d > 0 ? "up" : "down"}`;
+      gsap.fromTo(el, { opacity: 1, y: 0 }, { opacity: 0, y: -8, duration: reduce ? 0 : 1.4, delay: reduce ? 0.6 : 1, ease: "power1.in" });
+    }
     gsap.to(shown, {
       money: state.money,
       morale: state.morale,

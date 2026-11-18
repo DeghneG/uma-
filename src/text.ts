@@ -12,6 +12,11 @@ const en = {
     month1: "Month 1 · Rice",
     soundOn: "Sound: on",
     soundOff: "Sound: off",
+    month: (n: number, crop: string) => `Month ${n} of 5 · ${crop}`,
+    left: (n: number) => `${n} left`,
+    crops: ["Rice", "Sugarcane", "Livestock", "Coconut & veg", "Final sale"],
+    moods: ["Worried", "Holding on", "Hopeful"],
+    goal: "Goal",
     week: (n: number) => `Month 1 · Rice · Week ${n} / 4`,
   },
   common: {
@@ -162,6 +167,11 @@ const fil: typeof en = {
     month1: "Buwan 1 · Palay",
     soundOn: "Tunog: bukas",
     soundOff: "Tunog: sarado",
+    month: (n: number, crop: string) => `Buwan ${n} ng 5 · ${crop}`,
+    left: (n: number) => `${n} pa`,
+    crops: ["Palay", "Tubo", "Hayop", "Niyog at gulay", "Huling benta"],
+    moods: ["Nag-aalala", "Kinakaya", "May pag-asa"],
+    goal: "Target",
     week: (n: number) => `Buwan 1 · Palay · Linggo ${n} / 4`,
   },
   common: {

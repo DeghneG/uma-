@@ -2,7 +2,7 @@ import "./style.css";
 import { fieldAtWeek, initArt } from "./art";
 import { toggleSound } from "./sound";
 import { patch, resetGame, type Lang } from "./state";
-import { $, initHud, initPanelInput, renderHud, rerender } from "./ui";
+import { $, initHud, initPanelInput, renderHud, rerender, setStory } from "./ui";
 import { prologue, title } from "./scenes/intro";
 import { week1 } from "./scenes/week1";
 import { week2 } from "./scenes/week2";
@@ -19,6 +19,8 @@ const wk = /^week(\d)$/.exec(names[i]);
 if (wk) fieldAtWeek(Number(wk[1]) - 1);
 
 function run(): void {
+  // story mode starts when the family goes to the field (week 1); the title and prologue have no stats bar
+  setStory(i >= names.indexOf("week1"));
   steps[i](() => {
     i++;
     if (i >= steps.length) {
