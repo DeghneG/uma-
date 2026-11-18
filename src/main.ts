@@ -1,5 +1,5 @@
 import "./style.css";
-import { initArt } from "./art";
+import { fieldAtWeek, initArt } from "./art";
 import { toggleSound } from "./sound";
 import { patch, resetGame, type Lang } from "./state";
 import { $, initHud, initPanelInput, renderHud, rerender } from "./ui";
@@ -15,6 +15,8 @@ const steps: ((next: () => void) => void)[] = [title, prologue, week1, week2, we
 const names = ["title", "prologue", "week1", "week2", "week3", "week4", "market", "summary"];
 // Dev shortcut: open /#week3 to start at that scene.
 let i = Math.max(0, names.indexOf(location.hash.slice(1)));
+const wk = /^week(\d)$/.exec(names[i]);
+if (wk) fieldAtWeek(Number(wk[1]) - 1);
 
 function run(): void {
   steps[i](() => {

@@ -88,6 +88,19 @@ const BODY = [
   "...KPK.KPK...",
   "...KKK.KKK...",
 ];
+/** Optional hand-drawn sprite: put a PNG at public/sprites/kid.png and it replaces the code-drawn kid. */
+const kidImg = new Image();
+let kidReady = false;
+kidImg.onload = (): void => {
+  kidReady = true;
+};
+kidImg.src = "/sprites/kid.png";
+/** Draws the kid anchored at the feet (x centre, y = old top + 11), same spot as `person`. */
+const kid = (x: number, y: number): void => {
+  if (!kidReady) return person(x, y, "#d96f9a", false);
+  cx.drawImage(kidImg, Math.round(x - kidImg.width / 2), Math.round(y + 11 - kidImg.height));
+};
+
 const person = (x: number, y: number, shirt: string, hat = true): void => {
   const pal: Record<string, string> = {
     K: "#1b1410", H: "#eebc3c", h: "#c98a1f", B: shirt, D: "#2a1c14",
@@ -207,7 +220,7 @@ function fieldScene(t: number): void {
   const bob = field.working && !reduce ? Math.round(Math.sin(t / 180)) : 0;
   person(14, 24 + bob, "#c25a3a");
   if (field.ben) person(26, 26 - bob, "#6f9a3f");
-  if (field.ben && field.week === 3) person(34, 28 + bob, "#d96f9a", false);
+  if (field.ben && field.week === 3) kid(40, 28 + bob);
 }
 
 function market(): void {
