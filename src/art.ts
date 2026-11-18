@@ -1035,14 +1035,108 @@ function logo(t: number): void {
   place((x, y, w) => R(x + 3, y + 3, w - 6, 3, "#ffe27a"));
   cx.globalAlpha = 1;
 }
+
+/* ---------- the factory on the horizon (title) ---------- */
+const CHIMNEYS: [number, number, number][] = [[350, 12, 84], [376, 14, 70], [402, 12, 92], [426, 14, 78]];
+/** The plant is drawn in its own coordinates, then shifted right of the logo and raised above the hill ridge. */
+const FSHIFT_X = 110;
+const FSHIFT_Y = -22;
+const FGY = 198;
+/** Industrial plant: sawtooth hall, brick chimneys, cooling towers, tanks, pipes and a fence. Painted once. */
+function factoryBody(): void {
+  // long production hall with a sawtooth roof
+  R(240, 160, 196, 38, "#5b616b");
+  R(240, 160, 196, 3, "#7a808a");
+  for (let k = 0; k < 8; k++) {
+    const x = 240 + k * 25;
+    for (let r = 0; r < 11; r++) R(x + 25 - (2 + r * 2), 150 + r, 2 + r * 2, 1, r < 2 ? "#7d838d" : "#4a4f58");
+    R(x + 23, 150, 2, 11, "#9fb0bc");
+  }
+  for (let k = 0; k < 13; k++) R(246 + k * 14, 170, 8, 7, k % 4 === 2 ? "#2a2e36" : "#e6b84a");
+  R(240, 186, 196, 2, "#3f444c");
+  R(262, 174, 16, 24, "#2f333a");
+  // office block and water tank on the left
+  R(206, 174, 34, 24, "#6b7078");
+  R(206, 174, 34, 2, "#8a909a");
+  for (let k = 0; k < 3; k++) R(210 + k * 10, 180, 6, 6, "#e6b84a");
+  R(214, 156, 12, 18, "#9aa0a8");
+  R(212, 154, 16, 3, "#6a7078");
+  R(216, 174, 2, 6, "#4a4f58");
+  R(224, 174, 2, 6, "#4a4f58");
+  // storage tanks
+  for (const tx of [436, 456, 476]) {
+    R(tx, 172, 16, 26, "#aab0b8");
+    R(tx, 172, 16, 3, "#c8cdd4");
+    R(tx + 11, 172, 5, 26, "#8b919a");
+    R(tx, 184, 16, 1, "#6a7078");
+  }
+  // pipe rack and conveyor
+  R(432, 176, 60, 3, "#4a4f58");
+  for (let k = 0; k < 6; k++) R(434 + k * 11, 176, 2, 22, "#3f444c");
+  for (let i = 0; i < 26; i++) R(410 + i * 2, 160 - i * 0.6, 3, 2, "#3f444c");
+  // brick chimneys with bands and warning lights
+  for (const [x, w, top] of CHIMNEYS) {
+    R(x, top, w, FGY - top, "#7a4f44");
+    R(x + w - 4, top, 4, FGY - top, "#5e3a32");
+    R(x, top + 8, w, 3, "#e8e4dc");
+    R(x, top + 14, w, 3, "#c0453a");
+    R(x, top + 28, w, 3, "#e8e4dc");
+    R(x - 1, top, w + 2, 3, "#2f2a28");
+  }
+  // two hyperbolic cooling towers
+  for (const [cx0, top] of [[290, 126], [322, 134]]) {
+    const hgt = FGY - top;
+    for (let r = 0; r < hgt; r++) {
+      const f = r / hgt;
+      const w = Math.round(26 + 22 * Math.pow(Math.abs(f - 0.58) * 1.6, 1.4));
+      R(cx0 - w / 2, top + r, w, 1, "#b9bec6");
+      R(cx0 + w / 2 - Math.round(w * 0.35), top + r, Math.round(w * 0.35), 1, "#8b919a");
+      if (r % 9 === 0) R(cx0 - w / 2, top + r, w, 1, "#a2a8b0");
+    }
+    R(cx0 - 17, top - 1, 34, 2, "#6a7078");
+  }
+  // perimeter fence and a gate
+  R(206, FGY - 3, 300, 2, "#2f333a");
+  for (let x = 206; x < 506; x += 6) R(x, FGY - 7, 1, 7, "#2f333a");
+}
+function factory(): void {
+  cx.save();
+  cx.translate(FSHIFT_X, FSHIFT_Y);
+  factoryBody();
+  cx.restore();
+}
+/** One plume of thick dark smoke drifting on the wind. */
+const plume = (x: number, y: number, t: number, seed: number): void => {
+  for (let k = 0; k < 18; k++) {
+    const age = reduce ? k * 7 : (t / 45 + k * 7 + seed * 5) % 126;
+    const px = x + age * 0.55 + Math.sin(age / 14 + seed) * 3;
+    const py = y - age * 0.42;
+    const r = Math.round(4 + age * 0.19);
+    const al = Math.min(1, age / 9) * (0.78 - age / 185);
+    const d = 34 + Math.round(age * 0.45);
+    disc(Math.round(px), Math.round(py), r, `rgba(${d},${d},${d + 6},${al.toFixed(2)})`);
+  }
+};
+function factorySmoke(t: number): void {
+  CHIMNEYS.forEach(([x, w, top], i) => {
+    plume(x + FSHIFT_X + w / 2, top + FSHIFT_Y, t, i * 3 + 1);
+    // blinking aircraft warning light on top
+    R(x + FSHIFT_X + w / 2 - 1, top + FSHIFT_Y - 4, 2, 2, !reduce && Math.floor(t / 600) % 2 ? "#ff3a2a" : "#5a1a14");
+  });
+  // the smog hangs over the valley
+  disc(500, 60, 110, "rgba(60,52,52,0.05)");
+  disc(560, 40, 90, "rgba(60,52,52,0.05)");
+  R(0, 120, W, 90, "rgba(90,80,76,0.07)");
+}
 function titleScene(t: number): void {
   sky("#3f9be0", "#cfe9f6", 240);
   cloud(-20, 118, 3.4, t, 0.008);
   cloud(430, 92, 3, t, 0.006);
   cloud(250, 152, 2.2, t, 0.01);
   cloud(560, 138, 2.6, t, 0.007);
+  layer("title-factory", factory);
+  factorySmoke(t);
   layer("title-hills", () => {
-    range(172, 62, 0.9, 0.85, "#9bbbe0", "#4f78a8", "#bcd6ec", "#7ea2c8", "");
     range(196, 44, 2.6, 0.45, "#86b86e", "#2f6f46", "#4f8f55", "#244f38", "");
     treeline(196, 44, 2.6, 0.45, 30, 20, ["#2f6a44", "#3f8458"]);
     range(216, 16, 4.4, 0.1, "#78bd58", "#438f48", "#4f9a46", "#9ad06a", "#a6dc78");
