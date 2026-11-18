@@ -32,8 +32,8 @@ const en = {
   prologue: {
     tag: "Prologue",
     h: "Umaga sa Barrio",
-    p: "Rooster crow. Nanay is already in the kitchen and Tatay is sharpening the bolo. On the table sits a notice from the Sevilla family, who own the land: in five months the paddy will be cleared for a factory. No payment, only time. Tatay says the only way through is to plant, harvest and sell enough to start over in the city. Your cousin in Cebu has a room for you.",
-    help: ["Help Tatay in the field", "Story mode. Five months to plant, harvest and sell before you must leave. Your choices count."],
+    p: "Rooster crow. Nanay Flor is already in the kitchen and Tatay Bert is sharpening the bolo. On the table sits a notice from the Sevilla family, who own the land: in five months the paddy will be cleared for a factory. No payment, only time. Tatay Bert says the only way through is to plant, harvest and sell enough to start over in the city. Your cousin in Cebu has a room for you.",
+    help: ["Help Tatay Bert in the field", "Story mode. Five months to plant, harvest and sell before you must leave. Your choices count."],
     explore: ["Explore the whole area first", "Free roam from the rice field to the market. Talk to people, tend animals, try farming. Nothing here is recorded in the story."],
     helpTag: "Help",
     exploreTag: "Explore",
@@ -45,7 +45,7 @@ const en = {
     s: "Eviction without payment: the family farms land it does not own, so the owners can clear it with a few months' warning. The harvest is the only savings the family will ever have.",
     go: "Prepare the field",
     ben: "The Sevilla people gave all of us the same five months. We are planting like it is our last season. It is.",
-    intro: "Tatay: Five months. Plant, harvest, sell. That is all the time and all the money we have, so do it in the right order.",
+    intro: "Tatay Bert: Five months. Plant, harvest, sell. That is all the time and all the money we have, so do it in the right order.",
     head: "Which job comes first?",
     hint: "Pick the next job. Each wrong pick costs a star.",
     left: "Jobs left",
@@ -87,14 +87,14 @@ const en = {
   },
   w3: {
     h: "The Dry Spell",
-    p: "No rain for three weeks. The canal is a trickle and the whole barrio watches the same pump. Mang Ben's family needs the water on the same nights you do. Tatay says nothing. Nanay counts the pesos in the fuel jar.",
+    p: "No rain for three weeks. The canal is a trickle and the whole barrio watches the same pump. Mang Ben's family needs the water on the same nights you do. Tatay Bert says nothing. Nanay Flor counts the pesos in the fuel jar.",
     s: "Shared water: El Niño turns the canal into a competition between families who are all in the same trouble.",
     go: "What do you do?",
     ben: "The pump is shared, but the diesel is not. If we take turns, nobody's field dies before the others.",
     choices: [
       ["Buy fuel and run the pump every night", "Costs ₱800. Failed seedlings get replaced, so one earlier mistake will not cost you rice."],
       ["Take turns at the canal with the neighbors", "Slower and less water, but everyone shares the load. The neighbors will help at harvest."],
-      ["Plant fewer rows to stretch the water", "Saves ₱300, but the harvest can be at most 4 sacks. Tatay frowns at the empty rows."],
+      ["Plant fewer rows to stretch the water", "Saves ₱300, but the harvest can be at most 4 sacks. Tatay Bert frowns at the empty rows."],
     ],
   },
   w4: {
@@ -182,8 +182,8 @@ const fil: typeof en = {
   prologue: {
     tag: "Pambungad",
     h: "Umaga sa Barrio",
-    p: "Tilaok ng manok. Gising na si Nanay sa kusina at hinahasa ni Tatay ang itak. Sa mesa, may abiso mula sa pamilya Sevilla, ang may-ari ng lupa: sa loob ng limang buwan, lilinisin ang palayan para sa pabrika. Walang bayad, panahon lang. Sabi ni Tatay, ang tanging paraan ay magtanim, mag-ani at magbenta nang sapat para magsimulang muli sa lungsod. May kuwarto para sa iyo ang pinsan mo sa Cebu.",
-    help: ["Tulungan si Tatay sa bukid", "Story mode. Limang buwan para magtanim, mag-ani at magbenta bago kayo umalis. Mahalaga ang mga desisyon mo."],
+    p: "Tilaok ng manok. Gising na si Nanay Flor sa kusina at hinahasa ni Tatay Bert ang itak. Sa mesa, may abiso mula sa pamilya Sevilla, ang may-ari ng lupa: sa loob ng limang buwan, lilinisin ang palayan para sa pabrika. Walang bayad, panahon lang. Sabi ni Tatay Bert, ang tanging paraan ay magtanim, mag-ani at magbenta nang sapat para magsimulang muli sa lungsod. May kuwarto para sa iyo ang pinsan mo sa Cebu.",
+    help: ["Tulungan si Tatay Bert sa bukid", "Story mode. Limang buwan para magtanim, mag-ani at magbenta bago kayo umalis. Mahalaga ang mga desisyon mo."],
     explore: ["Libutin muna ang buong lugar", "Malayang maglakad mula palayan hanggang palengke. Makipag-usap, mag-alaga ng hayop, subukang magsaka. Walang maitatala sa kuwento."],
     helpTag: "Tumulong",
     exploreTag: "Mag-explore",
@@ -195,7 +195,7 @@ const fil: typeof en = {
     s: "Pagpapalayas nang walang bayad: nagsasaka ang pamilya sa lupang hindi kanila, kaya maaari itong linisin ng may-ari nang ilang buwan lang ang abiso. Ang ani ang nag-iisang ipon na mapapasakamay ng pamilya.",
     go: "Ihanda ang bukid",
     ben: "Parehong limang buwan ang ibinigay ng mga Sevilla sa ating lahat. Nagtatanim tayo na parang huling panahon na. Huli na nga.",
-    intro: "Tatay: Limang buwan. Magtanim, mag-ani, magbenta. Iyan lang ang oras at pera natin, kaya gawin nang tama ang pagkakasunod-sunod.",
+    intro: "Tatay Bert: Limang buwan. Magtanim, mag-ani, magbenta. Iyan lang ang oras at pera natin, kaya gawin nang tama ang pagkakasunod-sunod.",
     head: "Alin ang unang gawain?",
     hint: "Piliin ang susunod na gawain. Bawas na bituin ang bawat maling pili.",
     left: "Natitirang gawain",
@@ -237,14 +237,14 @@ const fil: typeof en = {
   },
   w3: {
     h: "Ang Tagtuyot",
-    p: "Tatlong linggo nang walang ulan. Mahina na ang agos ng kanal at iisang pump ang binabantayan ng buong barrio. Kailangan din ng pamilya ni Mang Ben ang tubig sa parehong gabi. Walang sinasabi si Tatay. Binibilang ni Nanay ang pera sa garapon ng gasolina.",
+    p: "Tatlong linggo nang walang ulan. Mahina na ang agos ng kanal at iisang pump ang binabantayan ng buong barrio. Kailangan din ng pamilya ni Mang Ben ang tubig sa parehong gabi. Walang sinasabi si Tatay Bert. Binibilang ni Nanay Flor ang pera sa garapon ng gasolina.",
     s: "Pinaghahatiang tubig: ginagawang paligsahan ng El Niño ang kanal ng mga pamilyang pare-parehong nahihirapan.",
     go: "Ano ang gagawin mo?",
     ben: "Pinaghahatian ang pump, pero hindi ang diesel. Kung magpapalitan tayo, walang mauunang mamatayan ng palayan.",
     choices: [
       ["Bumili ng gasolina at i-andar ang pump gabi-gabi", "Gastos na ₱800. Napapalitan ang namatay na punla, kaya hindi ka mawawalan ng palay sa isang naunang pagkakamali."],
       ["Magpalitan sa kanal kasama ang mga kapitbahay", "Mas mabagal at mas kaunting tubig, pero magkabahagi ang pasanin. Tutulong ang mga kapitbahay sa ani."],
-      ["Magtanim ng mas kaunting hanay para tipirin ang tubig", "Makakatipid ng ₱300, pero hanggang 4 na sako lang ang ani. Sumimangot si Tatay sa mga bakanteng hanay."],
+      ["Magtanim ng mas kaunting hanay para tipirin ang tubig", "Makakatipid ng ₱300, pero hanggang 4 na sako lang ang ani. Sumimangot si Tatay Bert sa mga bakanteng hanay."],
     ],
   },
   w4: {
