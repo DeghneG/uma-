@@ -10,7 +10,7 @@
 @media (prefers-color-scheme:dark){:root{
   --bg:#101812; --surface:#18231a; --fg:#e4eddc; --muted:#9db292; --line:#2c3d2e;
   --accent:#5fc487; --accent-fg:#0c1a10; --gold:#e3b64a; --bad:#ef7c62; color-scheme:dark}}
-*{box-sizing:border-box;font-variant-ligatures:none;font-feature-settings:"liga" 0,"clig" 0,"calt" 0,"dlig" 0}
+*{box-sizing:border-box;font-kerning:none;font-variant-ligatures:none;font-feature-settings:"liga" 0,"clig" 0,"calt" 0,"dlig" 0}
 html,body{height:100%;margin:0;overflow:hidden}
 body{background:#070b08;color:var(--fg);font-family:var(--font-body)}
 
@@ -188,3 +188,6 @@ h3{align-self:flex-start;margin:8px 0 -6px;padding:1px 14px;background:var(--ink
 .intro .skip{position:absolute;right:48px;bottom:36px;font:500 18px var(--font-body);color:#9db292}
 .menu button,.intro .line,.goal-row b,.delta,.stars,h1{font-kerning:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* Pixelify Sans: the hook of an "f" touches the dot of an "i" at body sizes ("five" reads "Ave"); a little tracking separates them. */
+.cap-zone p,.struggle,.balloon,.card,.note,.fb,.ledger td,.hud .sub,.goal-sub{letter-spacing:.07em}
