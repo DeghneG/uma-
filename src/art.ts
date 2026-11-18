@@ -81,14 +81,64 @@ const cloud = (x: number, y: number, s: number, t: number, speed: number): void 
   const px = ((x + t * speed) % (W + 160)) - 80;
   CLOUD.forEach(([o, w], r) => R(px + o * s, y + r * 4 * s, w * s, 4 * s, r >= 3 ? "#cfe3f1" : "#ffffff"));
 };
-const hillY = (x: number, base: number, a1: number, f1: number, a2: number, f2: number, ph: number): number =>
-  Math.round(base + Math.sin(x * f1 + ph) * a1 + Math.sin(x * f2 + ph * 2) * a2);
-const hills = (base: number, a1: number, f1: number, a2: number, f2: number, ph: number, col: string, hi: string): void => {
+/* Mountain ranges: pointed or rounded ridges lit from the upper left, fading with depth. */
+const rangeY = (x: number, base: number, amp: number, ph: number, sharp: number): number => {
+  const sp = 1 - Math.abs(Math.sin(x * 0.0105 + ph));
+  const rl = 0.5 + 0.5 * Math.sin(x * 0.0105 + ph * 1.3);
+  const m = sp * sharp + rl * (1 - sharp);
+  return Math.round(base - amp * (0.62 * m + 0.13 * Math.sin(x * 0.034 + ph * 2) + 0.065 * Math.sin(x * 0.081 + ph * 3) + 0.1));
+};
+const lerpA = (A: number[], B: number[], t: number): number[] => A.map((v, i) => v + (B[i] - v) * t);
+const range = (base: number, amp: number, ph: number, sharp: number, lit: string, shade: string, fade: string, tex: string, contour: string): void => {
+  const LIT = rgb(lit);
+  const SH = rgb(shade);
+  const FD = rgb(fade);
+  const peak = base - amp;
   for (let x = 0; x < W; x++) {
-    const y = hillY(x, base, a1, f1, a2, f2, ph);
-    R(x, y, 1, H - y, col);
-    R(x, y, 1, 2, hi);
+    const y = rangeY(x, base, amp, ph, sharp);
+    const dy = rangeY(x + 3, base, amp, ph, sharp) - rangeY(x - 3, base, amp, ph, sharp);
+    const l = Math.min(1, Math.max(0, 0.5 - dy * 0.1));
+    const face = lerpA(SH, LIT, l);
+    // vertical streaks (gullies and rock bands) stronger on the pointed ranges
+    const streak = (rnd(Math.floor(x / 3) + base) - 0.5) * (0.08 + sharp * 0.1);
+    for (let yy = y; yy < H; yy += 3) {
+      const t = Math.min(1, Math.max(0, (yy - peak) / (amp + 34)));
+      if (t >= 1) {
+        R(x, yy, 1, H - yy, fade);
+        break;
+      }
+      const c = lerpA(face, FD, t).map((v) => Math.min(255, Math.max(0, Math.round(v * (1 + streak * (1 - t))))));
+      R(x, yy, 1, 3, `rgb(${c.join(",")})`);
+    }
+    R(x, y, 1, 1, `rgb(${lerpA(face, [255, 255, 255], 0.4).map(Math.round).join(",")})`);
+    if (tex && rnd(x * 7.1 + base) > 0.8) R(x, y + 3 + rnd(x + base) * 22, 1, 1, tex);
+    if (contour) for (let k = 1; k < 4; k++) if ((x + k * 5) % 3 !== 0) R(x, y + k * 7 + Math.round(Math.sin(x * 0.05 + k)), 1, 1, contour);
   }
+};
+const treeline = (base: number, amp: number, ph: number, sharp: number, n: number, seed: number, cols: [string, string]): void => {
+  for (let i = 0; i < n; i++) {
+    const x = rnd(seed + i) * W;
+    const y = rangeY(x, base, amp, ph, sharp);
+    const r = 3 + Math.floor(rnd(seed + i + 40) * 3);
+    disc(x, y - r + 2, r, cols[0]);
+    disc(x - 1, y - r, Math.max(1, r - 2), cols[1]);
+  }
+};
+/** Paint a static layer once into an offscreen canvas and blit it every frame. */
+const layerCache = new Map<string, HTMLCanvasElement>();
+const layer = (key: string, paint: () => void): void => {
+  let c = layerCache.get(key);
+  if (!c) {
+    c = document.createElement("canvas");
+    c.width = W;
+    c.height = H;
+    const prev = cx;
+    cx = c.getContext("2d") as CanvasRenderingContext2D;
+    paint();
+    cx = prev;
+    layerCache.set(key, c);
+  }
+  cx.drawImage(c, 0, 0);
 };
 const tuft = (x: number, y: number, c1: string, c2: string): void => {
   R(x, y - 6, 1, 6, c1);
@@ -129,27 +179,6 @@ const flowers = (x0: number, x1: number, y0: number, y1: number, n: number, seed
 };
 
 /* ---------- extra background details ---------- */
-const treeline = (base: number, a1: number, f1: number, a2: number, f2: number, ph: number, n: number, seed: number, cols: [string, string]): void => {
-  for (let i = 0; i < n; i++) {
-    const x = rnd(seed + i) * W;
-    const y = hillY(x, base, a1, f1, a2, f2, ph);
-    const r = 3 + Math.floor(rnd(seed + i + 40) * 3);
-    disc(x, y - r + 2, r, cols[0]);
-    disc(x - 1, y - r, Math.max(1, r - 2), cols[1]);
-  }
-};
-/** Chocolate Hills style round mounds in the middle distance. */
-const chocolateHills = (base: number, col: string, hi: string): void => {
-  const mounds: [number, number, number][] = [[24, 22, 18], [78, 28, 24], [132, 20, 15], [186, 26, 21], [250, 22, 17], [304, 30, 25], [372, 24, 19], [430, 28, 22], [490, 22, 17], [552, 30, 24], [612, 24, 18]];
-  for (const [cx0, r, h] of mounds) {
-    for (let x = cx0 - r; x <= cx0 + r; x++) {
-      if (x < 0 || x >= W) continue;
-      const y = base - Math.round(h * Math.sqrt(Math.max(0, 1 - ((x - cx0) / r) ** 2)));
-      R(x, y, 1, H - y, x < cx0 ? col : mix(col, "#5a6a2c", 0.35));
-      R(x, y, 1, 2, hi);
-    }
-  }
-};
 const haze = (y: number): void => {
   for (let i = 0; i < 4; i++) R(0, y + i * 5, W, 5, `rgba(255,255,255,${0.1 - i * 0.02})`);
 };
@@ -360,13 +389,14 @@ function backdrop(t: number, horizon: number): void {
   cloud(190, 86, 1, t, 0.018);
   cloud(330, 52, 2, t, 0.008);
   cloud(520, 96, 1.2, t, 0.014);
-  hills(horizon - 34, 18, 0.011, 7, 0.03, 1, "#6f9fba", "#8cb8cb");
-  chocolateHills(horizon - 4, "#8a9a52", "#aab868");
-  hills(horizon - 14, 12, 0.016, 5, 0.05, 3, "#4f8a72", "#6aa588");
-  treeline(horizon - 14, 12, 0.016, 5, 0.05, 3, 30, 10, ["#2f6a44", "#3f8458"]);
-  hills(horizon - 2, 6, 0.02, 3, 0.07, 5, "#3f7a50", "#5a9a62");
-  treeline(horizon - 2, 6, 0.02, 3, 0.07, 5, 22, 70, ["#2a5a38", "#3a7a48"]);
-  haze(horizon - 22);
+  layer(`bd${horizon}`, () => {
+    range(horizon - 26, 56, 0.6, 0.85, "#9bbbe0", "#4f78a8", "#bcd6ec", "#7ea2c8", "");
+    range(horizon - 6, 40, 2.1, 0.45, "#86b86e", "#2f6f46", "#4f8f55", "#244f38", "");
+    treeline(horizon - 6, 40, 2.1, 0.45, 34, 10, ["#2f6a44", "#3f8458"]);
+    range(horizon + 2, 16, 4.0, 0.1, "#78bd58", "#438f48", "#52a04c", "#9ad06a", "#a6dc78");
+    treeline(horizon + 2, 16, 4.0, 0.1, 20, 70, ["#2a5a38", "#3a7a48"]);
+    haze(horizon - 24);
+  });
   birds(t);
 }
 
@@ -712,14 +742,15 @@ function titleScene(t: number): void {
   cloud(430, 92, 3, t, 0.006);
   cloud(250, 152, 2.2, t, 0.01);
   cloud(560, 138, 2.6, t, 0.007);
-  hills(186, 16, 0.012, 6, 0.03, 2, "#6f9fba", "#8cb8cb");
-  chocolateHills(198, "#8a9a52", "#aab868");
-  hills(198, 8, 0.02, 3, 0.06, 4, "#4f8a72", "#6aa588");
-  treeline(198, 8, 0.02, 3, 0.06, 4, 26, 20, ["#2f6a44", "#3f8458"]);
-  haze(176);
+  layer("title-hills", () => {
+    range(172, 62, 0.9, 0.85, "#9bbbe0", "#4f78a8", "#bcd6ec", "#7ea2c8", "");
+    range(196, 44, 2.6, 0.45, "#86b86e", "#2f6f46", "#4f8f55", "#244f38", "");
+    treeline(196, 44, 2.6, 0.45, 30, 20, ["#2f6a44", "#3f8458"]);
+    range(216, 16, 4.4, 0.1, "#78bd58", "#438f48", "#4f9a46", "#9ad06a", "#a6dc78");
+    treeline(216, 16, 4.4, 0.1, 18, 90, ["#2a5a38", "#3a7a48"]);
+    haze(178);
+  });
   birds(t);
-  hills(214, 5, 0.013, 2, 0.05, 1, "#3b7d3b", "#5aa84a");
-  treeline(214, 5, 0.013, 2, 0.05, 1, 16, 90, ["#2a5a38", "#3a7a48"]);
   for (let y = 222; y < H; y += 5) for (let x = (y / 5) % 2 ? 0 : 6; x < W; x += 12) R(x + rnd(x * y) * 5, y, 3, 1, rnd(x + y) > 0.5 ? "#2f6e33" : "#4d9a46");
   // rice terraces climbing to the right, with the kid on the top step
   for (let i = 0; i < 9; i++) {
