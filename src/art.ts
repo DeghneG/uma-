@@ -89,17 +89,21 @@ const BODY = [
   "...KKK.KKK...",
 ];
 /** Optional hand-drawn sprite: put a PNG at public/sprites/kid.png and it replaces the code-drawn kid. */
-const kidImg = new Image();
-let kidReady = false;
-kidImg.onload = (): void => {
-  kidReady = true;
+/** Loads public/sprites/<name>.png; returns a draw function anchored at the feet (same spot as `person`). */
+const loadSprite = (name: string, fallback: (x: number, y: number) => void): ((x: number, y: number) => void) => {
+  const img = new Image();
+  let ready = false;
+  img.onload = (): void => {
+    ready = true;
+  };
+  img.src = `/sprites/${name}.png`;
+  return (x, y) => {
+    if (!ready) return fallback(x, y);
+    cx.drawImage(img, Math.round(x - img.width / 2), Math.round(y + 11 - img.height));
+  };
 };
-kidImg.src = "/sprites/kid.png";
-/** Draws the kid anchored at the feet (x centre, y = old top + 11), same spot as `person`. */
-const kid = (x: number, y: number): void => {
-  if (!kidReady) return person(x, y, "#d96f9a", false);
-  cx.drawImage(kidImg, Math.round(x - kidImg.width / 2), Math.round(y + 11 - kidImg.height));
-};
+const kid = loadSprite("kid", (x, y) => person(x, y, "#d96f9a", false));
+const tatay = loadSprite("tatay", (x, y) => person(x, y, "#c25a3a"));
 
 const person = (x: number, y: number, shirt: string, hat = true): void => {
   const pal: Record<string, string> = {
@@ -128,7 +132,7 @@ function home(): void {
   R(40, 34, 6, 10, "#4a321c");
   R(34, 31, 4, 4, "#d9ecf2");
   R(24, 40, 2, 6, "#7b5836");
-  person(58, 38, "#c25a3a");
+  tatay(58, 38);
   person(74, 40, "#3f7bb0", false);
 }
 
@@ -218,7 +222,7 @@ function fieldScene(t: number): void {
 
   // Tatay works with a small bob; Mang Ben joins from week 3
   const bob = field.working && !reduce ? Math.round(Math.sin(t / 180)) : 0;
-  person(14, 24 + bob, "#c25a3a");
+  tatay(14, 24 + bob);
   if (field.ben) person(26, 26 - bob, "#6f9a3f");
   if (field.ben && field.week === 3) kid(40, 28 + bob);
 }
@@ -236,7 +240,7 @@ function market(): void {
     R(35 + i * 7, 26, 2, 1, "#9a8a58");
   }
   person(74, 36, "#3f7bb0", false);
-  person(14, 36, "#c25a3a");
+  tatay(14, 36);
 }
 
 function draw(t: number): void {
