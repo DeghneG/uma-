@@ -78,7 +78,7 @@ const sun = (x: number, y: number): void => {
 };
 const CLOUD: [number, number][] = [[14, 20], [6, 36], [0, 52], [4, 46], [12, 30]];
 const cloud = (x: number, y: number, s: number, t: number, speed: number): void => {
-  const px = ((x + t * speed) % (W + 160)) - 80;
+  const px = Math.round(((x + t * speed) % (W + 160)) - 80);
   CLOUD.forEach(([o, w], r) => R(px + o * s, y + r * 4 * s, w * s, 4 * s, r >= 3 ? "#cfe3f1" : "#ffffff"));
 };
 /* Mountain ranges: pointed or rounded ridges lit from the upper left, fading with depth. */
@@ -146,12 +146,12 @@ const tuft = (x: number, y: number, c1: string, c2: string): void => {
   R(x + 2, y - 5, 1, 5, c2);
 };
 const palm = (x: number, base: number, h: number, t: number, lean = 1, fr = 24): [number, number] => {
-  const sway = reduce ? 0 : Math.sin(t / 900 + x) * 2;
+  const sway = reduce ? 0 : Math.round(Math.sin(t / 900 + x) * 2);
   let tx = x;
   let ty = base;
   for (let i = 0; i < h; i += 2) {
     const p = i / h;
-    tx = x + lean * Math.sin(p * 1.3) * h * 0.12 + sway * p;
+    tx = Math.round(x + lean * Math.sin(p * 1.3) * h * 0.12 + sway * p);
     ty = base - i;
     R(tx - 2, ty, 5, 2, i % 8 < 4 ? "#7b5a3a" : "#6a4a2e");
     R(tx + 1, ty, 1, 2, "#9a7550");
@@ -171,7 +171,7 @@ const palm = (x: number, base: number, h: number, t: number, lean = 1, fr = 24):
 const smoke = (x: number, y: number, t: number): void => {
   for (let k = 0; k < 6; k++) {
     const age = reduce ? k * 10 : (t / 40 + k * 14) % 84;
-    disc(x + Math.sin(age / 12 + k) * 4 + age * 0.15, y - age * 0.55, 3 + age / 14, `rgba(214,214,220,${0.6 - age / 160})`);
+    disc(x + Math.sin(age / 12 + k) * 4 + age * 0.15, y - age * 0.55, 3 + age / 14, `rgba(214,214,220,${Math.min(1, age / 8) * (0.55 - age / 170)})`);
   }
 };
 const flowers = (x0: number, x1: number, y0: number, y1: number, n: number, seed: number): void => {
@@ -204,7 +204,7 @@ const butterfly = (x: number, y: number, t: number, c: string): void => {
   R(bx, by, 1, 2, "#2a2a30");
 };
 const banana = (x: number, g: number, t: number): void => {
-  const sway = reduce ? 0 : Math.sin(t / 1100 + x) * 1.5;
+  const sway = reduce ? 0 : Math.round(Math.sin(t / 1100 + x) * 1.5);
   R(x - 3, g - 34, 7, 34, "#6b8f3a");
   R(x - 3, g - 34, 2, 34, "#8ab04a");
   for (const d of [-1, -0.7, -0.4, -0.12, 0.12, 0.4, 0.7, 1]) {
@@ -220,7 +220,7 @@ const banana = (x: number, g: number, t: number): void => {
   R(x + 3, g - 24, 4, 2, "#c9a82a");
 };
 const bamboo = (x: number, g: number, h: number, t: number): void => {
-  const sway = reduce ? 0 : Math.sin(t / 1300 + x) * 1.2;
+  const sway = reduce ? 0 : Math.round(Math.sin(t / 1300 + x) * 1.2);
   for (let k = 0; k < 4; k++) {
     const hh = h - k * 7;
     const bx = x + k * 5;
@@ -355,9 +355,9 @@ const wander = (t: number, seed: number, range: number): [number, number] => {
 };
 const hen = (x: number, g: number, t: number, seed: number, col = "#c9783a"): void => {
   const [dx, dir] = wander(t, seed, 10);
-  const hx = x + dx;
+  const hx = Math.round(x + dx);
   flipAt(hx, dir, () => {
-    const hy = !reduce && Math.sin(t / 260 + seed * 3) > 0.55 ? 4 : 0;
+    const hy = reduce ? 0 : Math.round(Math.pow(Math.max(0, Math.sin(t / 260 + seed * 3)), 3) * 4);
     R(hx, g - 8, 9, 6, col);
     R(hx + 1, g - 8, 7, 2, "#e0a060");
     R(hx - 3, g - 12, 4, 7, col);
@@ -371,7 +371,7 @@ const hen = (x: number, g: number, t: number, seed: number, col = "#c9783a"): vo
 };
 const rooster = (x: number, g: number, t: number, seed: number): void => {
   const [dx, dir] = wander(t, seed, 8);
-  const hx = x + dx;
+  const hx = Math.round(x + dx);
   flipAt(hx, dir, () => {
     R(hx, g - 11, 11, 8, "#b8582f");
     R(hx + 1, g - 11, 9, 3, "#e0883a");
@@ -395,7 +395,7 @@ const chick = (x: number, g: number, t: number, seed: number): void => {
 };
 const pig = (x: number, g: number, t: number, seed: number, scale = 1): void => {
   const [dx, dir] = wander(t, seed, 6);
-  const px = x + dx;
+  const px = Math.round(x + dx);
   const s = scale;
   const U = (v: number): number => v * s;
   flipAt(px, dir, () => {
@@ -414,7 +414,7 @@ const pig = (x: number, g: number, t: number, seed: number, scale = 1): void => 
 };
 const goat = (x: number, g: number, t: number, seed: number, col = "#e8e2d4", patch = "#8a6a43"): void => {
   const [dx, dir] = wander(t, seed, 12);
-  const gx = x + dx;
+  const gx = Math.round(x + dx);
   flipAt(gx, dir, () => {
     const chew = !reduce && Math.sin(t / 220 + seed) > 0 ? 1 : 0;
     R(gx + 4, g - 17, 20, 10, col);
@@ -433,7 +433,7 @@ const goat = (x: number, g: number, t: number, seed: number, col = "#e8e2d4", pa
 };
 const duck = (x: number, y: number, t: number, seed: number, kids = 0): void => {
   const [dx, dir] = wander(t, seed, 38);
-  const px = x + dx;
+  const px = Math.round(x + dx);
   flipAt(px, dir, () => {
     R(px - 4, y - 2, 12, 1, "rgba(255,255,255,0.45)");
     disc(px, y - 4, 5, "#f4f1e6");
@@ -451,7 +451,7 @@ const duck = (x: number, y: number, t: number, seed: number, kids = 0): void => 
 
 /* ---------- foreground trees (drawn last, cropped at the edges) ---------- */
 const bigTree = (x: number, base: number, h: number, r: number, t: number, seed: number): void => {
-  const sway = reduce ? 0 : Math.sin(t / 1500 + seed) * 1.5;
+  const sway = reduce ? 0 : Math.round(Math.sin(t / 1500 + seed) * 1.5);
   for (let y = 0; y < h; y += 2) {
     const p = y / h;
     const w = Math.round(16 - p * 7);
@@ -506,7 +506,7 @@ const fgBushes = (seed: number, n: number): void => {
 /* ---------- the farm: every crop on one screen (title) ---------- */
 /** Sugarcane clump: tall jointed stalks topped with long arching leaves. */
 const cane = (x: number, g: number, h: number, t: number, seed: number): void => {
-  const sway = reduce ? 0 : Math.sin(t / 1200 + seed) * 1.2;
+  const sway = reduce ? 0 : Math.round(Math.sin(t / 1200 + seed) * 1.2);
   for (let k = 0; k < 3; k++) {
     const bx = x + k * 3;
     const hh = h - k * 4;
@@ -579,7 +579,7 @@ const trellis = (x: number, g: number): void => {
   }
 };
 /** Terraced rice paddies climbing the hillside: water glints, green sprouts, ripe gold on the top steps. */
-const riceTerraces = (t: number): void => {
+const riceTerraces = (): void => {
   for (let i = 0; i < 9; i++) {
     const sx = 455 + i * 15;
     const sy = 336 - i * 13;
@@ -594,6 +594,12 @@ const riceTerraces = (t: number): void => {
       R(px - 2, sy + 5, 2, 4, ripe ? "#c9a43a" : "#3f9a40");
       R(px + 2, sy + 5, 2, 4, ripe ? "#c9a43a" : "#3f9a40");
     }
+  }
+};
+const riceGlints = (t: number): void => {
+  for (let i = 0; i < 9; i++) {
+    const sx = 455 + i * 15;
+    const sy = 336 - i * 13;
     for (let k = 0; k < 4; k++) R(sx + 6 + ((k * 37 + i * 11 + (reduce ? 0 : Math.floor(t / 300))) % 90), sy + 8, 6, 1, "#bfe6f0");
   }
 };
@@ -1045,16 +1051,19 @@ function titleScene(t: number): void {
   });
   birds(t);
   for (let y = 222; y < H; y += 5) for (let x = (y / 5) % 2 ? 0 : 6; x < W; x += 12) R(x + rnd(x * y) * 5, y, 3, 1, rnd(x + y) > 0.5 ? "#2f6e33" : "#4d9a46");
-  // the whole farm on one screen: the bahay kubo and its animals, then every crop
-  riceTerraces(t);
-  // sugarcane plantation (behind, left of centre): rows from back to front
-  for (let r = 0; r < 4; r++) {
-    const g = 246 + r * 14;
-    const h = 34 + r * 7;
-    const step = 11 + r;
-    for (let k = 0; 180 + k * step < 338; k++) cane(180 + k * step + (r % 2) * 5, g, h, t, k + r * 5);
-  }
-  // coconut grove (middle right), with soft shadows and fallen nuts
+  // the whole farm on one screen: the bahay kubo and its animals, then every crop.
+  // Everything that never moves is painted once into cached layers.
+  layer("title-back", () => {
+    riceTerraces();
+    for (let r = 0; r < 4; r++) {
+      const g = 246 + r * 14;
+      const h = 34 + r * 7;
+      const step = 11 + r;
+      for (let k = 0; 180 + k * step < 338; k++) cane(180 + k * step + (r % 2) * 5, g, h, 0, k + r * 5);
+    }
+  });
+  riceGlints(t);
+  // coconut grove (middle right): the palms sway, so they stay live
   for (const sx of [352, 392, 428, 456]) {
     disc(sx + 4, 266, 14, "rgba(20,60,25,0.16)");
     disc(sx + 4, 266, 9, "rgba(20,60,25,0.16)");
@@ -1064,15 +1073,29 @@ function titleScene(t: number): void {
   cocoPalm(428, 264, 134, t, 1);
   cocoPalm(458, 254, 104, t, -1);
   for (const f of [[372, 270], [408, 268], [442, 274]]) disc(f[0], f[1], 2, "#6a4a2e");
-  // the bahay kubo on the left, smoke from the kitchen, and its animal yard
-  hut(88, 262);
+  layer("title-mid", () => {
+    hut(88, 262);
+    for (let x = 4; x < 150; x += 14) {
+      R(x, 272, 3, 22, "#8a6a43");
+      R(x, 272, 3, 2, "#a8844f");
+    }
+    R(4, 278, 146, 2, "#8a6a43");
+    R(4, 288, 146, 2, "#8a6a43");
+    for (let x = 178; x < 452; x += 14) {
+      R(x, 276, 3, 12, "#8a6a43");
+      R(x, 276, 3, 2, "#a8844f");
+    }
+    R(178, 280, 274, 2, "#8a6a43");
+    vegBed(291, 178, 452, 0, 1);
+    vegBed(304, 178, 452, 1, 1);
+    vegBed(317, 178, 452, 2, 1);
+    vegBed(330, 178, 452, 3, 1);
+    trellis(396, 314);
+    scarecrow(188, 312);
+    flowers(0, 176, 296, 350, 12, 3);
+  });
   smoke(88, 142, t);
-  for (let x = 4; x < 150; x += 14) {
-    R(x, 272, 3, 22, "#8a6a43");
-    R(x, 272, 3, 2, "#a8844f");
-  }
-  R(4, 278, 146, 2, "#8a6a43");
-  R(4, 288, 146, 2, "#8a6a43");
+  // the animal yard
   pig(36, 294, t, 1);
   pig(98, 292, t, 4);
   pig(68, 296, t, 7, 0.55);
@@ -1084,23 +1107,10 @@ function titleScene(t: number): void {
   chick(48, 334, t, 1);
   chick(58, 338, t, 2);
   chick(122, 340, t, 3);
-  // fence, then the vegetable plantation (front): raised beds, a trellis with gourds
-  for (let x = 178; x < 452; x += 14) {
-    R(x, 276, 3, 12, "#8a6a43");
-    R(x, 276, 3, 2, "#a8844f");
-  }
-  R(178, 280, 274, 2, "#8a6a43");
-  vegBed(291, 178, 452, 0, 1);
-  vegBed(304, 178, 452, 1, 1);
-  vegBed(317, 178, 452, 2, 1);
-  vegBed(330, 178, 452, 3, 1);
-  trellis(396, 314);
-  scarecrow(188, 312);
   butterfly(220, 290, t, "#f2c94c");
   butterfly(330, 296, t, "#ffffff");
   butterfly(60, 270, t, "#e07aa8");
   carabao(452, 344, t);
-  flowers(0, 176, 296, 350, 12, 3);
   kid(592, 232);
   bigTree(630, 366, 220, 60, t, 4);
   palm(-4, 396, 250, t, 1, 34);
