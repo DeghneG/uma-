@@ -19,8 +19,8 @@ body{background:#070b08;color:var(--fg);font-family:var(--font-body)}
 canvas{position:absolute;left:0;top:0;width:1920px;height:1080px;image-rendering:pixelated;display:block}
 
 /* ---- HUD: story mode only. Slides in from the top when #game has .story (always dark so it reads over any scene) ---- */
-.hud{position:absolute;left:0;right:0;top:0;height:112px;padding:0 440px 0 40px;display:grid;
-  grid-template-columns:190px 1fr 250px 290px;gap:30px;align-items:center;
+.hud{position:absolute;left:0;right:0;top:0;height:112px;padding:0 372px 0 40px;display:grid;
+  grid-template-columns:190px 1fr 240px 350px;gap:30px;align-items:center;
   --fg:#f2f7ea;--muted:#b3c4a8;--bg:#0f1a12;--surface:#1c2a1f;--gold:#e3b64a;--accent:#5fc487;--bad:#ef7c62;
   color:var(--fg);background:linear-gradient(#0b130def,#0b130dd0);border-bottom:4px solid #000;
   transform:translateY(-120%);transition:transform .45s cubic-bezier(.2,.8,.2,1)}
@@ -47,7 +47,9 @@ h1{font-family:var(--font-display);font-weight:700;font-size:52px;line-height:1;
 .goalbar s{position:absolute;right:3px;top:-2px;font:700 16px/18px var(--font-body);text-decoration:none;color:var(--muted)}
 .goalbar s::before{content:"★"}
 .goalbar.done s{color:var(--gold)}
-.meter span{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.meter span{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;white-space:nowrap}
+.meter span em.lab{min-width:0}
+.meter span em.lab>em{overflow:hidden;text-overflow:ellipsis}
 .meter em{font-style:normal}
 .meter b{color:var(--fg);font-variant-numeric:tabular-nums}
 .sub2{font-size:15px;color:var(--muted);margin-top:4px;line-height:1.2}
@@ -111,9 +113,9 @@ h3{font:600 14px var(--font-body);letter-spacing:.08em;text-transform:uppercase;
 .mark{position:absolute;top:-6px;bottom:-6px;width:8px;background:var(--fg);left:0}
 .stars{font-family:var(--font-display);font-size:40px;color:var(--gold);letter-spacing:.1em;display:flex;gap:2px}
 .ledger{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-.ledger td{padding:8px 0;border-bottom:2px solid var(--line)}
+.ledger td{padding:5px 0;font-size:19px;border-bottom:2px solid var(--line)}
 .ledger td:last-child{text-align:right;font-weight:600}
-.ledger tr.total td{border-top:3px solid var(--fg);border-bottom:0;font-size:26px}
+.ledger tr.total td{border-top:3px solid var(--fg);border-bottom:0;font-size:24px}
 
 /* ---- title menu and intro cards (drawn over the scene, no panel) ---- */
 .stage-label:empty{display:none}
