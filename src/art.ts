@@ -81,9 +81,11 @@ const cloud = (x: number, y: number, s: number, t: number, speed: number): void 
   const px = ((x + t * speed) % (W + 160)) - 80;
   CLOUD.forEach(([o, w], r) => R(px + o * s, y + r * 4 * s, w * s, 4 * s, r >= 3 ? "#cfe3f1" : "#ffffff"));
 };
+const hillY = (x: number, base: number, a1: number, f1: number, a2: number, f2: number, ph: number): number =>
+  Math.round(base + Math.sin(x * f1 + ph) * a1 + Math.sin(x * f2 + ph * 2) * a2);
 const hills = (base: number, a1: number, f1: number, a2: number, f2: number, ph: number, col: string, hi: string): void => {
   for (let x = 0; x < W; x++) {
-    const y = Math.round(base + Math.sin(x * f1 + ph) * a1 + Math.sin(x * f2 + ph * 2) * a2);
+    const y = hillY(x, base, a1, f1, a2, f2, ph);
     R(x, y, 1, H - y, col);
     R(x, y, 1, 2, hi);
   }
@@ -126,6 +128,181 @@ const flowers = (x0: number, x1: number, y0: number, y1: number, n: number, seed
   for (let i = 0; i < n; i++) R(x0 + rnd(seed + i) * (x1 - x0), y0 + rnd(seed + i + 50) * (y1 - y0), 2, 2, cols[i % 4]);
 };
 
+/* ---------- extra background details ---------- */
+const treeline = (base: number, a1: number, f1: number, a2: number, f2: number, ph: number, n: number, seed: number, cols: [string, string]): void => {
+  for (let i = 0; i < n; i++) {
+    const x = rnd(seed + i) * W;
+    const y = hillY(x, base, a1, f1, a2, f2, ph);
+    const r = 3 + Math.floor(rnd(seed + i + 40) * 3);
+    disc(x, y - r + 2, r, cols[0]);
+    disc(x - 1, y - r, Math.max(1, r - 2), cols[1]);
+  }
+};
+/** Chocolate Hills style round mounds in the middle distance. */
+const chocolateHills = (base: number, col: string, hi: string): void => {
+  const mounds: [number, number, number][] = [[24, 22, 18], [78, 28, 24], [132, 20, 15], [186, 26, 21], [250, 22, 17], [304, 30, 25], [372, 24, 19], [430, 28, 22], [490, 22, 17], [552, 30, 24], [612, 24, 18]];
+  for (const [cx0, r, h] of mounds) {
+    for (let x = cx0 - r; x <= cx0 + r; x++) {
+      if (x < 0 || x >= W) continue;
+      const y = base - Math.round(h * Math.sqrt(Math.max(0, 1 - ((x - cx0) / r) ** 2)));
+      R(x, y, 1, H - y, x < cx0 ? col : mix(col, "#5a6a2c", 0.35));
+      R(x, y, 1, 2, hi);
+    }
+  }
+};
+const haze = (y: number): void => {
+  for (let i = 0; i < 4; i++) R(0, y + i * 5, W, 5, `rgba(255,255,255,${0.1 - i * 0.02})`);
+};
+const birds = (t: number): void => {
+  for (let i = 0; i < 4; i++) {
+    const x = (((reduce ? 0 : t * 0.03) + i * 150) % (W + 60)) - 30;
+    const y = 72 + i * 16 + (reduce ? 0 : Math.sin(t / 500 + i) * 3);
+    const up = !reduce && Math.floor(t / 200 + i) % 2 === 0;
+    R(x, y, 2, 1, "#2a2a30");
+    R(x - 3, y + (up ? -2 : 1), 3, 1, "#2a2a30");
+    R(x + 2, y + (up ? -2 : 1), 3, 1, "#2a2a30");
+  }
+};
+const butterfly = (x: number, y: number, t: number, c: string): void => {
+  const bx = x + (reduce ? 0 : Math.sin(t / 700 + x) * 18);
+  const by = y + (reduce ? 0 : Math.cos(t / 500 + x) * 8);
+  const open = reduce || Math.floor(t / 140 + x) % 2 === 0;
+  if (open) {
+    R(bx - 3, by, 3, 2, c);
+    R(bx + 1, by, 3, 2, c);
+  } else R(bx - 1, by - 1, 2, 3, c);
+  R(bx, by, 1, 2, "#2a2a30");
+};
+const banana = (x: number, g: number, t: number): void => {
+  const sway = reduce ? 0 : Math.sin(t / 1100 + x) * 1.5;
+  R(x - 3, g - 34, 7, 34, "#6b8f3a");
+  R(x - 3, g - 34, 2, 34, "#8ab04a");
+  for (const d of [-1, -0.7, -0.4, -0.12, 0.12, 0.4, 0.7, 1]) {
+    for (let k = 0; k < 20; k++) {
+      const lx = x + d * k * 2;
+      const ly = g - 38 - k * 0.2 + k * k * 0.07 + d * sway * 0.3;
+      R(lx, ly, 5, 3, k % 4 < 2 ? "#4f9a3f" : "#3f8a35");
+      R(lx, ly, 5, 1, "#6cc05a");
+      if (k % 4 === 0) R(lx, ly + 3, 2, 1, "#2f6f2a");
+    }
+  }
+  R(x + 2, g - 30, 5, 8, "#f2d13a");
+  R(x + 3, g - 24, 4, 2, "#c9a82a");
+};
+const bamboo = (x: number, g: number, h: number, t: number): void => {
+  const sway = reduce ? 0 : Math.sin(t / 1300 + x) * 1.2;
+  for (let k = 0; k < 4; k++) {
+    const hh = h - k * 7;
+    const bx = x + k * 5;
+    R(bx, g - hh, 5, hh, "#5f9a2e");
+    R(bx, g - hh, 2, hh, "#86c04a");
+    R(bx + 4, g - hh, 1, hh, "#3f6e1e");
+    for (let n = 6; n < hh; n += 13) R(bx, g - n, 5, 2, "#3f6e1e");
+    for (let l = 0; l < 8; l++) R(bx + (l % 2 ? 4 : -9) + sway + l * (l % 2 ? 1 : -1), g - hh + l * 2, 9, 2, l % 2 ? "#5fb84a" : "#4f9a3f");
+  }
+};
+const carabao = (x: number, g: number, t: number): void => {
+  const bob = reduce ? 0 : Math.round(Math.sin(t / 900));
+  R(x + 4, g - 22, 34, 14, "#4a4a52");
+  R(x + 4, g - 22, 34, 2, "#62626c");
+  R(x + 26, g - 26, 10, 5, "#4a4a52");
+  R(x - 8, g - 21 + bob, 14, 10, "#3f3f46");
+  R(x - 10, g - 17 + bob, 5, 6, "#55555e");
+  R(x - 12, g - 25 + bob, 8, 2, "#d8d2c0");
+  R(x - 14, g - 27 + bob, 3, 3, "#d8d2c0");
+  R(x - 4, g - 23 + bob, 2, 2, "#d8d2c0");
+  R(x - 3, g - 18 + bob, 2, 2, "#e8e0d0");
+  for (const lx of [6, 12, 30, 35]) R(x + lx, g - 9, 4, 9, lx % 2 ? "#3f3f46" : "#34343a");
+  R(x + 38, g - 20, 2, 12, "#3f3f46");
+  R(x + 37, g - 9, 4, 3, "#2a2a30");
+  R(x + 4, g - 9, 34, 2, "#00000025");
+};
+const jeepney = (x: number, g: number, c1: string, c2: string): void => {
+  R(x, g - 20, 76, 14, c1);
+  R(x, g - 20, 76, 3, c2);
+  R(x, g - 11, 76, 2, c2);
+  R(x + 8, g - 32, 50, 12, "#f4f1e6");
+  R(x + 8, g - 32, 50, 2, c2);
+  for (let k = 0; k < 4; k++) R(x + 12 + k * 12, g - 29, 9, 7, "#5a7a8a");
+  R(x + 58, g - 28, 16, 8, c1);
+  R(x + 66, g - 26, 6, 5, "#5a7a8a");
+  R(x - 3, g - 14, 3, 7, "#bbbbbb");
+  R(x + 72, g - 14, 4, 7, "#bbbbbb");
+  for (let k = 0; k < 5; k++) R(x + 14 + k * 11, g - 16, 5, 3, k % 2 ? "#f2c94c" : "#ffffff");
+  for (const wx of [14, 60]) {
+    disc(x + wx, g - 5, 6, "#1a1a1a");
+    disc(x + wx, g - 5, 2, "#9a9a9a");
+  }
+};
+const scarecrow = (x: number, g: number): void => {
+  R(x, g - 30, 3, 30, "#7b5836");
+  R(x - 9, g - 24, 21, 3, "#7b5836");
+  R(x - 6, g - 26, 15, 10, "#c25a3a");
+  R(x - 6, g - 26, 15, 2, "#d9785a");
+  disc(x + 1, g - 33, 4, "#e3c58a");
+  R(x - 6, g - 39, 15, 3, "#c9a14a");
+  R(x - 3, g - 44, 9, 6, "#d9b45a");
+  R(x - 11, g - 22, 3, 6, "#c9a14a");
+  R(x + 11, g - 22, 3, 6, "#c9a14a");
+};
+const egret = (x: number, y: number): void => {
+  R(x, y - 8, 7, 4, "#ffffff");
+  R(x + 6, y - 14, 2, 7, "#ffffff");
+  R(x + 6, y - 16, 4, 3, "#ffffff");
+  R(x + 10, y - 15, 3, 1, "#f2c94c");
+  R(x + 3, y - 4, 1, 4, "#444444");
+  R(x + 5, y - 4, 1, 4, "#444444");
+  R(x, y - 8, 3, 2, "#e8eef2");
+};
+const pole = (x: number, g: number): void => {
+  R(x, g - 44, 3, 44, "#6a4a2e");
+  R(x - 9, g - 40, 21, 2, "#5a3d26");
+  R(x - 7, g - 34, 17, 2, "#5a3d26");
+};
+const wires = (y: number): void => {
+  for (let x = 0; x < W; x += 4) R(x, y + Math.round(Math.sin(x * 0.045) * 2), 4, 1, "#2a2a30");
+};
+const clothesline = (x0: number, x1: number, y: number, t: number): void => {
+  R(x0, y - 6, 2, 50, "#7b5836");
+  R(x1, y - 6, 2, 50, "#7b5836");
+  const cols = ["#d0452d", "#f2f2ea", "#4aa0b8", "#f2c94c", "#e07aa8"];
+  for (let x = x0 + 2; x < x1; x += 2) R(x, y + Math.round(Math.sin(((x - x0) / (x1 - x0)) * Math.PI) * 4), 2, 1, "#2a2a30");
+  for (let i = 0; i < 5; i++) {
+    const cx0 = x0 + 10 + i * Math.floor((x1 - x0 - 20) / 5);
+    const sw = reduce ? 0 : Math.round(Math.sin(t / 700 + i) * 1.4);
+    R(cx0, y + 4, 9, 13, cols[i]);
+    R(cx0 + sw, y + 14, 9, 3, cols[i]);
+  }
+};
+const bunting = (x0: number, x1: number, y: number): void => {
+  const cols = ["#d0452d", "#f2c94c", "#4aa0b8", "#f0f0e8", "#5fa84a"];
+  for (let x = x0; x < x1; x += 2) R(x, y + Math.round(Math.sin(((x - x0) / (x1 - x0)) * Math.PI) * 8), 2, 1, "#3a2a1c");
+  for (let x = x0 + 4, i = 0; x < x1 - 6; x += 10, i++) {
+    const sy = y + Math.round(Math.sin(((x - x0) / (x1 - x0)) * Math.PI) * 8);
+    R(x, sy + 1, 7, 3, cols[i % 5]);
+    R(x + 1, sy + 4, 5, 2, cols[i % 5]);
+    R(x + 2, sy + 6, 3, 2, cols[i % 5]);
+  }
+};
+const lantern = (x: number, y: number, t: number): void => {
+  const glow = reduce ? 0.3 : 0.25 + Math.sin(t / 400 + x) * 0.06;
+  disc(x, y + 6, 12, `rgba(255,200,90,${glow})`);
+  R(x, y - 8, 1, 8, "#222222");
+  R(x - 3, y, 7, 2, "#222222");
+  R(x - 3, y + 2, 7, 8, "#d0452d");
+  R(x - 2, y + 3, 5, 6, "#ffcf5a");
+  R(x - 3, y + 10, 7, 2, "#222222");
+};
+const mangoes = (x: number, y: number): void => {
+  for (let i = 0; i < 9; i++) {
+    const row = i < 5 ? 0 : 1;
+    const px = x + (i < 5 ? i : i - 5) * 9 + row * 4;
+    const py = y - row * 7;
+    disc(px, py, 5, i % 3 === 0 ? "#e0a030" : "#f2c94c");
+    R(px - 2, py - 3, 2, 2, "#fff0a8");
+  }
+};
+
 /* ---------- people ---------- */
 /**
  * Code-drawn villager (13x16 cells, drawn at 2x): used until a hand-drawn sprite exists for that person.
@@ -145,12 +322,11 @@ const BODY = [
   "...KPK.KPK...",
   "...KKK.KKK...",
 ];
-const person = (x: number, feet: number, shirt: string, hat = true): void => {
+const person = (x: number, feet: number, shirt: string, hat = true, s = 2): void => {
   const pal: Record<string, string> = {
     K: "#1b1410", H: "#eebc3c", h: "#c98a1f", B: shirt, D: "#2a1c14", S: "#f0c79c", T: shirt, P: "#3f5fa0",
   };
   const rows = [...(hat ? HAT : HAIR), ...BODY];
-  const s = 2;
   const ox = x - 13 * s * 0.5;
   const oy = feet - rows.length * s;
   rows.forEach((row, j) => {
@@ -185,8 +361,13 @@ function backdrop(t: number, horizon: number): void {
   cloud(330, 52, 2, t, 0.008);
   cloud(520, 96, 1.2, t, 0.014);
   hills(horizon - 34, 18, 0.011, 7, 0.03, 1, "#6f9fba", "#8cb8cb");
+  chocolateHills(horizon - 4, "#8a9a52", "#aab868");
   hills(horizon - 14, 12, 0.016, 5, 0.05, 3, "#4f8a72", "#6aa588");
+  treeline(horizon - 14, 12, 0.016, 5, 0.05, 3, 30, 10, ["#2f6a44", "#3f8458"]);
   hills(horizon - 2, 6, 0.02, 3, 0.07, 5, "#3f7a50", "#5a9a62");
+  treeline(horizon - 2, 6, 0.02, 3, 0.07, 5, 22, 70, ["#2a5a38", "#3a7a48"]);
+  haze(horizon - 22);
+  birds(t);
 }
 
 function home(t: number): void {
@@ -204,6 +385,10 @@ function home(t: number): void {
   palm(46, 292, 150, t, 1);
   palm(404, 270, 118, t, -1);
   hut(210, 268);
+  smoke(210, 146, t);
+  banana(124, 258, t);
+  bamboo(362, 268, 86, t);
+  clothesline(268, 352, 238, t);
   // fence
   for (let x = 4; x < 140; x += 14) {
     R(x, 246, 3, 22, "#8a6a43");
@@ -213,6 +398,10 @@ function home(t: number): void {
   R(4, 260, 136, 2, "#8a6a43");
   for (let i = 0; i < 70; i++) tuft(8 + rnd(i) * 620, 300 + rnd(i + 90) * 54, "#3f8a3f", "#4aa045");
   flowers(0, 640, 286, 356, 36, 7);
+  carabao(60, 340, t);
+  butterfly(120, 300, t, "#f2c94c");
+  butterfly(300, 322, t, "#e07aa8");
+  butterfly(380, 288, t, "#ffffff");
   shadow(330, 305, 40);
   shadow(402, 311, 40);
   tatay(330, 304);
@@ -292,11 +481,20 @@ function fieldScene(t: number): void {
   for (let x = 6; x < W; x += 34) R(x, 164, 16, 2, "#e8e4cc");
   for (let i = 0; i < 40; i++) tuft(6 + rnd(i) * 628, 176, "#3f8a3f", "#4aa045");
 
+  // utility poles and wires along the road, with a banana plant on the bank
+  for (const px of [30, 170, 310, 450, 590]) pole(px, 176);
+  wires(138);
+  wires(143);
+  banana(280, 180, t);
+
   // pump and pipe
   R(42, 152, 18, 24, "#7a7f86");
   R(38, 148, 26, 6, "#9aa0a6");
   R(58, 162, 14, 5, "#9aa0a6");
   R(70, 166, 4, 10, field.water > 0.3 ? "#4aa0b8" : "#9aa0a6");
+
+  // a jeepney drives along the road (not while the SUV is parked there for the notice)
+  if (field.week !== 0) jeepney(reduce ? 210 : ((t * 0.035) % (W + 160)) - 100, 171, "#d0452d", "#f2c94c");
 
   // field rows
   for (let j = 0; j < ROWS; j++) {
@@ -354,6 +552,13 @@ function fieldScene(t: number): void {
       }
     }
   }
+
+  // egrets, a scarecrow and butterflies
+  egret(210, 203);
+  egret(322, 253);
+  scarecrow(384, 236);
+  butterfly(150, 240, t, "#f2c94c");
+  butterfly(330, 205, t, "#ffffff");
 
   // pests (week 2): snail eggs, a rat, yellow blight patches
   if (field.week === 1) {
@@ -428,6 +633,14 @@ function market(t: number): void {
   // cobbled ground
   R(0, 184, W, H - 184, "#b99a6f");
   for (let y = 184; y < H; y += 8) for (let x = (y / 8) % 2 ? 0 : 8; x < W; x += 16) R(x, y, 14, 6, (x + y) % 3 ? "#c4a678" : "#ad8f65");
+  // bunting over the street, a parked jeepney and a crowd along the shop fronts
+  bunting(10, 420, 128);
+  jeepney(344, 198, "#3f7bb0", "#f2c94c");
+  person(30, 200, "#8a4a9a", true, 1);
+  person(70, 202, "#d96f9a", false, 1);
+  person(338, 202, "#c25a3a", true, 1);
+  person(312, 200, "#6f9a3f", false, 1);
+
   // stall: posts, striped awning, counter
   R(112, 176, 5, 70, "#7b5836");
   R(300, 176, 5, 70, "#7b5836");
@@ -444,10 +657,12 @@ function market(t: number): void {
     R(sx + 8, 214, 12, 3, "#9a8a58");
     R(sx, 220, 28, 6, "#cdbf8c");
   }
+  lantern(116, 180, t);
+  lantern(300, 180, t);
   // crates and baskets
   R(330, 218, 32, 28, "#9a7a48");
   R(330, 218, 32, 4, "#b8955a");
-  R(334, 200, 24, 18, "#d99a3a");
+  mangoes(336, 214);
   R(40, 224, 28, 22, "#b88a4a");
   disc(54, 222, 11, "#7aa24a");
   palm(580, 240, 110, t, -1);
@@ -498,8 +713,13 @@ function titleScene(t: number): void {
   cloud(250, 152, 2.2, t, 0.01);
   cloud(560, 138, 2.6, t, 0.007);
   hills(186, 16, 0.012, 6, 0.03, 2, "#6f9fba", "#8cb8cb");
+  chocolateHills(198, "#8a9a52", "#aab868");
   hills(198, 8, 0.02, 3, 0.06, 4, "#4f8a72", "#6aa588");
+  treeline(198, 8, 0.02, 3, 0.06, 4, 26, 20, ["#2f6a44", "#3f8458"]);
+  haze(176);
+  birds(t);
   hills(214, 5, 0.013, 2, 0.05, 1, "#3b7d3b", "#5aa84a");
+  treeline(214, 5, 0.013, 2, 0.05, 1, 16, 90, ["#2a5a38", "#3a7a48"]);
   for (let y = 222; y < H; y += 5) for (let x = (y / 5) % 2 ? 0 : 6; x < W; x += 12) R(x + rnd(x * y) * 5, y, 3, 1, rnd(x + y) > 0.5 ? "#2f6e33" : "#4d9a46");
   // rice terraces climbing to the right, with the kid on the top step
   for (let i = 0; i < 9; i++) {
@@ -516,6 +736,13 @@ function titleScene(t: number): void {
   bush(150, 304, 20);
   bush(396, 304, 22);
   bush(366, 316, 14);
+  smoke(88, 142, t);
+  banana(190, 290, t);
+  bamboo(432, 292, 84, t);
+  carabao(278, 338, t);
+  butterfly(200, 262, t, "#f2c94c");
+  butterfly(340, 270, t, "#ffffff");
+  butterfly(60, 300, t, "#e07aa8");
   flowers(0, 640, 262, 350, 30, 3);
   kid(592, 232);
   // dark grass in the foreground
