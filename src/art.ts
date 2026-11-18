@@ -3,7 +3,7 @@
  * is shown at exactly 3x. Hand-drawn character sprites (public/sprites) are drawn 1:1 on this grid.
  * Swap any scene for a painted background later without touching the game logic.
  */
-export type SceneKind = "home" | "field" | "market";
+export type SceneKind = "title" | "home" | "field" | "market";
 
 /**
  * Field state. Numbers are 0..1 fractions so GSAP can tween them for visible progress
@@ -22,7 +22,7 @@ export const field = {
   ben: false,
   working: false,
 };
-export const view: { scene: SceneKind; sacks: number } = { scene: "home", sacks: 0 };
+export const view: { scene: SceneKind; sacks: number; logoA: number } = { scene: "home", sacks: 0, logoA: 1 };
 export const setScene = (k: SceneKind): void => {
   view.scene = k;
 };
@@ -461,8 +461,72 @@ function market(t: number): void {
   for (let i = 0; i < 30; i++) tuft(8 + rnd(i + 5) * 620, 330 + rnd(i + 70) * 24, "#8a9a50", "#6a7a3a");
 }
 
+
+/* ---------- title screen ---------- */
+const GLYPHS: Record<string, number[][]> = {
+  U: [[0, 0, 18, 76], [46, 0, 18, 76], [0, 58, 64, 18]],
+  M: [[0, 0, 18, 76], [46, 0, 18, 76], [0, 0, 64, 18], [23, 18, 18, 32]],
+  A: [[0, 16, 18, 60], [46, 16, 18, 60], [10, 0, 44, 18], [0, 40, 64, 16]],
+};
+/** Big blocky UMA logo: dark outline, stacked extrusion, golden face. Letters bob gently. */
+function logo(t: number): void {
+  if (view.logoA <= 0) return;
+  cx.globalAlpha = view.logoA;
+  const x0 = 204;
+  const y0 = 30;
+  const place = (fn: (x: number, y: number, w: number, h: number) => void): void =>
+    "UMA".split("").forEach((ch, i) => {
+      const ox = x0 + i * 84;
+      const oy = y0 + (reduce ? 0 : Math.round(Math.sin(t / 700 + i * 0.9) * 2));
+      GLYPHS[ch].forEach(([x, y, w, h]) => fn(ox + x, oy + y, w, h));
+    });
+  for (let k = 0; k <= 10; k++) place((x, y, w, h) => R(x + k - 3, y + k - 3, w + 6, h + 6, "#2a120a"));
+  for (let k = 10; k >= 1; k--) place((x, y, w, h) => R(x + k, y + k, w, h, k % 4 < 2 ? "#a8381a" : "#8f2f15"));
+  place((x, y, w, h) => R(x, y, w, h, "#f4b92f"));
+  place((x, y, w) => R(x + 3, y + 3, w - 6, 3, "#ffe27a"));
+  cx.globalAlpha = 1;
+}
+const bush = (x: number, y: number, r: number): void => {
+  disc(x, y, r, "#245a2e");
+  disc(x - r * 0.3, y - r * 0.3, r * 0.75, "#2f7a3a");
+  disc(x - r * 0.4, y - r * 0.45, r * 0.4, "#4a9a4a");
+};
+function titleScene(t: number): void {
+  sky("#3f9be0", "#cfe9f6", 240);
+  cloud(-20, 118, 3.4, t, 0.008);
+  cloud(430, 92, 3, t, 0.006);
+  cloud(250, 152, 2.2, t, 0.01);
+  cloud(560, 138, 2.6, t, 0.007);
+  hills(186, 16, 0.012, 6, 0.03, 2, "#6f9fba", "#8cb8cb");
+  hills(198, 8, 0.02, 3, 0.06, 4, "#4f8a72", "#6aa588");
+  hills(214, 5, 0.013, 2, 0.05, 1, "#3b7d3b", "#5aa84a");
+  for (let y = 222; y < H; y += 5) for (let x = (y / 5) % 2 ? 0 : 6; x < W; x += 12) R(x + rnd(x * y) * 5, y, 3, 1, rnd(x + y) > 0.5 ? "#2f6e33" : "#4d9a46");
+  // rice terraces climbing to the right, with the kid on the top step
+  for (let i = 0; i < 9; i++) {
+    const sx = 455 + i * 15;
+    const sy = 336 - i * 13;
+    R(sx, sy, W - sx, 13, i % 2 ? "#8fbf52" : "#78ad45");
+    R(sx, sy, W - sx, 2, "#b4dc78");
+    R(sx, sy + 11, W - sx, 2, "#4f7e2a");
+  }
+  hut(88, 262);
+  palm(30, 272, 112, t, 1);
+  palm(430, 236, 80, t, -1);
+  bush(240, 296, 16);
+  bush(150, 304, 20);
+  bush(396, 304, 22);
+  bush(366, 316, 14);
+  flowers(0, 640, 262, 350, 30, 3);
+  kid(592, 232);
+  // dark grass in the foreground
+  for (let x = 0; x < W; x += 2) R(x, H - 10 - rnd(x) * 14, 2, 24, "#0c2414");
+  for (let x = 0; x < W; x += 6) R(x + 1, H - 24 - rnd(x + 9) * 10, 1, 10, "#0c2414");
+  logo(t);
+}
+
 function draw(t: number): void {
-  if (view.scene === "home") home(t);
+  if (view.scene === "title") titleScene(t);
+  else if (view.scene === "home") home(t);
   else if (view.scene === "field") fieldScene(t);
   else market(t);
 }

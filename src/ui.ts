@@ -78,9 +78,10 @@ export function initPanelInput(): void {
   });
 }
 
-/** The stats bar only shows in story mode (explore mode and the title screen have none). */
-export function setStory(on: boolean): void {
-  $("game").classList.toggle("story", on);
+/** Screen mode: the title screen has no panel or buttons bar; the stats bar only shows in story mode. */
+export function setMode(m: { title: boolean; story: boolean }): void {
+  $("game").classList.toggle("title", m.title);
+  $("game").classList.toggle("story", m.story);
 }
 
 let lastMoney = state.money;
@@ -108,10 +109,13 @@ export function initHud(): void {
 
 /* ---------- panel ---------- */
 let builder: ((p: HTMLElement) => void) | null = null;
+let host: HTMLElement | null = null;
 
-export function show(build: (p: HTMLElement) => void, animate = true): void {
+/** Render a scene builder into the story panel (or another host such as the title menu). */
+export function show(build: (p: HTMLElement) => void, animate = true, into?: HTMLElement): void {
   builder = build;
-  const p = $("panel");
+  host = into ?? $("panel");
+  const p = host;
   p.innerHTML = "";
   build(p);
   if (animate && !reduce) {
@@ -121,7 +125,7 @@ export function show(build: (p: HTMLElement) => void, animate = true): void {
   }
 }
 export function rerender(): void {
-  if (builder) show(builder, false);
+  if (builder) show(builder, false, host ?? undefined);
 }
 
 export function shake(): void {

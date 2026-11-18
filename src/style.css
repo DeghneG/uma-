@@ -10,7 +10,7 @@
 @media (prefers-color-scheme:dark){:root{
   --bg:#101812; --surface:#18231a; --fg:#e4eddc; --muted:#9db292; --line:#2c3d2e;
   --accent:#5fc487; --accent-fg:#0c1a10; --gold:#e3b64a; --bad:#ef7c62; color-scheme:dark}}
-*{box-sizing:border-box}
+*{box-sizing:border-box;font-variant-ligatures:none;font-feature-settings:"liga" 0,"clig" 0,"calt" 0,"dlig" 0}
 html,body{height:100%;margin:0;overflow:hidden}
 body{background:#070b08;color:var(--fg);font-family:var(--font-body)}
 
@@ -71,7 +71,7 @@ button:focus-visible{outline:4px solid var(--gold);outline-offset:2px}
 .panel{position:absolute;right:40px;top:136px;bottom:40px;width:640px;overflow-y:auto;background:var(--surface);
   border:4px solid var(--fg);padding:30px 32px;display:flex;flex-direction:column;gap:18px;justify-content:flex-start;scrollbar-width:thin}
 .tag{font:600 15px var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--bad)}
-h2{font-family:var(--font-display);font-weight:700;font-size:40px;margin:0;line-height:1.1;text-wrap:balance}
+h2{font-kerning:none;letter-spacing:.02em;font-family:var(--font-display);font-weight:700;font-size:40px;margin:0;line-height:1.1;text-wrap:balance}
 h3{font:600 14px var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:6px 0 -6px}
 .panel p{margin:0}
 .quote{border-left:5px solid var(--gold);padding-left:16px;font-style:italic}
@@ -99,4 +99,23 @@ h3{font:600 14px var(--font-body);letter-spacing:.08em;text-transform:uppercase;
 .ledger td{padding:8px 0;border-bottom:2px solid var(--line)}
 .ledger td:last-child{text-align:right;font-weight:600}
 .ledger tr.total td{border-top:3px solid var(--fg);border-bottom:0;font-size:26px}
+
+/* ---- title menu and intro cards (drawn over the scene, no panel) ---- */
+.stage-label:empty{display:none}
+#game.title .panel,#game.title .ctrls,#game.title .stage-label{display:none}
+.menu{position:absolute;left:0;right:0;top:620px;display:none;flex-direction:column;align-items:center;gap:4px}
+#game.title .menu{display:flex}
+.menu button{position:relative;background:none;border:0;cursor:pointer;color:#f4efe0;font:700 50px/1.2 var(--font-display);padding:4px 24px 4px 64px;
+  text-shadow:3px 0 #1a1208,-3px 0 #1a1208,0 3px #1a1208,0 -3px #1a1208,3px 3px #1a1208,-3px -3px #1a1208,3px -3px #1a1208,-3px 3px #1a1208}
+.menu button[aria-selected="true"]{color:#ffe27a}
+.menu button[aria-selected="true"]::before{content:"";position:absolute;left:12px;top:50%;width:36px;height:36px;margin-top:-18px;image-rendering:pixelated;
+  background:url("data:image/svg+xml;utf8,<svg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 9 9%27 shape-rendering=%27crispEdges%27><path fill=%27%231a1208%27 d=%27M0 2h5v4H0zM4 0h5v4H4z%27/><path fill=%27%235fc487%27 d=%27M1 3h3v2H1zM5 1h3v2H5z%27/><path fill=%27%232f7a4c%27 d=%27M4 4h1v5H4z%27/></svg>") center/contain no-repeat}
+.menu button:focus-visible{outline:none}
+.intro{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:36px;text-align:center;padding:0 200px;background:rgba(5,9,7,0)}
+#game.intro-on .intro{display:flex}
+.intro .line{font:700 58px/1.3 var(--font-display);color:#f4efe0;max-width:1280px;text-shadow:5px 5px 0 #000}
+.intro .head{letter-spacing:.03em;font-kerning:none;font:700 104px/1.05 var(--font-display);color:#ffe27a;text-shadow:7px 7px 0 #5a2d12;max-width:1500px;text-wrap:balance}
+.intro .hint{font:600 22px var(--font-body);letter-spacing:.12em;text-transform:uppercase;color:#cfd8c4;animation:blink 1.2s steps(2) infinite}
+.intro .skip{position:absolute;right:48px;bottom:36px;font:500 18px var(--font-body);color:#9db292}
+.menu button,.intro .line,.goal-row b,.delta,.stars,h1{font-kerning:none}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}

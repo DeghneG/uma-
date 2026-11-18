@@ -33,6 +33,16 @@ const en = {
     p: "Your family farms rice on land it does not own. The wealthy family who owns it will build a factory here and has given you five months, with no payment. The family has ₱4,000 saved and needs ₱20,000 to start over in the city. After every harvest, take the crop to market and sell it.",
     begin: "Begin",
     note: "First playable: Month 1, rice. The other crops come next.",
+    beats: [
+      "A family farms rice on land it does not own.",
+      "The wealthy family who owns it will build a factory here.",
+      "They have given five months. No payment.",
+      "₱4,000 saved. ₱20,000 needed to start over in the city.",
+      "After every harvest, take the crop to market and sell it.",
+    ],
+    press: "Press Space or click to begin",
+    skip: "Click or Space to continue · Esc to skip",
+    menu: { play: "Play Game", settings: "Settings", back: "Back", language: "Language" },
   },
   prologue: {
     tag: "Prologue",
@@ -188,6 +198,16 @@ const fil: typeof en = {
     p: "Nagsasaka ang pamilya mo ng palay sa lupang hindi nila pag-aari. Magtatayo ng pabrika ang mayamang may-ari at limang buwan ang ibinigay, walang bayad. May ipon ang pamilya na ₱4,000 at kailangan nila ng ₱20,000 para magsimulang muli sa lungsod. Pagkatapos ng bawat ani, dalhin ito sa palengke at ibenta.",
     begin: "Simulan",
     note: "Unang playable: Buwan 1, palay. Susunod ang iba pang pananim.",
+    beats: [
+      "Nagsasaka ang pamilya mo ng palay sa lupang hindi nila pag-aari.",
+      "Magtatayo ng pabrika rito ang mayamang may-ari ng lupa.",
+      "Limang buwan ang ibinigay nila. Walang bayad.",
+      "May ipon na ₱4,000. Kailangan ng ₱20,000 para magsimulang muli sa lungsod.",
+      "Pagkatapos ng bawat ani, dalhin ito sa palengke at ibenta.",
+    ],
+    press: "Pindutin ang Space o i-click para magsimula",
+    skip: "I-click o Space para magpatuloy · Esc para laktawan",
+    menu: { play: "Maglaro", settings: "Mga Setting", back: "Bumalik", language: "Wika" },
   },
   prologue: {
     tag: "Pambungad",

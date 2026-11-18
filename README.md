@@ -4,7 +4,7 @@ A top-down pixel-art web game about a tenant farming family in the Visayas. They
 
 **Status:** Month 1 (rice) is complete: the notice, four weeks of work with visible field progress, Mang Ben's advice each week, sound effects (toggle in the header), the market sale and an itemized money summary. Other crops and free roam are not built yet.
 
-Keyboard: press 1, 2 or 3 to pick a card; Space cuts rice in the harvest game. Dev shortcut: open `http://localhost:5173/#week3` (also `week1`, `week2`, `week4`, `market`, `summary`) to start at that scene.
+Keyboard: press 1, 2 or 3 to pick a card; Space cuts rice in the harvest game. Dev shortcut: open `http://localhost:5173/#week3` (also `week1`, `week2`, `week4`, `market`, `summary`) to start at that scene, or `/#intro` to play the intro cards. Title menu: arrow keys and Enter, or click.
 
 ## Run
 
