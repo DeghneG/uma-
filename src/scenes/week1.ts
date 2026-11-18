@@ -1,5 +1,5 @@
 import gsap from "gsap";
-import { field, fieldAtWeek, setScene, shears, snipWeeds, weedsLeft } from "../art";
+import { BUNDLE, field, fieldAtWeek, plantAt, pump, resetSow, seedsLeft, setScene, shears, snipWeeds, sow, weedsLeft } from "../art";
 import { sfx } from "../sound";
 import { patch } from "../state";
 import { T, h, reduce, resultPanel, setLabel, shake, show, starsFor, statusRow, storyPanel, tweenField } from "../ui";
@@ -44,7 +44,7 @@ export function week1(next: () => void): void {
       p.appendChild(h("p", undefined, t.intro));
       p.appendChild(h("p", "note", t.hint));
       p.appendChild(statusRow([`${t.left}: ${3 - done.length}`, `${T().common.mistakes}: ${wrong}`]));
-      const grid = h("div", "cards");
+      const grid = h("div", "cards nonum");
       ORDER.forEach((job) => {
         const b = h("button", "card", `<b>${t.jobs[job][0]}</b><small>${t.jobs[job][1]}</small>`) as HTMLButtonElement;
         b.disabled = done.includes(job);
@@ -61,12 +61,8 @@ export function week1(next: () => void): void {
     const expected = ORDER[done.length];
     if (job === expected) {
       if (job === "weeds") return weed();
-      done.push(job);
-      sfx("good");
-      if (job === "water") tweenField({ water: 1 }, 1.4);
-      if (job === "plant") tweenField({ plant: 1 }, 1.2);
-      fb = { text: t.ok[job], bad: false };
-      if (done.length === 3) return finish();
+      if (job === "water") return pumpJob();
+      if (job === "plant") return plantJob();
     } else {
       wrong++;
       sfx("bad");
@@ -180,6 +176,218 @@ export function week1(next: () => void): void {
       );
     };
     equip();
+  }
+
+  /** Shared plumbing for a close-up job: pointer position on the canvas, a liveness check, and clean-up. */
+  type Handlers = {
+    down?: (x: number, y: number) => void;
+    move?: (x: number, y: number) => void;
+    up?: (x: number, y: number) => void;
+    key?: (e: KeyboardEvent, x: number, y: number) => boolean;
+  };
+  function closeUp(live: string, handlers: Handlers, pos: { x: number; y: number }): () => void {
+    const cv = document.getElementById("cv") as HTMLCanvasElement;
+    let off = false;
+    const alive = (): boolean => {
+      if (!off && !document.querySelector(live)) stop();
+      return !off;
+    };
+    const xy = (e: PointerEvent): [number, number] => {
+      const r = cv.getBoundingClientRect();
+      pos.x = Math.min(634, Math.max(4, ((e.clientX - r.left) / r.width) * 640));
+      pos.y = Math.min(350, Math.max(120, ((e.clientY - r.top) / r.height) * 360));
+      return [pos.x, pos.y];
+    };
+    const d = (e: PointerEvent): void => {
+      if (alive()) handlers.down?.(...xy(e));
+    };
+    const m = (e: PointerEvent): void => {
+      if (alive()) handlers.move?.(...xy(e));
+    };
+    const u = (e: PointerEvent): void => {
+      if (alive()) handlers.up?.(...xy(e));
+    };
+    const k = (e: KeyboardEvent): void => {
+      if (!alive()) return;
+      const step = 9;
+      const key = e.key.toLowerCase();
+      if (key === "a") pos.x = Math.max(4, pos.x - step);
+      else if (key === "d") pos.x = Math.min(634, pos.x + step);
+      else if (key === "w") pos.y = Math.max(120, pos.y - step);
+      else if (key === "s") pos.y = Math.min(350, pos.y + step);
+      else if (handlers.key?.(e, pos.x, pos.y)) {
+        e.preventDefault();
+        return;
+      } else return;
+      e.preventDefault();
+      handlers.move?.(pos.x, pos.y);
+    };
+    cv.addEventListener("pointerdown", d);
+    cv.addEventListener("pointermove", m);
+    window.addEventListener("pointerup", u);
+    document.addEventListener("keydown", k);
+    function stop(): void {
+      if (off) return;
+      off = true;
+      cv.removeEventListener("pointerdown", d);
+      cv.removeEventListener("pointermove", m);
+      window.removeEventListener("pointerup", u);
+      document.removeEventListener("keydown", k);
+      document.getElementById("game")?.classList.remove("grab");
+    }
+    return stop;
+  }
+
+  const zoomIn = (): void => {
+    if (!reduce) gsap.fromTo("#cv", { scale: 1.2, filter: "brightness(1.6)" }, { scale: 1, filter: "brightness(1)", duration: 0.5, ease: "power3.out", clearProps: "transform,filter" });
+  };
+  const backToField = (): void => {
+    setScene("field");
+    if (!reduce) gsap.fromTo("#cv", { scale: 1.1 }, { scale: 1, duration: 0.5, ease: "power2.out", clearProps: "transform" });
+  };
+  /** A job is finished: show the whole field again, then the job list. */
+  function jobDone(job: Job): void {
+    backToField();
+    field.working = false;
+    done.push(job);
+    sfx("good");
+    if (job === "water") tweenField({ water: 1 }, 1.4);
+    if (job === "plant") tweenField({ plant: 1 }, 1.2);
+    fb = { text: T().w1.ok[job], bad: false };
+    if (done.length === 3) return finish();
+    draw(true);
+  }
+
+  /** Irrigation by hand: start the pump, watch the gauge, stop it inside the green zone. */
+  function pumpJob(): void {
+    setScene("pumping");
+    zoomIn();
+    pump.on = false;
+    pump.level = 0;
+    field.working = false;
+    let msg: { text: string; bad: boolean } | null = null;
+    let raf = 0;
+    let last = 0;
+    let busy = false;
+
+    const render = (): void =>
+      show((p) => {
+        const t = T().w1;
+        p.appendChild(h("h2", undefined, t.pumpHead));
+        p.appendChild(h("p", "note pumphint", t.pumpHint));
+        p.appendChild(statusRow([`${T().common.mistakes}: ${wrong}`]));
+        if (msg) p.appendChild(h("p", `fb${msg.bad ? " bad" : ""}`, msg.text));
+        const b = h("button", "btn", pump.on ? t.pumpStop : t.pumpStart);
+        b.addEventListener("click", toggle);
+        p.appendChild(b);
+      }, false);
+
+    const tick = (now: number): void => {
+      if (!document.querySelector(".pumphint")) {
+        pump.on = false;
+        document.removeEventListener("keydown", onKey);
+        return;
+      }
+      const dt = last ? Math.min(60, now - last) : 16;
+      last = now;
+      if (pump.on) pump.level = Math.min(1, pump.level + dt * 0.00011);
+      raf = requestAnimationFrame(tick);
+    };
+    const toggle = (): void => {
+      if (busy) return;
+      if (!pump.on) {
+        pump.on = true;
+        msg = null;
+        sfx("good");
+        render();
+        return;
+      }
+      pump.on = false;
+      sfx("click");
+      if (pump.level < pump.lo) {
+        wrong++;
+        sfx("bad");
+        msg = { text: T().w1.tooLittle, bad: true };
+      } else if (pump.level > pump.hi) {
+        wrong++;
+        sfx("bad");
+        shake();
+        msg = { text: T().w1.tooMuch, bad: true };
+        busy = true;
+        gsap.to(pump, { level: 0.25, duration: reduce ? 0 : 1.6, ease: "power1.inOut", onComplete: () => (busy = false) });
+      } else {
+        busy = true;
+        cancelAnimationFrame(raf);
+        document.removeEventListener("keydown", onKey);
+        setTimeout(() => jobDone("water"), 900);
+        return render();
+      }
+      render();
+    };
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.repeat || (e.key !== " " && e.key !== "Enter")) return;
+      if (!document.querySelector(".pumphint")) return;
+      if ((e.target as HTMLElement | null)?.closest?.("button")) return; // a focused button handles its own key
+      e.preventDefault();
+      toggle();
+    };
+    document.addEventListener("keydown", onKey);
+    render();
+    raf = requestAnimationFrame(tick);
+  }
+
+  /** Planting by hand: pick a seedling from the bundle, drag it, and drop it on a mark in the mud. */
+  function plantJob(): void {
+    setScene("planting");
+    zoomIn();
+    resetSow();
+    field.working = true;
+    const game = document.getElementById("game");
+    let finished = false;
+    const refresh = (): void => {
+      const s = document.querySelector("#panel .status span");
+      if (s) s.textContent = `${T().w1.seedsLeft}: ${seedsLeft()}`;
+    };
+    show((p) => {
+      p.appendChild(h("h2", undefined, T().w1.sowHead));
+      p.appendChild(h("p", "note sowhint", T().w1.sowHint));
+      p.appendChild(statusRow([`${T().w1.seedsLeft}: ${seedsLeft()}`]));
+    });
+    const grab = (x: number, y: number): void => {
+      if (sow.held || Math.hypot(x - BUNDLE.x, y - (BUNDLE.y - 6)) > 44) return;
+      sow.held = true;
+      game?.classList.add("grab");
+      sfx("click");
+    };
+    const drop = (x: number, y: number): void => {
+      if (!sow.held) return;
+      sow.held = false;
+      game?.classList.remove("grab");
+      if (!plantAt(x, y)) return;
+      sfx("cut");
+      refresh();
+      if (seedsLeft() === 0 && !finished) {
+        finished = true;
+        stop();
+        sow.on = false;
+        setTimeout(() => jobDone("plant"), 900);
+      }
+    };
+    const stop = closeUp(
+      ".sowhint",
+      {
+        down: grab,
+        up: drop,
+        key: (e, x, y) => {
+          if (e.key !== " " && e.key !== "Enter") return false;
+          if (e.repeat) return true;
+          if (sow.held) drop(x, y);
+          else grab(x, y);
+          return true;
+        },
+      },
+      sow,
+    );
   }
 
   function finish(): void {

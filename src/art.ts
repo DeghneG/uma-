@@ -3,7 +3,7 @@
  * is shown at exactly 3x. Hand-drawn character sprites (public/sprites) are drawn 1:1 on this grid.
  * Swap any scene for a painted background later without touching the game logic.
  */
-export type SceneKind = "title" | "home" | "field" | "market" | "weeding";
+export type SceneKind = "title" | "home" | "field" | "market" | "weeding" | "pumping" | "planting";
 
 /**
  * Field state. Numbers are 0..1 fractions so GSAP can tween them for visible progress
@@ -26,6 +26,33 @@ export const field = {
 export const weedPatch: { x: number; y: number; t: number; cx: number; cy: number; s: number }[] = [];
 /** The grass shears the player holds while weeding (canvas coordinates). */
 export const shears = { on: false, x: 320, y: 250, snip: 0 };
+/** The pump close-up: how full the paddy is (0..1) and the band the water should stop in. */
+export const pump = { on: false, level: 0, lo: 0.56, hi: 0.74 };
+/** The planting close-up: marks in the mud where seedlings go, and the hand carrying one. */
+export const sow: { slots: { x: number; y: number; s: number; t: number }[]; held: boolean; on: boolean; x: number; y: number } = { slots: [], held: false, on: false, x: 320, y: 250 };
+export const BUNDLE = { x: 70, y: 322 };
+export function resetSow(): void {
+  sow.slots.length = 0;
+  for (let j = 0; j < 4; j++) for (let i = 0; i < 5; i++) sow.slots.push({ x: 90 + i * 110 + (j % 2) * 30, y: 150 + j * 46, s: 1.1 + j * 0.3, t: 0 });
+  sow.held = false;
+  sow.on = true;
+}
+export const seedsLeft = (): number => sow.slots.filter((q) => q.t === 0).length;
+/** Drop the carried seedling at (x, y): plants it on the nearest empty mark if one is close, else returns false. */
+export function plantAt(x: number, y: number): boolean {
+  let best: (typeof sow.slots)[number] | null = null;
+  let bd = 28;
+  for (const q of sow.slots) {
+    const d = Math.hypot(q.x - x, q.y - y);
+    if (q.t === 0 && d < bd) {
+      best = q;
+      bd = d;
+    }
+  }
+  if (!best) return false;
+  best.t = performance.now();
+  return true;
+}
 const WEED_ROWS = 6;
 const WEED_PER_ROW = 4;
 function makeWeeds(): void {
@@ -286,19 +313,33 @@ const bamboo = (x: number, g: number, h: number, t: number): void => {
 };
 const carabao = (x: number, g: number, t: number): void => {
   const bob = reduce ? 0 : Math.round(Math.sin(t / 900));
-  R(x + 4, g - 22, 34, 14, "#4a4a52");
-  R(x + 4, g - 22, 34, 2, "#62626c");
-  R(x + 26, g - 26, 10, 5, "#4a4a52");
-  R(x - 8, g - 21 + bob, 14, 10, "#3f3f46");
-  R(x - 10, g - 17 + bob, 5, 6, "#55555e");
-  R(x - 12, g - 25 + bob, 8, 2, "#d8d2c0");
-  R(x - 14, g - 27 + bob, 3, 3, "#d8d2c0");
-  R(x - 4, g - 23 + bob, 2, 2, "#d8d2c0");
-  R(x - 3, g - 18 + bob, 2, 2, "#e8e0d0");
-  for (const lx of [6, 12, 30, 35]) R(x + lx, g - 9, 4, 9, lx % 2 ? "#3f3f46" : "#34343a");
-  R(x + 38, g - 20, 2, 12, "#3f3f46");
-  R(x + 37, g - 9, 4, 3, "#2a2a30");
-  R(x + 4, g - 9, 34, 2, "#00000025");
+  R(x + 6, g - 1, 58, 3, "#00000030");
+  // legs, thick with dark hooves
+  for (const lx of [10, 19, 46, 55]) {
+    R(x + lx, g - 15, 7, 15, lx % 2 ? "#3f3f46" : "#34343a");
+    R(x + lx, g - 3, 7, 3, "#1a1a1e");
+  }
+  // body, shoulder hump and rump
+  R(x + 6, g - 40, 58, 24, "#4a4a52");
+  R(x + 6, g - 40, 58, 3, "#62626c");
+  R(x + 6, g - 21, 58, 5, "#34343a");
+  R(x + 40, g - 45, 16, 6, "#4a4a52");
+  R(x + 40, g - 45, 16, 2, "#62626c");
+  // tail with a tuft
+  R(x + 64, g - 38, 3, 22, "#3f3f46");
+  R(x + 63, g - 17, 5, 6, "#2a2a30");
+  // neck, head carried low, wide muzzle
+  R(x - 4, g - 38 + bob, 18, 18, "#3f3f46");
+  R(x - 20, g - 32 + bob, 20, 15, "#3f3f46");
+  R(x - 26, g - 25 + bob, 9, 10, "#55555e");
+  R(x - 24, g - 20 + bob, 2, 2, "#1a1a1e");
+  R(x - 10, g - 28 + bob, 2, 2, "#e8e0d0");
+  // ear and long horns swept back in a crescent
+  R(x - 1, g - 34 + bob, 5, 3, "#2a2a30");
+  R(x - 14, g - 36 + bob, 8, 3, "#d8d2c0");
+  R(x - 8, g - 40 + bob, 8, 3, "#d8d2c0");
+  R(x - 1, g - 43 + bob, 6, 3, "#d8d2c0");
+  R(x + 4, g - 45 + bob, 3, 3, "#b9b29c");
 };
 const jeepney = (x: number, g: number, c1: string, c2: string): void => {
   R(x, g - 20, 76, 14, c1);
@@ -870,7 +911,9 @@ function backdrop(t: number, horizon: number): void {
   cloud(330, 52, 2, t, 0.008);
   cloud(520, 96, 1.2, t, 0.014);
   layer(`bd${horizon}`, () => {
-    range(horizon - 26, 56, 0.6, 0.85, "#9bbbe0", "#4f78a8", "#bcd6ec", "#7ea2c8", "");
+    // a real mountain: dark blue-grey rock faces, gullies and ridge lines, fading into forest at its foot
+    range(horizon - 24, 78, 0.6, 0.92, "#8da7b0", "#2f4a58", "#5d8a72", "#243c4a", "#4d6c7a");
+    range(horizon - 14, 52, 1.5, 0.7, "#6a9a6a", "#1d4a34", "#3f7a52", "#153a28", "#2f6244");
     range(horizon - 6, 40, 2.1, 0.45, "#86b86e", "#2f6f46", "#4f8f55", "#244f38", "");
     treeline(horizon - 6, 40, 2.1, 0.45, 34, 10, ["#2f6a44", "#3f8458"]);
     range(horizon + 2, 16, 4.0, 0.1, "#78bd58", "#438f48", "#52a04c", "#9ad06a", "#a6dc78");
@@ -887,9 +930,29 @@ function home(t: number): void {
     R(0, 152 + i * 5, W, 5, i % 2 ? "#7cc05a" : "#5fa84a");
     R(0, 152 + i * 5, W, 1, "#9ad46f");
   }
-  // grass
-  R(0, 184, W, H - 184, "#5fa84a");
-  for (let y = 184; y < H; y += 6) R(0, y, W, 3, y % 12 ? "#68b250" : "#5aa045");
+  // the farm behind the house: rice paddies, vegetable beds, sugarcane and coconut palms
+  layer("home-farm", () => {
+    R(0, 184, W, 52, "#5fa84a");
+    for (let r = 0; r < 6; r++) {
+      const y = 186 + r * 8;
+      R(150, y, 280, 8, r % 2 ? "#7cc05a" : "#68b250");
+      R(150, y, 280, 1, "#5b4a2a");
+      R(150, y + 6, 280, 1, "#a8dde8");
+      for (let x = 152 + (r % 2) * 3; x < 428; x += 6) {
+        R(x, y + 2, 1, 4, "#2f7a1f");
+        R(x + 2, y + 3, 1, 3, "#8bd13a");
+      }
+    }
+    for (let r = 0; r < 4; r++) vegBed(196 + r * 9, 440, 556, r, 1);
+    trellis(566, 232);
+  });
+  for (let r = 0; r < 3; r++) for (let k = 0; k < 9; k++) cane(4 + k * 14 + r * 6, 208 + r * 10, 32, t, k + r * 5);
+  cocoPalm(150, 226, 64, t, 1);
+  cocoPalm(604, 234, 78, t, -1);
+  cocoPalm(620, 226, 60, t, 1);
+  // grass in front of the farm
+  R(0, 236, W, H - 236, "#5fa84a");
+  for (let y = 236; y < H; y += 6) R(0, y, W, 3, y % 12 ? "#68b250" : "#5aa045");
   // dirt path to the hut
   for (let i = 0; i < 70; i++) R(150 + i * 1.2 + (i % 5), 262 + i * 1.4, 70 - i * 0.2, 2, i % 3 ? "#b89a62" : "#a98b55");
   palm(46, 292, 150, t, 1);
@@ -1230,6 +1293,167 @@ function weeding(t: number): void {
   }
 }
 
+/** The pump close-up: an engine, a pipe into the paddy, a water gauge with the green zone to stop in. */
+function pumping(t: number): void {
+  backdrop(t, 104);
+  R(0, 104, W, 12, "#5d9a48");
+  R(0, 116, W, H - 116, "#9c7a47");
+  for (let i = 0; i < 40; i++) R(rnd(i + 2) * W, 120 + rnd(i * 5) * 230, 6, 1, "#7a5a36");
+  // canal on the left feeding the engine
+  R(0, 270, 120, 70, "#4aa0b8");
+  R(0, 270, 120, 3, "#7cc6d8");
+  for (let k = 0; k < 4; k++) R((k * 37 + (reduce ? 0 : t / 40)) % 110, 290 + k * 10, 16, 1, "#a8dde8");
+  R(100, 296, 70, 10, "#7a8088");
+  R(100, 296, 70, 3, "#a2a8ae");
+  // the engine, shaking a little while it runs
+  const sh = pump.on && !reduce ? Math.round(Math.sin(t / 35)) : 0;
+  cx.save();
+  cx.translate(sh, 0);
+  R(150, 212, 110, 90, "#1c0d08");
+  R(153, 215, 104, 84, "#c0392b");
+  R(153, 215, 104, 8, "#e0604a");
+  R(153, 291, 104, 8, "#8a2a1e");
+  R(165, 232, 50, 40, "#aeb6bc");
+  R(165, 232, 50, 5, "#d8dfe3");
+  R(222, 236, 26, 26, "#1c0d08");
+  R(225, 239, 20, 20, "#5a6066");
+  R(233, 247, 4, 4, "#d6dadd");
+  // the on/off switch: red when off, green when running
+  R(180, 278, 34, 14, "#1c0d08");
+  R(183, 281, 28, 8, pump.on ? "#52c24a" : "#d9432e");
+  R(pump.on ? 196 : 183, 281, 14, 8, pump.on ? "#8fe085" : "#f08a78");
+  cx.restore();
+  if (pump.on && !reduce) for (let k = 0; k < 5; k++) disc(176 + ((t / 60 + k * 9) % 40), 204 - ((t / 40 + k * 13) % 36), 3 + (k % 3), "rgba(60,60,64,0.4)");
+  // pipe from the engine up and over the dike
+  R(256, 250, 38, 8, "#8f969c");
+  R(286, 130, 8, 128, "#8f969c");
+  R(286, 130, 70, 8, "#8f969c");
+  R(350, 130, 8, 16, "#6e747c");
+  R(256, 250, 38, 2, "#b6bcc2");
+  // the paddy as a cut-away: dikes, soil, water
+  const bx = 300;
+  const bw = 290;
+  const top = 150;
+  const bot = 340;
+  R(bx - 14, top - 8, 14, bot - top + 8, "#7a5a36");
+  R(bx - 14, top - 8, 14, 5, "#5d9a48");
+  R(bx + bw, top - 8, 14, bot - top + 8, "#7a5a36");
+  R(bx + bw, top - 8, 14, 5, "#5d9a48");
+  R(bx, top, bw, bot - top, "#b58f58");
+  for (let i = 0; i < 26; i++) {
+    const x = bx + rnd(i + 70) * (bw - 14);
+    const y = top + 20 + rnd(i + 90) * (bot - top - 30);
+    R(x, y, 10, 1, "#7a5c34");
+    R(x + 4, y + 1, 1, 5, "#7a5c34");
+  }
+  const wy = Math.round(bot - pump.level * (bot - top));
+  if (pump.level > 0.005) {
+    R(bx, wy, bw, bot - wy, "#4aa0b8");
+    R(bx, wy, bw, 3, "#8fd2e2");
+    for (let k = 0; k < 10; k++) {
+      const x = bx + ((k * 47 + (reduce ? 0 : t / 40)) % (bw - 18));
+      R(x, wy + 8 + (k % 4) * 9, 16, 1, "#a8dde8");
+    }
+  }
+  // falling water from the pipe while it runs
+  if (pump.on) for (let k = 0; k < 8; k++) R(352 + (k % 2), 146 + ((reduce ? k * 9 : t / 8 + k * 24) % (Math.max(8, wy - 146))), 2, 7, "#b8e4f0");
+  // gauge on the right dike: orange = too little, green = right, red = too much
+  const gx = bx + bw + 20;
+  const yLo = Math.round(bot - pump.lo * (bot - top));
+  const yHi = Math.round(bot - pump.hi * (bot - top));
+  R(gx, top - 10, 22, bot - top + 10, "#1c0d08");
+  R(gx + 3, top - 7, 16, yHi - top + 7, "#d9432e");
+  R(gx + 3, yHi, 16, yLo - yHi, "#52c24a");
+  R(gx + 3, yLo, 16, bot - yLo, "#e8a23a");
+  for (let y = top; y <= bot; y += 19) R(gx - 5, y, 6, 2, "#1c0d08");
+  // dashed guide lines across the paddy at the edges of the green zone, and a tint between them
+  cx.globalAlpha = 0.18;
+  R(bx, yHi, bw, yLo - yHi, "#52e04a");
+  cx.globalAlpha = 1;
+  for (let x = bx; x < bx + bw; x += 12) {
+    R(x, yHi, 7, 2, "#f4f1e4");
+    R(x, yLo, 7, 2, "#f4f1e4");
+  }
+  // pointer showing the current level on the gauge
+  const py = Math.min(bot, Math.max(top - 6, wy));
+  R(gx - 16, py - 6, 14, 12, "#1c0d08");
+  R(gx - 14, py - 4, 10, 8, "#f2c94c");
+  R(gx - 2, py - 3, 4, 6, "#1c0d08");
+}
+
+/** Muddy flooded soil with a mark for every seedling; a bundle of seedlings waits at the bottom left. */
+function seedling(x: number, y: number, s: number, grow = 1): void {
+  cx.save();
+  cx.translate(Math.round(x), Math.round(y));
+  cx.scale(s, s);
+  const g = Math.max(0.2, grow);
+  const hh = (n: number): number => Math.round(n * g);
+  R(-3, -1, 7, 2, "#1c0d08");
+  R(-2, -hh(13), 4, hh(13), "#1f4a14");
+  R(-1, -hh(12), 2, hh(12), "#59b32f");
+  R(-5, -hh(10), 4, hh(10), "#1f4a14");
+  R(-4, -hh(9), 2, hh(9), "#86d13a");
+  R(2, -hh(11), 4, hh(11), "#1f4a14");
+  R(3, -hh(10), 2, hh(10), "#a7e04a");
+  cx.restore();
+}
+function planting(t: number): void {
+  backdrop(t, 104);
+  R(0, 104, W, 12, "#5d9a48");
+  // a flooded paddy: muddy ground under a sheet of shallow water
+  R(0, 116, W, H - 116, "#5b4630");
+  for (let i = 0; i < 60; i++) R(rnd(i + 11) * W, 120 + rnd(i * 7) * 236, 10 + rnd(i) * 18, 2, "#4a3826");
+  cx.globalAlpha = 0.5;
+  R(0, 116, W, H - 116, "#6fb4c6");
+  cx.globalAlpha = 1;
+  // the hills and sky reflected in the water, fading with distance
+  for (let y = 116; y < 176; y += 4) {
+    cx.globalAlpha = 0.28 * (1 - (y - 116) / 60);
+    R(0, y, W, 4, "#a8d2b0");
+  }
+  cx.globalAlpha = 1;
+  // bright ripples drifting along the surface, longer and lower toward the viewer
+  for (let k = 0; k < 26; k++) {
+    const row = k % 7;
+    const y = 126 + row * 36 + (k % 3) * 6;
+    const len = 14 + row * 5;
+    R(((k * 53 + (reduce ? 0 : t / (60 - row * 4))) % (W + 40)) - 20, y, len, 1 + (row > 3 ? 1 : 0), "#d6f0f6");
+  }
+  // dark mud showing through in patches
+  cx.globalAlpha = 0.16;
+  for (let i = 0; i < 18; i++) R(rnd(i + 31) * W, 150 + rnd(i * 3) * 190, 16 + rnd(i) * 26, 5, "#3a2a1a");
+  cx.globalAlpha = 1;
+  for (const q of sow.slots) {
+    // an empty mark is a pale dimple in the mud; planting fills it
+    if (q.t === 0) {
+      const w = Math.round(14 * q.s);
+      const mh = Math.max(3, Math.round(3 * q.s));
+      R(q.x - w / 2 - 1, q.y - 3, w + 2, mh + 3, "#2a1a0e");
+      R(q.x - w / 2 + 1, q.y - 4, w - 2, 1, "#2a1a0e");
+      R(q.x - w / 2, q.y - 3, w, mh + 1, "#a07a48");
+      R(q.x - w / 2 + 2, q.y - 3, w - 4, 1, "#d8b878");
+      R(q.x - w / 2 + 2, q.y - 1, w - 4, 1, "#d6b97e");
+    }
+  }
+  const now = performance.now();
+  for (const q of sow.slots) {
+    if (q.t === 0) continue;
+    const age = now - q.t;
+    const rr = Math.round((6 + Math.min(1, age / 700) * 8) * q.s);
+    cx.globalAlpha = Math.max(0, 0.8 - age / 900);
+    R(q.x - rr, q.y, rr * 2, 1, "#e8f8fc");
+    cx.globalAlpha = 0.3;
+    R(q.x - 5 * q.s, q.y + 3, 10 * q.s, 2, "#1f4a14");
+    cx.globalAlpha = 1;
+    seedling(q.x, q.y, q.s, Math.min(1, age / 300));
+  }
+  // the bundle
+  R(BUNDLE.x - 30, BUNDLE.y + 4, 62, 5, "rgba(0,0,0,0.3)");
+  for (let k = 0; k < 6; k++) seedling(BUNDLE.x - 20 + k * 8, BUNDLE.y + (k % 2) * 3, 2.2);
+  R(BUNDLE.x - 24, BUNDLE.y - 12, 54, 4, "#d9432e");
+  if (sow.held) seedling(sow.x, sow.y + 10, 2.6);
+}
+
 function market(t: number): void {
   backdrop(t, 132);
   // shop fronts
@@ -1506,6 +1730,8 @@ function draw(t: number): void {
   else if (view.scene === "home") home(t);
   else if (view.scene === "field") fieldScene(t);
   else if (view.scene === "weeding") weeding(t);
+  else if (view.scene === "pumping") pumping(t);
+  else if (view.scene === "planting") planting(t);
   else market(t);
 }
 
