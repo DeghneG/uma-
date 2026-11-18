@@ -1,5 +1,5 @@
 import gsap from "gsap";
-import { field } from "./art";
+import { field, speakerAnchor, view } from "./art";
 import { sfx, soundOn } from "./sound";
 import { GOAL, onChange, peso, state } from "./state";
 import { text, type Dict } from "./text";
@@ -127,9 +127,134 @@ export function initHud(): void {
   renderHud();
 }
 
+/* ---------- drawn shapes the stylesheet uses (komiks balloon tail, star burst, rating stars) ---------- */
+const svgUrl = (w: number, h: number, body: string, crisp = true): string =>
+  `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${w} ${h}'${crisp ? " shape-rendering='crispEdges'" : ""}>${body}</svg>`)}")`;
+const star = (cx: number, cy: number, outer: number, inner: number, points: number): string => {
+  const pts: string[] = [];
+  for (let i = 0; i < points * 2; i++) {
+    const a = (Math.PI * i) / points - Math.PI / 2;
+    const r = i % 2 ? inner : outer;
+    pts.push(`${(cx + Math.cos(a) * r).toFixed(1)},${(cy + Math.sin(a) * r).toFixed(1)}`);
+  }
+  return pts.join(" ");
+};
+function initShapes(): void {
+  const ink = "#14110f";
+  const rect = (x: number, y: number, w: number, hh: number, c: string): string => `<rect x='${x}' y='${y}' width='${w}' height='${hh}' fill='${c}'/>`;
+  // stepped pixel tail, pointing down and to the left
+  let tail = "";
+  for (let r = 0; r < 11; r++) {
+    const left = 2 - Math.round(r / 10);
+    const right = 12 - r;
+    if (right <= left) break;
+    tail += rect(left - 1, r, 1, 1, ink) + rect(left, r, right - left, 1, "#fffdf4") + rect(right, r, 1, 1, ink);
+  }
+  tail += rect(0, 11, 2, 1, ink);
+  const root = document.documentElement.style;
+  root.setProperty("--tail-img", svgUrl(14, 12, tail));
+  root.setProperty("--burst-img", svgUrl(48, 48, `<polygon points='${star(24, 24, 23, 15, 8)}' fill='#ffd23c' stroke='${ink}' stroke-width='3' stroke-linejoin='miter'/>`, false));
+  root.setProperty("--star-on", svgUrl(24, 24, `<polygon points='${star(12, 13, 11, 4.6, 5)}' fill='#ffd23c' stroke='${ink}' stroke-width='1.6' stroke-linejoin='miter'/>`, false));
+  root.setProperty("--star-off", svgUrl(24, 24, `<polygon points='${star(12, 13, 11, 4.6, 5)}' fill='#3a3530' stroke='${ink}' stroke-width='1.6' stroke-linejoin='miter'/>`, false));
+  root.setProperty("--star-hud", svgUrl(24, 24, `<polygon points='${star(12, 13, 11, 4.6, 5)}' fill='#b3c4a8' stroke='${ink}' stroke-width='1.6'/>`, false));
+  root.setProperty("--star-hud-on", svgUrl(24, 24, `<polygon points='${star(12, 13, 11, 4.6, 5)}' fill='#ffd23c' stroke='${ink}' stroke-width='1.6'/>`, false));
+}
+initShapes();
+
 /* ---------- panel ---------- */
 let builder: ((p: HTMLElement) => void) | null = null;
 let host: HTMLElement | null = null;
+
+const SPEAKERS = ["Tatay Bert", "Nanay Flor", "Mang Ben"];
+/** "Tatay Bert: Five months..." or 'Mang Ben: "..."' as {who, text}, or null for plain narration. */
+function parseSpeech(text: string): { who: string; text: string } | null {
+  for (const who of SPEAKERS) {
+    if (text.startsWith(who + ":")) return { who, text: text.slice(who.length + 1).trim().replace(/^[“"]\s*/, "").replace(/\s*[”"]$/, "") };
+  }
+  return null;
+}
+function balloon(who: string, text: string): HTMLElement {
+  const b = h("div", "balloon");
+  b.dataset.who = who;
+  b.appendChild(h("span", "who", who));
+  b.appendChild(h("p", undefined, text));
+  return b;
+}
+
+/**
+ * Sort whatever a scene put in the panel into komiks parts: narration and titles in a caption box (top left),
+ * spoken lines in balloons pointing at the speaker, and everything the player acts on in a row along the bottom.
+ */
+function arrange(p: HTMLElement): void {
+  const cap = h("div", "cap-zone");
+  const say = h("div", "say-zone");
+  const ask = h("div", "ask-zone");
+  for (const el of [...p.children] as HTMLElement[]) {
+    const cl = el.classList;
+    if (cl.contains("tag")) continue; // the corner label already names the scene; no kicker above a heading
+    if (cl.contains("quote")) {
+      const s = parseSpeech(el.textContent ?? "");
+      say.appendChild(balloon(s?.who ?? "Mang Ben", s?.text ?? (el.textContent ?? "")));
+    } else if (el.tagName === "P" && !el.className) {
+      const s = parseSpeech(el.textContent ?? "");
+      if (s) say.appendChild(balloon(s.who, s.text));
+      else cap.appendChild(el);
+    } else if (["fb", "cards", "timing", "btn"].some((c) => cl.contains(c))) ask.appendChild(el);
+    else cap.appendChild(el);
+  }
+  p.replaceChildren(...[cap, say, ask].filter((z) => z.childElementCount));
+  p.classList.toggle("sheet", !!cap.querySelector(".ledger"));
+  placeBalloons(p);
+}
+
+/** Put each balloon above its speaker with the tail pointing down at their head; keep clear of the caption and the choice row. */
+function placeBalloons(p: HTMLElement): void {
+  const cap = p.querySelector<HTMLElement>(".cap-zone");
+  const ask = p.querySelector<HTMLElement>(".ask-zone");
+  const askTop = ask ? ask.offsetTop : 1000;
+  p.querySelectorAll<HTMLElement>(".balloon").forEach((b) => {
+    const w = b.offsetWidth;
+    const hh = b.offsetHeight;
+    const a = speakerAnchor(b.dataset.who ?? "");
+    let left = 64;
+    let top = cap ? cap.offsetTop + cap.scrollHeight + 80 : 300;
+    let tail = 20;
+    if (!a && view.scene !== "title") {
+      // an off-screen voice speaks from the empty sky at the top right, tail pointing off the right edge (keeps the scene clear)
+      left = 1880 - w;
+      top = 210;
+      tail = w - 84;
+      b.classList.add("flip");
+    }
+    if (a) {
+      const x = a[0] * 3;
+      const y = a[1] * 3;
+      left = Math.min(Math.max(x - 30, 40), 1880 - w);
+      top = y - hh - 64;
+      tail = Math.min(Math.max(x - left - 4, 20), w - 76);
+      if (cap) {
+        const capBottom = cap.offsetTop + cap.scrollHeight;
+        const clash = left < cap.offsetLeft + cap.offsetWidth + 20 && left + w > cap.offsetLeft && top < capBottom + 40 && top + hh > cap.offsetTop - 40;
+        if (clash) top = capBottom + 70;
+      }
+    }
+    top = Math.max(150, Math.min(top, askTop - 70 - hh));
+    b.style.left = `${left}px`;
+    b.style.top = `${top}px`;
+    b.style.setProperty("--tail", `${tail}px`);
+    b.style.transformOrigin = `${tail + (b.classList.contains("flip") ? 52 : 4)}px 100%`;
+  });
+}
+
+/** The authored moment: caption slides in, balloons pop (komiks overshoot), choices rise from the bottom edge. */
+function enter(p: HTMLElement): void {
+  gsap.set(p, { autoAlpha: 1 });
+  if (reduce) return;
+  const e = "expo.out";
+  gsap.from(p.querySelectorAll(".cap-zone > *"), { x: -50, autoAlpha: 0, duration: 0.5, stagger: 0.08, ease: e });
+  gsap.from(p.querySelectorAll(".balloon"), { scale: 0.4, autoAlpha: 0, duration: 0.5, delay: 0.25, stagger: 0.15, ease: "back.out(2.2)" });
+  gsap.from(p.querySelector(".ask-zone"), { y: 90, autoAlpha: 0, duration: 0.55, delay: 0.35, ease: e });
+}
 
 /** Render a scene builder into the story panel (or another host such as the title menu). */
 export function show(build: (p: HTMLElement) => void, animate = true, into?: HTMLElement): void {
@@ -138,11 +263,10 @@ export function show(build: (p: HTMLElement) => void, animate = true, into?: HTM
   const p = host;
   p.innerHTML = "";
   build(p);
-  if (animate && !reduce) {
-    gsap.fromTo(p, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.35, clearProps: "transform" });
-  } else {
-    gsap.set(p, { autoAlpha: 1, y: 0 });
-  }
+  if (p.id === "panel") arrange(p);
+  if (p.id === "panel" && animate) enter(p);
+  else if (animate && !reduce) gsap.fromTo(p, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.35, clearProps: "transform" });
+  else gsap.set(p, { autoAlpha: 1, y: 0 });
 }
 export function rerender(): void {
   if (builder) show(builder, false, host ?? undefined);
@@ -177,7 +301,7 @@ export function storyPanel(
 
 export function starsEl(n: number): HTMLElement {
   const e = h("div", "stars");
-  for (let i = 0; i < 3; i++) e.appendChild(h("span", undefined, i < n ? "★" : "☆"));
+  for (let i = 0; i < 3; i++) e.appendChild(h("span", i < n ? "on" : "off"));
   if (!reduce) gsap.from(e.children, { scale: 0, duration: 0.35, stagger: 0.12, ease: "back.out(2.5)", delay: 0.15 });
   return e;
 }

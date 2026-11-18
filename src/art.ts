@@ -27,6 +27,15 @@ export const setScene = (k: SceneKind): void => {
   view.scene = k;
 };
 
+/** Canvas position (x centre, y top of head) of a speaking character in the current scene, or null when off screen. */
+export function speakerAnchor(name: string): [number, number] | null {
+  const s = view.scene;
+  if (name.startsWith("Tatay")) return s === "home" ? [330, 247] : s === "field" ? [92, 237] : s === "market" ? [92, 259] : null;
+  if (name.startsWith("Nanay")) return s === "home" ? [402, 253] : s === "market" ? [372, 266] : null;
+  if (name.startsWith("Mang Ben")) return s === "field" && field.ben ? [176, 250] : null;
+  return null;
+}
+
 /** Put the field in the state it has at the start of a given week (also used by the #week dev shortcut). */
 export function fieldAtWeek(week: number): void {
   field.week = week;
@@ -872,10 +881,10 @@ function home(t: number): void {
   butterfly(300, 322, t, "#e07aa8");
   butterfly(380, 288, t, "#ffffff");
   const [tx, tm] = stroll(330, 26, t, 1);
-  shadow(tx, 305, 40);
-  shadow(402, 311, 40);
-  tatay(tx, 304, t, tm, 1);
-  nanay(402, 310, t, "idle", 2);
+  shadow(tx, 287, 40);
+  shadow(402, 293, 40);
+  tatay(tx, 286, t, tm, 1);
+  nanay(402, 292, t, "idle", 2);
   bigTree(-12, 380, 210, 56, t, 3);
   palm(30, 392, 250, t, 1, 34);
   fgBushes(11, 9);
