@@ -145,7 +145,7 @@ const tuft = (x: number, y: number, c1: string, c2: string): void => {
   R(x - 2, y - 4, 1, 4, c2);
   R(x + 2, y - 5, 1, 5, c2);
 };
-const palm = (x: number, base: number, h: number, t: number, lean = 1): void => {
+const palm = (x: number, base: number, h: number, t: number, lean = 1, fr = 24): void => {
   const sway = reduce ? 0 : Math.sin(t / 900 + x) * 2;
   let tx = x;
   let ty = base;
@@ -157,7 +157,7 @@ const palm = (x: number, base: number, h: number, t: number, lean = 1): void => 
     R(tx + 1, ty, 1, 2, "#9a7550");
   }
   for (const d of [-1, -0.7, -0.38, 0.38, 0.7, 1]) {
-    for (let k = 0; k < 24; k++) {
+    for (let k = 0; k < fr; k++) {
       const fx = tx + d * k * 2.1;
       const fy = ty - 4 + k * (0.5 - Math.abs(d) * 0.25) + k * k * 0.028 + d * sway * 0.3;
       R(fx, fy, 4, 3, k % 6 < 3 ? "#438f3f" : "#2f6f33");
@@ -332,6 +332,175 @@ const mangoes = (x: number, y: number): void => {
   }
 };
 
+/* ---------- livestock ---------- */
+/** Draw fn mirrored around x when dir > 0 (all animal art faces left). */
+const flipAt = (x: number, dir: number, fn: () => void): void => {
+  if (dir <= 0) {
+    fn();
+    return;
+  }
+  cx.save();
+  cx.translate(x, 0);
+  cx.scale(-1, 1);
+  cx.translate(-x, 0);
+  fn();
+  cx.restore();
+};
+/** Slow back-and-forth wandering: [offset, direction]. */
+const wander = (t: number, seed: number, range: number): [number, number] => {
+  if (reduce) return [0, -1];
+  const p = t / 2600 + seed;
+  return [Math.sin(p) * range, Math.cos(p) >= 0 ? 1 : -1];
+};
+const hen = (x: number, g: number, t: number, seed: number, col = "#c9783a"): void => {
+  const [dx, dir] = wander(t, seed, 10);
+  const hx = x + dx;
+  flipAt(hx, dir, () => {
+    const hy = !reduce && Math.sin(t / 260 + seed * 3) > 0.55 ? 4 : 0;
+    R(hx, g - 8, 9, 6, col);
+    R(hx + 1, g - 8, 7, 2, "#e0a060");
+    R(hx - 3, g - 12, 4, 7, col);
+    R(hx + 8, g - 13 + hy, 4, 4, col);
+    R(hx + 9, g - 15 + hy, 2, 2, "#d23a2e");
+    R(hx + 12, g - 12 + hy, 2, 1, "#f2c94c");
+    R(hx + 10, g - 12 + hy, 1, 1, "#1a1a1a");
+    R(hx + 3, g - 2, 1, 2, "#e0a030");
+    R(hx + 6, g - 2, 1, 2, "#e0a030");
+  });
+};
+const rooster = (x: number, g: number, t: number, seed: number): void => {
+  const [dx, dir] = wander(t, seed, 8);
+  const hx = x + dx;
+  flipAt(hx, dir, () => {
+    R(hx, g - 11, 11, 8, "#b8582f");
+    R(hx + 1, g - 11, 9, 3, "#e0883a");
+    R(hx - 5, g - 20, 3, 12, "#2f7a4c");
+    R(hx - 3, g - 22, 3, 13, "#d23a2e");
+    R(hx - 1, g - 19, 3, 10, "#2f6aa8");
+    R(hx + 10, g - 18, 5, 5, "#b8582f");
+    R(hx + 11, g - 21, 3, 3, "#d23a2e");
+    R(hx + 15, g - 16, 3, 1, "#f2c94c");
+    R(hx + 13, g - 16, 1, 1, "#1a1a1a");
+    R(hx + 14, g - 14, 2, 2, "#d23a2e");
+    R(hx + 4, g - 3, 1, 3, "#e0a030");
+    R(hx + 8, g - 3, 1, 3, "#e0a030");
+  });
+};
+const chick = (x: number, g: number, t: number, seed: number): void => {
+  const hop = reduce ? 0 : Math.max(0, Math.round(Math.sin(t / 180 + seed * 5) * 2));
+  R(x, g - 4 - hop, 4, 4, "#f2d13a");
+  R(x + 4, g - 3 - hop, 1, 1, "#f2994a");
+  R(x + 2, g - 3 - hop, 1, 1, "#1a1a1a");
+};
+const pig = (x: number, g: number, t: number, seed: number, scale = 1): void => {
+  const [dx, dir] = wander(t, seed, 6);
+  const px = x + dx;
+  const s = scale;
+  const U = (v: number): number => v * s;
+  flipAt(px, dir, () => {
+    const wig = reduce ? 0 : Math.round(Math.sin(t / 200 + seed)) * s;
+    R(px + U(4), g - U(15), U(22), U(11), "#f0a8b0");
+    R(px + U(4), g - U(15), U(22), U(3), "#f7c2c8");
+    R(px + U(4), g - U(6), U(22), U(2), "#d98a96");
+    R(px - U(4), g - U(15), U(10), U(10), "#f0a8b0");
+    R(px - U(7), g - U(11), U(4), U(5), "#e58a98");
+    R(px - U(2), g - U(18), U(4), U(4), "#e58a98");
+    R(px, g - U(12), U(2), U(2), "#2a2a30");
+    for (const lx of [6, 11, 19, 24]) R(px + U(lx), g - U(5), U(4), U(5), "#e58a98");
+    R(px + U(26), g - U(14) + wig, U(2), U(3), "#e58a98");
+    R(px + U(28), g - U(13) + wig, U(1), U(2), "#e58a98");
+  });
+};
+const goat = (x: number, g: number, t: number, seed: number, col = "#e8e2d4", patch = "#8a6a43"): void => {
+  const [dx, dir] = wander(t, seed, 12);
+  const gx = x + dx;
+  flipAt(gx, dir, () => {
+    const chew = !reduce && Math.sin(t / 220 + seed) > 0 ? 1 : 0;
+    R(gx + 4, g - 17, 20, 10, col);
+    R(gx + 4, g - 17, 20, 2, "#f6f2e6");
+    R(gx + 14, g - 16, 7, 6, patch);
+    R(gx - 4, g - 23, 9, 9, col);
+    R(gx - 7, g - 19 + chew, 4, 4, col);
+    R(gx - 2, g - 27, 2, 5, "#8a7a5a");
+    R(gx + 2, g - 27, 2, 5, "#8a7a5a");
+    R(gx + 4, g - 21, 4, 2, "#c9c0aa");
+    R(gx - 5, g - 15 + chew, 2, 4, "#f6f2e6");
+    R(gx - 1, g - 21, 1, 1, "#1a1a1a");
+    for (const lx of [6, 11, 18, 22]) R(gx + lx, g - 8, 2, 8, "#c9c0aa");
+    R(gx + 24, g - 20, 2, 4, col);
+  });
+};
+const duck = (x: number, y: number, t: number, seed: number, kids = 0): void => {
+  const [dx, dir] = wander(t, seed, 38);
+  const px = x + dx;
+  flipAt(px, dir, () => {
+    R(px - 4, y - 2, 12, 1, "rgba(255,255,255,0.45)");
+    disc(px, y - 4, 5, "#f4f1e6");
+    R(px - 7, y - 7, 4, 3, "#f4f1e6");
+    disc(px + 5, y - 9, 3, "#2f7a4c");
+    R(px + 7, y - 9, 4, 2, "#f2994a");
+    R(px + 6, y - 10, 1, 1, "#1a1a1a");
+    for (let k = 0; k < kids; k++) {
+      disc(px - 10 - k * 6, y - 2, 2, "#f2d13a");
+      R(px - 12 - k * 6, y - 3, 1, 1, "#f2994a");
+    }
+  });
+};
+
+
+/* ---------- foreground trees (drawn last, cropped at the edges) ---------- */
+const bigTree = (x: number, base: number, h: number, r: number, t: number, seed: number): void => {
+  const sway = reduce ? 0 : Math.sin(t / 1500 + seed) * 1.5;
+  for (let y = 0; y < h; y += 2) {
+    const p = y / h;
+    const w = Math.round(16 - p * 7);
+    const tx = x + Math.sin(p * 1.2 + seed) * 5 * p;
+    R(tx - w / 2, base - y, w, 2, y % 10 < 5 ? "#6b4a2e" : "#5e4128");
+    R(tx - w / 2, base - y, 2, 2, "#8a6540");
+  }
+  R(x - 14, base - 4, 28, 4, "#5e4128");
+  R(x - 18, base - 1, 36, 2, "#5e4128");
+  const topX = x + Math.sin(1.2 + seed) * 5 + sway * 0.4;
+  const topY = base - h;
+  for (const d of [-1, 1]) for (let k = 0; k < 18; k++) R(topX + d * k * 1.6, topY + 10 - k * 0.9, 4, 3, "#5e4128");
+  const N = 28;
+  const pos = (i: number): [number, number, number] => {
+    const ang = rnd(seed + i) * Math.PI * 2;
+    const rad = Math.sqrt(rnd(seed + i + 30)) * r;
+    return [topX + Math.cos(ang) * rad * 1.25 + sway, topY - r * 0.35 + Math.sin(ang) * rad * 0.75, 11 + Math.floor(rnd(seed + i + 60) * 8)];
+  };
+  for (let i = 0; i < N; i++) {
+    const [bx, by, br] = pos(i);
+    disc(bx, by, br, i % 3 === 0 ? "#2a6a2c" : "#2f7a2e");
+  }
+  for (let i = 0; i < N; i++) {
+    const [bx, by, br] = pos(i);
+    disc(bx - 2, by - 3, br - 3, "#3f9a38");
+  }
+  for (let i = 0; i < N; i++) {
+    const [bx, by, br] = pos(i);
+    if (by < topY - r * 0.2) disc(bx - 4, by - 5, Math.max(3, br - 8), "#6cc04a");
+  }
+  for (let i = 0; i < 50; i++) {
+    const [bx, by] = pos(i % N);
+    R(bx + (rnd(seed + i + 90) - 0.5) * 18, by + (rnd(seed + i + 120) - 0.5) * 14, 2, 2, "#8fdc62");
+  }
+  for (let i = 0; i < 6; i++) {
+    const [bx, by] = pos(i * 3);
+    disc(bx + 3, by + 8, 2, "#f2c94c");
+    R(bx + 3, by + 5, 1, 3, "#2a6a2c");
+  }
+};
+const fgBushes = (seed: number, n: number): void => {
+  for (let i = 0; i < n; i++) {
+    const x = rnd(seed + i) * W;
+    const r = 9 + Math.floor(rnd(seed + i + 20) * 10);
+    disc(x, 368, r, "#1f4f2a");
+    disc(x - r * 0.25, 366 - r * 0.2, Math.round(r * 0.75), "#2c6a36");
+    disc(x - r * 0.4, 363 - r * 0.45, Math.round(r * 0.4), "#4a9a48");
+  }
+};
+
 /* ---------- people ---------- */
 /**
  * Code-drawn villager (13x16 cells, drawn at 2x): used until a hand-drawn sprite exists for that person.
@@ -429,6 +598,18 @@ function home(t: number): void {
   for (let i = 0; i < 70; i++) tuft(8 + rnd(i) * 620, 300 + rnd(i + 90) * 54, "#3f8a3f", "#4aa045");
   flowers(0, 640, 286, 356, 36, 7);
   carabao(60, 340, t);
+  pig(34, 268, t, 1);
+  pig(92, 266, t, 4);
+  pig(64, 270, t, 7, 0.55);
+  pig(112, 270, t, 2, 0.55);
+  goat(246, 322, t, 3);
+  goat(292, 336, t, 9, "#8a6a43", "#e8e2d4");
+  hen(140, 296, t, 5);
+  hen(176, 312, t, 8, "#a8452a");
+  rooster(210, 300, t, 2);
+  chick(158, 306, t, 1);
+  chick(168, 310, t, 2);
+  chick(196, 316, t, 3);
   butterfly(120, 300, t, "#f2c94c");
   butterfly(300, 322, t, "#e07aa8");
   butterfly(380, 288, t, "#ffffff");
@@ -436,6 +617,9 @@ function home(t: number): void {
   shadow(402, 311, 40);
   tatay(330, 304);
   nanay(402, 310);
+  bigTree(-12, 380, 210, 56, t, 3);
+  palm(30, 392, 250, t, 1, 34);
+  fgBushes(11, 9);
 }
 
 function hut(x: number, g: number): void {
@@ -523,6 +707,7 @@ function fieldScene(t: number): void {
   R(58, 162, 14, 5, "#9aa0a6");
   R(70, 166, 4, 10, field.water > 0.3 ? "#4aa0b8" : "#9aa0a6");
 
+  goat(110, 181, t, 6);
   // a jeepney drives along the road (not while the SUV is parked there for the notice)
   if (field.week !== 0) jeepney(reduce ? 210 : ((t * 0.035) % (W + 160)) - 100, 171, "#d0452d", "#f2c94c");
 
@@ -587,6 +772,12 @@ function fieldScene(t: number): void {
   egret(210, 203);
   egret(322, 253);
   scarecrow(384, 236);
+  carabao(318, 194, t);
+  if (field.water > 0.5) {
+    duck(140, ROW0 + ROWH + 18, t, 1, 2);
+    duck(210, ROW0 + ROWH + 19, t, 4);
+    duck(270, ROW0 + ROWH * 3 + 18, t, 7, 3);
+  }
   butterfly(150, 240, t, "#f2c94c");
   butterfly(330, 205, t, "#ffffff");
 
@@ -646,6 +837,8 @@ function fieldScene(t: number): void {
     shadow(250, 292);
     kid(250, 292 + bob);
   }
+  bigTree(-16, 384, 200, 54, t, 5);
+  fgBushes(21, 9);
 }
 
 function market(t: number): void {
@@ -693,6 +886,12 @@ function market(t: number): void {
   R(330, 218, 32, 28, "#9a7a48");
   R(330, 218, 32, 4, "#b8955a");
   mangoes(336, 214);
+  hen(48, 224, t, 3);
+  hen(60, 224, t, 6, "#a8452a");
+  goat(244, 322, t, 5);
+  hen(150, 306, t, 8);
+  chick(162, 310, t, 2);
+  chick(170, 313, t, 4);
   R(40, 224, 28, 22, "#b88a4a");
   disc(54, 222, 11, "#7aa24a");
   palm(580, 240, 110, t, -1);
@@ -704,6 +903,8 @@ function market(t: number): void {
   shadow(372, 304, 40);
   nanay(372, 304);
   for (let i = 0; i < 30; i++) tuft(8 + rnd(i + 5) * 620, 330 + rnd(i + 70) * 24, "#8a9a50", "#6a7a3a");
+  bigTree(-14, 384, 205, 54, t, 8);
+  fgBushes(31, 8);
 }
 
 
@@ -774,8 +975,16 @@ function titleScene(t: number): void {
   butterfly(200, 262, t, "#f2c94c");
   butterfly(340, 270, t, "#ffffff");
   butterfly(60, 300, t, "#e07aa8");
+  hen(150, 322, t, 2);
+  rooster(196, 330, t, 5);
+  chick(168, 326, t, 1);
+  chick(178, 330, t, 3);
+  goat(430, 338, t, 7);
+  pig(330, 334, t, 4, 0.8);
   flowers(0, 640, 262, 350, 30, 3);
   kid(592, 232);
+  bigTree(630, 366, 220, 60, t, 4);
+  palm(-4, 396, 250, t, 1, 34);
   // dark grass in the foreground
   for (let x = 0; x < W; x += 2) R(x, H - 10 - rnd(x) * 14, 2, 24, "#0c2414");
   for (let x = 0; x < W; x += 6) R(x + 1, H - 24 - rnd(x + 9) * 10, 1, 10, "#0c2414");
