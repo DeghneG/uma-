@@ -1162,7 +1162,7 @@ function fieldScene(t: number): void {
   for (let i = 0; i < 40; i++) tuft(6 + rnd(i + 300) * 628, canalY + 22 + rnd(i + 400) * 10, "#3f8a3f", "#4aa045");
   flowers(0, 640, canalY + 16, 356, 20, 11);
 
-  // the SUV and the agent are only there for the notice
+  // the SUV are only there for the notice
   if (field.week === 0) {
     R(150, 140, 80, 20, "#f4f4f2");
     R(164, 124, 50, 18, "#f4f4f2");
@@ -1170,8 +1170,6 @@ function fieldScene(t: number): void {
     R(190, 128, 18, 11, "#8fb7c9");
     R(156, 156, 14, 9, "#222222");
     R(206, 156, 14, 9, "#222222");
-    shadow(300, 280, 28);
-    person(300, 280, "#2f4a6b", false, 2, t, "idle", 4);
   }
 
   // Bert works with a small bob; Mang Ben joins from week 3, with a child at the harvest
@@ -1181,6 +1179,11 @@ function fieldScene(t: number): void {
   if (field.ben) {
     shadow(176, 282, 30);
     person(176, 282, "#6f9a3f", true, 2, t, wm, 3);
+  }
+  if (field.week === 0) {
+    // the child (the hero of the story) helps in the paddy from the first week
+    shadow(150, 284);
+    kid(150, 284, t, wm, 5);
   }
   if (field.ben && field.week === 3) {
     shadow(250, 292);
