@@ -23,6 +23,7 @@ npm run build    # type-check + production build into dist/
 | `src/art.ts` | Pixel scenes drawn in code on a 640x360 grid (shown at 3x in a 1920x1080 frame); hand-drawn sprites load from public/sprites |
 | `src/ui.ts` | Savings/morale HUD, panel rendering, GSAP motion helpers |
 | `src/scenes/` | One file per scene: intro, week1 to week4, market, summary |
+| `src/music.ts` | Generative background music (3/4 ukulele arpeggio, bamboo flute, shakers, gongs); mood follows the story |
 | `src/main.ts` | Scene order and language toggle |
 
 `game-walkthrough.html` is the earlier standalone storyboard prototype.

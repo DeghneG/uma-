@@ -22,7 +22,7 @@ export function toggleSound(): boolean {
   return enabled;
 }
 
-function audio(): AudioContext | null {
+export function audioCtx(): AudioContext | null {
   if (!ctx) {
     const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Ctor) return null;
@@ -33,7 +33,7 @@ function audio(): AudioContext | null {
 }
 
 function tone(freq: number, dur: number, type: OscillatorType, vol: number, delay = 0, endFreq?: number): void {
-  const a = audio();
+  const a = audioCtx();
   if (!a) return;
   const t0 = a.currentTime + delay;
   const o = a.createOscillator();

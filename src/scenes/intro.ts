@@ -2,6 +2,7 @@ import gsap from "gsap";
 import { addMorale, patch, state } from "../state";
 import { setScene, view as artView } from "../art";
 import { soundOn, sfx } from "../sound";
+import { musicOn, toggleMusic } from "../music";
 import { $, T, h, reduce, rerender, setBack, setLabel, show } from "../ui";
 
 type Item = { label: string; run: () => void };
@@ -43,6 +44,13 @@ export function title(next: () => void): void {
               label: soundOn() ? t.hud.soundOn : t.hud.soundOff,
               run: () => {
                 $("snd").click();
+                rerender();
+              },
+            },
+            {
+              label: musicOn() ? t.hud.musicOn : t.hud.musicOff,
+              run: () => {
+                toggleMusic();
                 rerender();
               },
             },

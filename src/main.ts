@@ -1,6 +1,7 @@
 import "./style.css";
 import { fieldAtWeek, initArt } from "./art";
 import { toggleSound } from "./sound";
+import { armMusic, refreshMusic, setMood, type Mood } from "./music";
 import { patch, resetGame, type Lang } from "./state";
 import { $, initHud, initPanelInput, renderHud, rerender, setBack, setMode } from "./ui";
 import { prologue, title } from "./scenes/intro";
@@ -13,6 +14,8 @@ import { summary } from "./scenes/summary";
 
 const steps: ((next: () => void, back?: () => void) => void)[] = [title, prologue, week1, week2, week3, week4, market, summary];
 const names = ["title", "prologue", "week1", "week2", "week3", "week4", "market", "summary"];
+/** The score follows the story: warm at home, steady at work, tense in the dry spell, lively at the harvest. */
+const MOOD: Record<string, Mood> = { title: "home", prologue: "home", week1: "work", week2: "work", week3: "tense", week4: "harvest", market: "market", summary: "reflect" };
 // Dev shortcut: open /#week3 to start at that scene.
 let i = Math.max(0, names.indexOf(location.hash.slice(1)));
 const wk = /^week(\d)$/.exec(names[i]);
@@ -22,6 +25,7 @@ function run(): void {
   // story mode starts when the family goes to the field (week 1); the title and prologue have no stats bar
   setMode({ title: i === 0, story: i >= names.indexOf("week1") });
   setBack(null);
+  setMood(MOOD[names[i]]);
   steps[i](
     () => {
       i++;
@@ -67,6 +71,7 @@ function fit(): void {
 window.addEventListener("resize", fit);
 fit();
 
+armMusic();
 initArt($<HTMLCanvasElement>("cv"));
 initHud();
 initPanelInput();
@@ -74,6 +79,7 @@ $("l-en").addEventListener("click", () => setLang("en"));
 $("l-fil").addEventListener("click", () => setLang("fil"));
 $("snd").addEventListener("click", () => {
   toggleSound();
+  refreshMusic();
   renderHud();
 });
 setLang(saved);
