@@ -118,7 +118,7 @@ const loadSprite = (
 };
 const kid = loadSprite("kid", (x, y) => person(x, y, "#d96f9a", false));
 const tatay = loadSprite("tatay", (x, y) => person(x, y, "#c25a3a"));
-const nanay = loadSprite("nanay", (x, y) => person(x, y, "#3f7bb0", false), true);
+const nanay = loadSprite("nanay", (x, y) => person(x, y, "#3f7bb0", false));
 
 const person = (x: number, y: number, shirt: string, hat = true): void => {
   const pal: Record<string, string> = {
