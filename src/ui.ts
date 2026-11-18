@@ -154,6 +154,13 @@ export function shake(): void {
 }
 
 /* ---------- reusable pieces ---------- */
+/** A row of small status chips (rounds left, mistakes so far...). */
+export function statusRow(items: string[]): HTMLElement {
+  const row = h("div", "status");
+  for (const s of items) row.appendChild(h("span", undefined, s));
+  return row;
+}
+
 export function storyPanel(
   p: HTMLElement,
   o: { tag: string; h: string; p: string; s?: string; quote?: string; go: string; onGo: () => void },

@@ -1,7 +1,7 @@
 import { field, fieldAtWeek, setScene } from "../art";
 import { sfx } from "../sound";
 import { addMoney, addMorale, patch } from "../state";
-import { T, h, resultPanel, setLabel, shake, show, storyPanel, tweenPest } from "../ui";
+import { T, h, resultPanel, setLabel, shake, show, statusRow, storyPanel, tweenPest } from "../ui";
 
 type Tool = "hand" | "trap" | "spray";
 const TOOLS: Tool[] = ["hand", "trap", "spray"];
@@ -52,7 +52,8 @@ export function week2(next: () => void): void {
       p.appendChild(h("div", "tag", t.go));
       p.appendChild(h("h2", undefined, pest.n));
       p.appendChild(h("p", undefined, pest.d));
-      p.appendChild(h("p", "note", `${t.hint}  |  ${t.round} ${i + 1} / 3  |  ${T().common.mistakes}: ${mist}`));
+      p.appendChild(h("p", "note", t.hint));
+      p.appendChild(statusRow([`${t.round} ${i + 1} / 3`, `${T().common.mistakes}: ${mist}`]));
       const grid = h("div", "cards");
       TOOLS.forEach((tool) => {
         const b = h("button", "card", `<b>${t.tools[tool][0]}</b><small>${t.tools[tool][1]}</small>`);

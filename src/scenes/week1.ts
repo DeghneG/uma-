@@ -1,7 +1,7 @@
 import { field, fieldAtWeek, setScene } from "../art";
 import { sfx } from "../sound";
 import { patch } from "../state";
-import { T, h, resultPanel, setLabel, shake, show, starsFor, storyPanel, tweenField } from "../ui";
+import { T, h, resultPanel, setLabel, shake, show, starsFor, statusRow, storyPanel, tweenField } from "../ui";
 
 type Job = "weeds" | "water" | "plant";
 const ORDER: Job[] = ["weeds", "water", "plant"];
@@ -41,7 +41,8 @@ export function week1(next: () => void): void {
       p.appendChild(h("div", "tag", t.go));
       p.appendChild(h("h2", undefined, t.head));
       p.appendChild(h("p", undefined, t.intro));
-      p.appendChild(h("p", "note", `${t.hint}  |  ${t.left}: ${3 - done.length}  |  ${T().common.mistakes}: ${wrong}`));
+      p.appendChild(h("p", "note", t.hint));
+      p.appendChild(statusRow([`${t.left}: ${3 - done.length}`, `${T().common.mistakes}: ${wrong}`]));
       const grid = h("div", "cards");
       ORDER.forEach((job) => {
         const b = h("button", "card", `<b>${t.jobs[job][0]}</b><small>${t.jobs[job][1]}</small>`) as HTMLButtonElement;

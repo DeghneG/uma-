@@ -48,7 +48,7 @@ export function week4(next: () => void): void {
       p.appendChild(h("div", "tag", t.go));
       p.appendChild(h("h2", undefined, t.h));
       p.appendChild(h("p", "note", t.hint));
-      const info = h("p", "note");
+      const info = h("div", "status");
       const track = h("div", "timing");
       const zone = h("div", "zone");
       const mark = h("div", "mark");
@@ -57,7 +57,7 @@ export function week4(next: () => void): void {
       p.append(info, track, btn);
 
       const upd = (): void => {
-        info.textContent = `${t.round} ${round + 1} / 3  |  ${t.hits}: ${hits}`;
+        info.innerHTML = `<span>${t.round} ${round + 1} / 3</span><span>${t.hits}: ${hits}</span>`;
         zone.style.left = `${zones[round]}%`;
         zone.style.width = `${zoneW}%`;
       };
