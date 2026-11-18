@@ -88,9 +88,17 @@ const BODY = [
   "...KPK.KPK...",
   "...KKK.KKK...",
 ];
-/** Optional hand-drawn sprite: put a PNG at public/sprites/kid.png and it replaces the code-drawn kid. */
-/** Loads public/sprites/<name>.png; returns a draw function anchored at the feet (same spot as `person`). */
-const loadSprite = (name: string, fallback: (x: number, y: number) => void): ((x: number, y: number) => void) => {
+/**
+ * The canvas is 192x108 (SCALE x the 96x54 scene units). Scenery and code-drawn people are drawn in
+ * scene units through a 2x transform; hand-drawn sprites in public/sprites/<name>.png are drawn
+ * pixel for pixel (1 PNG pixel = 1 canvas pixel) anchored at the feet, falling back to `fallback`.
+ */
+const SCALE = 2;
+const loadSprite = (
+  name: string,
+  fallback: (x: number, y: number) => void,
+  lowRes = false,
+): ((x: number, y: number) => void) => {
   const img = new Image();
   let ready = false;
   img.onload = (): void => {
@@ -99,12 +107,18 @@ const loadSprite = (name: string, fallback: (x: number, y: number) => void): ((x
   img.src = `/sprites/${name}.png`;
   return (x, y) => {
     if (!ready) return fallback(x, y);
-    cx.drawImage(img, Math.round(x - img.width / 2), Math.round(y + 11 - img.height));
+    if (lowRes) {
+      cx.drawImage(img, Math.round(x - img.width / 2), Math.round(y + 11 - img.height));
+      return;
+    }
+    cx.setTransform(1, 0, 0, 1, 0, 0);
+    cx.drawImage(img, Math.round(x * SCALE - img.width / 2), Math.round((y + 11) * SCALE - img.height));
+    cx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
   };
 };
 const kid = loadSprite("kid", (x, y) => person(x, y, "#d96f9a", false));
 const tatay = loadSprite("tatay", (x, y) => person(x, y, "#c25a3a"));
-const nanay = loadSprite("nanay", (x, y) => person(x, y, "#3f7bb0", false));
+const nanay = loadSprite("nanay", (x, y) => person(x, y, "#3f7bb0", false), true);
 
 const person = (x: number, y: number, shirt: string, hat = true): void => {
   const pal: Record<string, string> = {
@@ -254,7 +268,9 @@ export function initArt(canvas: HTMLCanvasElement): void {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
   cx = ctx;
+  cx.imageSmoothingEnabled = false;
   const frame = (t: number): void => {
+    cx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
     draw(reduce ? 0 : t);
     requestAnimationFrame(frame);
   };
