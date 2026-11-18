@@ -145,7 +145,7 @@ const tuft = (x: number, y: number, c1: string, c2: string): void => {
   R(x - 2, y - 4, 1, 4, c2);
   R(x + 2, y - 5, 1, 5, c2);
 };
-const palm = (x: number, base: number, h: number, t: number, lean = 1, fr = 24): void => {
+const palm = (x: number, base: number, h: number, t: number, lean = 1, fr = 24): [number, number] => {
   const sway = reduce ? 0 : Math.sin(t / 900 + x) * 2;
   let tx = x;
   let ty = base;
@@ -166,6 +166,7 @@ const palm = (x: number, base: number, h: number, t: number, lean = 1, fr = 24):
   }
   disc(tx - 3, ty + 3, 3, "#6a4a2e");
   disc(tx + 3, ty + 4, 3, "#5a3d26");
+  return [tx, ty];
 };
 const smoke = (x: number, y: number, t: number): void => {
   for (let k = 0; k < 6; k++) {
@@ -498,6 +499,102 @@ const fgBushes = (seed: number, n: number): void => {
     disc(x, 368, r, "#1f4f2a");
     disc(x - r * 0.25, 366 - r * 0.2, Math.round(r * 0.75), "#2c6a36");
     disc(x - r * 0.4, 363 - r * 0.45, Math.round(r * 0.4), "#4a9a48");
+  }
+};
+
+
+/* ---------- the farm: every crop on one screen (title) ---------- */
+/** Sugarcane clump: tall jointed stalks topped with long arching leaves. */
+const cane = (x: number, g: number, h: number, t: number, seed: number): void => {
+  const sway = reduce ? 0 : Math.sin(t / 1200 + seed) * 1.2;
+  for (let k = 0; k < 3; k++) {
+    const bx = x + k * 3;
+    const hh = h - k * 4;
+    R(bx, g - hh, 2, hh, "#b7c45a");
+    R(bx, g - hh, 1, hh, "#d6dc7a");
+    for (let n = 5; n < hh; n += 8) R(bx, g - n, 2, 1, "#7a8a32");
+  }
+  for (const d of [-1, -0.6, -0.2, 0.2, 0.6, 1]) {
+    for (let k = 0; k < 14; k++) {
+      R(x + 3 + d * k * 1.5 + sway, g - h - 1 + k * k * 0.07 - k * 0.35, 3, 2, k % 3 === 0 ? "#6fb04a" : "#8acb5a");
+    }
+  }
+  if (seed % 3 === 0) {
+    R(x + 3, g - h - 9, 1, 8, "#e8dcc8");
+    R(x + 2, g - h - 12, 3, 4, "#f4f0e2");
+  }
+};
+/** Coconut palm with visible clusters of coconuts under the crown. */
+const cocoPalm = (x: number, base: number, h: number, t: number, lean: number): void => {
+  const [tx, ty] = palm(x, base, h, t, lean, 26);
+  for (let i = 0; i < 8; i++) {
+    const cxn = tx - 7 + (i % 4) * 4 + (i >= 4 ? 2 : 0);
+    const cyn = ty + 3 + Math.floor(i / 4) * 5 + (i % 2);
+    disc(cxn, cyn, 3, i % 3 === 0 ? "#6a8a2e" : "#8a6a2e");
+    R(cxn - 1, cyn - 2, 2, 1, i % 3 === 0 ? "#9ab84a" : "#b8955a");
+  }
+  disc(x + 14 + (x % 9), base + 1, 2, "#6a4a2e");
+};
+/** One raised vegetable bed in perspective: kind 0 cabbage, 1 tomato, 2 eggplant, 3 pechay, 4 okra. */
+const vegBed = (y: number, x0: number, x1: number, kind: number, s: number): void => {
+  R(x0, y, x1 - x0, 7 * s, "#5a3d26");
+  R(x0, y, x1 - x0, 2, "#7a5a36");
+  R(x0, y + 7 * s - 2, x1 - x0, 2, "#3f2a18");
+  const gap = 15 * s;
+  for (let x = x0 + 8 * s; x < x1 - 6; x += gap) {
+    const g = y + 5 * s;
+    if (kind === 0) {
+      disc(x, g - 5 * s, 5 * s, "#6fb04a");
+      disc(x - s, g - 6 * s, 3 * s, "#8ed06a");
+      disc(x - s, g - 7 * s, Math.max(1, s), "#c8f0a0");
+    } else if (kind === 1) {
+      R(x, g - 14 * s, 1, 14 * s, "#8a6a43");
+      disc(x, g - 8 * s, 4 * s, "#3f8a35");
+      for (let k = 0; k < 3; k++) disc(x - 2 * s + k * 2 * s, g - (4 + k * 3) * s, Math.max(1, s), "#e0452d");
+    } else if (kind === 2) {
+      disc(x, g - 7 * s, 5 * s, "#3f7a3a");
+      for (let k = 0; k < 2; k++) R(x - 2 * s + k * 4 * s, g - 5 * s, 3 * s, 5 * s, "#5a2a6a");
+      R(x - 2 * s, g - 5 * s, 1, 2 * s, "#8a5a9a");
+    } else if (kind === 3) {
+      for (let k = -1; k <= 1; k++) R(x + k * 3 * s, g - 9 * s + Math.abs(k) * 2 * s, 3 * s, 9 * s - Math.abs(k) * 2 * s, k === 0 ? "#8ed06a" : "#6fb04a");
+      R(x, g - 9 * s, 3 * s, 2 * s, "#b8e68a");
+    } else {
+      R(x, g - 13 * s, 2 * s, 13 * s, "#4f8a3a");
+      R(x - 3 * s, g - 11 * s, 4 * s, 2 * s, "#5fa84a");
+      R(x + 2 * s, g - 9 * s, 4 * s, 2 * s, "#5fa84a");
+      R(x + 1, g - 8 * s, s, 4 * s, "#7fc44a");
+      R(x - s, g - 5 * s, s, 3 * s, "#7fc44a");
+    }
+  }
+};
+/** Bamboo trellis arch hung with gourds and squash. */
+const trellis = (x: number, g: number): void => {
+  R(x, g - 40, 3, 40, "#8a6a43");
+  R(x + 44, g - 40, 3, 40, "#8a6a43");
+  R(x - 2, g - 42, 52, 3, "#a8844f");
+  for (let k = 0; k < 6; k++) R(x + 3 + k * 8, g - 40, 1, 14, "#4f9a3f");
+  for (let k = 0; k < 14; k++) R(x + 2 + k * 3, g - 42 + (k % 3), 3, 3, "#4f9a3f");
+  for (let k = 0; k < 4; k++) {
+    R(x + 8 + k * 11, g - 38, 4, 12 + (k % 2) * 4, k % 2 ? "#e0b030" : "#7fc44a");
+  }
+};
+/** Terraced rice paddies climbing the hillside: water glints, green sprouts, ripe gold on the top steps. */
+const riceTerraces = (t: number): void => {
+  for (let i = 0; i < 9; i++) {
+    const sx = 455 + i * 15;
+    const sy = 336 - i * 13;
+    R(sx, sy, W - sx, 13, "#6bb8d0");
+    R(sx, sy, W - sx, 2, "#9a7a46");
+    R(sx, sy + 11, W - sx, 2, "#4f6a2a");
+    for (let k = 0; k < 14; k++) {
+      const px = sx + 4 + k * 8 + (i % 2) * 4;
+      if (px > W) break;
+      const ripe = i >= 6;
+      R(px, sy + 3, 2, 6, ripe ? "#d9b43a" : "#4fb04a");
+      R(px - 2, sy + 5, 2, 4, ripe ? "#c9a43a" : "#3f9a40");
+      R(px + 2, sy + 5, 2, 4, ripe ? "#c9a43a" : "#3f9a40");
+    }
+    for (let k = 0; k < 4; k++) R(sx + 6 + ((k * 37 + i * 11 + (reduce ? 0 : Math.floor(t / 300))) % 90), sy + 8, 6, 1, "#bfe6f0");
   }
 };
 
@@ -932,11 +1029,6 @@ function logo(t: number): void {
   place((x, y, w) => R(x + 3, y + 3, w - 6, 3, "#ffe27a"));
   cx.globalAlpha = 1;
 }
-const bush = (x: number, y: number, r: number): void => {
-  disc(x, y, r, "#245a2e");
-  disc(x - r * 0.3, y - r * 0.3, r * 0.75, "#2f7a3a");
-  disc(x - r * 0.4, y - r * 0.45, r * 0.4, "#4a9a4a");
-};
 function titleScene(t: number): void {
   sky("#3f9be0", "#cfe9f6", 240);
   cloud(-20, 118, 3.4, t, 0.008);
@@ -953,35 +1045,45 @@ function titleScene(t: number): void {
   });
   birds(t);
   for (let y = 222; y < H; y += 5) for (let x = (y / 5) % 2 ? 0 : 6; x < W; x += 12) R(x + rnd(x * y) * 5, y, 3, 1, rnd(x + y) > 0.5 ? "#2f6e33" : "#4d9a46");
-  // rice terraces climbing to the right, with the kid on the top step
-  for (let i = 0; i < 9; i++) {
-    const sx = 455 + i * 15;
-    const sy = 336 - i * 13;
-    R(sx, sy, W - sx, 13, i % 2 ? "#8fbf52" : "#78ad45");
-    R(sx, sy, W - sx, 2, "#b4dc78");
-    R(sx, sy + 11, W - sx, 2, "#4f7e2a");
+  // the whole farm on one screen: rice terraces, sugarcane, coconut grove, vegetable beds
+  riceTerraces(t);
+  // sugarcane plantation (left): rows from back to front
+  for (let r = 0; r < 4; r++) {
+    const g = 246 + r * 16;
+    const h = 34 + r * 7;
+    for (let k = 0; k < 20 - r; k++) cane(-4 + k * (11 + r) + (r % 2) * 5, g, h, t, k + r * 5);
   }
-  hut(88, 262);
-  palm(30, 272, 112, t, 1);
-  palm(430, 236, 80, t, -1);
-  bush(240, 296, 16);
-  bush(150, 304, 20);
-  bush(396, 304, 22);
-  bush(366, 316, 14);
-  smoke(88, 142, t);
-  banana(190, 290, t);
-  bamboo(432, 292, 84, t);
-  carabao(278, 338, t);
-  butterfly(200, 262, t, "#f2c94c");
-  butterfly(340, 270, t, "#ffffff");
-  butterfly(60, 300, t, "#e07aa8");
-  hen(150, 322, t, 2);
-  rooster(196, 330, t, 5);
-  chick(168, 326, t, 1);
-  chick(178, 330, t, 3);
-  goat(430, 338, t, 7);
-  pig(330, 334, t, 4, 0.8);
-  flowers(0, 640, 262, 350, 30, 3);
+  // coconut grove (middle back)
+  for (const sx of [236, 284, 338, 392, 436]) {
+    disc(sx + 4, 266, 14, "rgba(20,60,25,0.16)");
+    disc(sx + 4, 266, 9, "rgba(20,60,25,0.16)");
+  }
+  cocoPalm(236, 262, 120, t, 1);
+  cocoPalm(284, 252, 92, t, -1);
+  cocoPalm(338, 264, 132, t, 1);
+  cocoPalm(392, 254, 100, t, -1);
+  cocoPalm(436, 262, 116, t, 1);
+  for (const f of [[258, 270], [310, 268], [362, 274], [412, 270]]) disc(f[0], f[1], 2, "#6a4a2e");
+  // fence between the fields and the garden
+  for (let x = 0; x < 452; x += 14) {
+    R(x, 276, 3, 12, "#8a6a43");
+    R(x, 276, 3, 2, "#a8844f");
+  }
+  R(0, 280, 452, 2, "#8a6a43");
+  // vegetable plantation (front): raised beds, a trellis with gourds
+  vegBed(291, 0, 452, 0, 1);
+  vegBed(304, 0, 452, 1, 1);
+  vegBed(317, 0, 452, 2, 1);
+  vegBed(330, 0, 452, 3, 1);
+  trellis(396, 314);
+  scarecrow(24, 312);
+  butterfly(120, 290, t, "#f2c94c");
+  butterfly(300, 296, t, "#ffffff");
+  butterfly(60, 304, t, "#e07aa8");
+  hen(190, 346, t, 2);
+  chick(206, 348, t, 1);
+  carabao(452, 344, t);
+  flowers(0, 452, 290, 350, 26, 3);
   kid(592, 232);
   bigTree(630, 366, 220, 60, t, 4);
   palm(-4, 396, 250, t, 1, 34);
