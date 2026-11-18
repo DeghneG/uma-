@@ -71,6 +71,14 @@ function fit(): void {
 window.addEventListener("resize", fit);
 fit();
 
+// the glove cursor closes into a fist while the mouse button is held
+{
+  const game = document.getElementById("game");
+  const press = (on: boolean) => (): void => void game?.classList.toggle("press", on);
+  window.addEventListener("pointerdown", (e) => (e.button === 0 ? press(true)() : undefined));
+  for (const ev of ["pointerup", "pointercancel", "blur"]) window.addEventListener(ev, press(false));
+}
+
 armMusic();
 initArt($<HTMLCanvasElement>("cv"));
 initHud();
