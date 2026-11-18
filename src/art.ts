@@ -55,12 +55,53 @@ const hills = (): void => {
   R(10, 18, 22, 6, "#4d7a5c");
   R(60, 16, 26, 8, "#4d7a5c");
 };
-const person = (x: number, y: number, c: string): void => {
-  R(x, y, 3, 3, "#e3b48d");
-  R(x - 1, y + 3, 5, 5, c);
-  R(x, y + 8, 1, 3, "#3a2a1c");
-  R(x + 2, y + 8, 1, 3, "#3a2a1c");
-  R(x - 2, y - 1, 7, 1, "#e1c15a");
+/**
+ * Chibi villager sprite, 13x16 cells, big head and black outline.
+ * K outline, H hat, h hat shade, B hat band, D hair, S skin, T shirt, P shorts.
+ * (x, y) keep the old meaning: x is the body centre, y the top of the old 11px figure.
+ */
+const HAT = [
+  "....KKKKK....",
+  "..KKHHHHHKK..",
+  ".KHHHHHHHHHK.",
+  ".KBBBBBBBBBK.",
+  "KHHHHHHHHHHhK",
+  "KKKKKKKKKKKKK",
+];
+const HAIR = [
+  "....KKKKK....",
+  "..KKDDDDDKK..",
+  ".KDDDDDDDDDK.",
+  ".KDDDDDDDDDK.",
+  ".KDDDDDDDDDK.",
+  ".KDDDDDDDDDK.",
+];
+const BODY = [
+  ".KDSSSSSSSDK.",
+  ".KSSSSSSSSSK.",
+  ".KSKSSSSSKSK.",
+  ".KSKSSSSSKSK.",
+  "..KSSSSSSSK..",
+  "..SKTTTTTKS..",
+  "..SKTTTTTKS..",
+  "...KPPPPPK...",
+  "...KPK.KPK...",
+  "...KKK.KKK...",
+];
+const person = (x: number, y: number, shirt: string, hat = true): void => {
+  const pal: Record<string, string> = {
+    K: "#1b1410", H: "#eebc3c", h: "#c98a1f", B: shirt, D: "#2a1c14",
+    S: "#f0c79c", T: shirt, P: "#3f5fa0",
+  };
+  const rows = [...(hat ? HAT : HAIR), ...BODY];
+  const ox = x - 5;
+  const oy = y - 5;
+  rows.forEach((row, j) => {
+    for (let i = 0; i < row.length; i++) {
+      const k = row[i];
+      if (k !== ".") R(ox + i, oy + j, 1, 1, pal[k]);
+    }
+  });
 };
 
 function home(): void {
@@ -74,8 +115,8 @@ function home(): void {
   R(40, 34, 6, 10, "#4a321c");
   R(34, 31, 4, 4, "#d9ecf2");
   R(24, 40, 2, 6, "#7b5836");
-  person(62, 38, "#c25a3a");
-  person(68, 40, "#3f7bb0");
+  person(58, 38, "#c25a3a");
+  person(74, 40, "#3f7bb0", false);
 }
 
 function fieldScene(t: number): void {
@@ -159,14 +200,14 @@ function fieldScene(t: number): void {
     R(75, 23, 5, 3, "#8fb7c9");
     R(66, 32, 4, 3, "#222222");
     R(79, 32, 4, 3, "#222222");
-    person(88, 25, "#2f4a6b");
+    person(88, 25, "#2f4a6b", false);
   }
 
   // Tatay works with a small bob; Mang Ben joins from week 3
   const bob = field.working && !reduce ? Math.round(Math.sin(t / 180)) : 0;
   person(14, 24 + bob, "#c25a3a");
   if (field.ben) person(26, 26 - bob, "#6f9a3f");
-  if (field.ben && field.week === 3) person(34, 28 + bob, "#d96f9a");
+  if (field.ben && field.week === 3) person(34, 28 + bob, "#d96f9a", false);
 }
 
 function market(): void {
@@ -181,7 +222,7 @@ function market(): void {
     R(33 + i * 7, 27, 6, 6, "#e7d9a8");
     R(35 + i * 7, 26, 2, 1, "#9a8a58");
   }
-  person(74, 36, "#3f7bb0");
+  person(74, 36, "#3f7bb0", false);
   person(14, 36, "#c25a3a");
 }
 
