@@ -623,33 +623,188 @@ const BODY = [
   "...KPK.KPK...",
   "...KKK.KKK...",
 ];
-const person = (x: number, feet: number, shirt: string, hat = true, s = 2): void => {
+type Mode = "idle" | "walk" | "work";
+interface Motion {
+  lean: number;
+  bob: number;
+  headDy: number;
+  armL: number;
+  armR: number;
+  legLdy: number;
+  legRdy: number;
+  legLdx: number;
+  legRdx: number;
+  blink: boolean;
+}
+/**
+ * Procedural animation in whole pixels (one frame of art is enough): breathing, a slow sway and blinking at rest,
+ * a step cycle with swinging arms when walking, and a lean-and-swing when working.
+ */
+const motion = (t: number, mode: Mode, seed: number): Motion => {
+  const m: Motion = { lean: 0, bob: 0, headDy: 0, armL: 0, armR: 0, legLdy: 0, legRdy: 0, legLdx: 0, legRdx: 0, blink: false };
+  if (reduce) return m;
+  if (mode === "walk") {
+    const ph = t / 115 + seed;
+    const s = Math.sin(ph);
+    m.bob = Math.round(Math.abs(s) * 1.4);
+    m.armL = Math.round(s * 1.4);
+    m.armR = -m.armL;
+    m.legLdy = -Math.round(Math.max(0, s) * 2.4);
+    m.legRdy = -Math.round(Math.max(0, -s) * 2.4);
+    m.legLdx = Math.round(s * 1.6);
+    m.legRdx = -m.legLdx;
+    m.lean = Math.round(Math.sin(ph / 2) * 0.6);
+  } else if (mode === "work") {
+    const ph = t / 170 + seed;
+    m.lean = Math.round(Math.sin(ph) * 2.4);
+    m.bob = Math.round(Math.abs(Math.sin(ph)) * 1.4);
+    m.armL = Math.round(Math.sin(ph) * 2);
+    m.armR = Math.round(Math.sin(ph + 1.6) * 2);
+    m.headDy = Math.round(Math.max(0, Math.sin(ph)));
+  } else {
+    m.lean = Math.round(Math.sin(t / 1100 + seed) * 0.7);
+    m.headDy = Math.round((Math.sin(t / 700 + seed) + 1) / 2);
+  }
+  m.blink = (t + seed * 1700) % 4200 < 140;
+  return m;
+};
+/** Walk back and forth around x, pausing at each end: [x, mode]. */
+const stroll = (x: number, range: number, t: number, seed: number): [number, Mode] => {
+  if (reduce) return [x, "idle"];
+  const p = t / 3200 + seed;
+  return [Math.round(x + Math.sin(p) * range), Math.abs(Math.cos(p)) > 0.3 ? "walk" : "idle"];
+};
+
+/** Code-drawn villager (13x16 cells, drawn at s x), animated with the same motion model as the sprites. */
+const person = (x: number, feet: number, shirt: string, hat = true, s = 2, t = 0, mode: Mode = "idle", seed = 0): void => {
   const pal: Record<string, string> = {
     K: "#1b1410", H: "#eebc3c", h: "#c98a1f", B: shirt, D: "#2a1c14", S: "#f0c79c", T: shirt, P: "#3f5fa0",
   };
   const rows = [...(hat ? HAT : HAIR), ...BODY];
   const ox = x - 13 * s * 0.5;
   const oy = feet - rows.length * s;
+  const m = motion(t, mode, seed);
+  // unshifted hips under the torso so bobbing never leaves a gap
+  for (let j = 11; j <= 13; j++) for (let i = 4; i <= 8; i++) if (rows[j][i] !== ".") R(ox + i * s, oy + j * s, s, s, pal[rows[j][i]]);
   rows.forEach((row, j) => {
-    for (let i = 0; i < row.length; i++) if (row[i] !== ".") R(ox + i * s, oy + j * s, s, s, pal[row[i]]);
+    for (let i = 0; i < row.length; i++) {
+      if (row[i] === ".") continue;
+      let dx = 0;
+      let dy = 0;
+      if (j <= 12) {
+        dx = Math.round((m.lean * (13 - j)) / 13 * 1.3);
+        dy = -m.bob;
+        if (j <= 10) dy += m.headDy;
+        else if (i <= 3) dy += m.armL;
+        else if (i >= 9) dy += m.armR;
+      } else if (j >= 14) {
+        dx = i < 6 ? m.legLdx : m.legRdx;
+        dy = i < 6 ? m.legLdy : m.legRdy;
+      }
+      R(ox + (i + dx) * s, oy + (j + dy) * s, s, s, pal[row[i]]);
+    }
   });
+  if (m.blink) {
+    const eyeRows = rows.length - BODY.length + 2;
+    for (const ex of [3, 9]) R(ox + (ex + Math.round((m.lean * (13 - eyeRows)) / 13 * 1.3)) * s, oy + (eyeRows + m.headDy - m.bob) * s, s, s * 2, pal.S);
+  }
 };
-/** Loads public/sprites/<name>.png (hand-drawn, drawn 1:1); returns draw(x centre, y of feet). */
-const loadSprite = (name: string, fallback: (x: number, feet: number) => void): ((x: number, feet: number) => void) => {
+
+/** Where the parts of a hand-drawn sprite are, found once from its pixels. */
+interface Rig {
+  w: number;
+  h: number;
+  headEnd: number;
+  bodyEnd: number;
+  mid: number;
+  a0: number;
+  a1: number;
+  eyes: { x: number; y: number; c: string }[];
+}
+const analyse = (img: HTMLImageElement): Rig => {
+  const w = img.width;
+  const h = img.height;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const g = c.getContext("2d") as CanvasRenderingContext2D;
+  g.drawImage(img, 0, 0);
+  const d = g.getImageData(0, 0, w, h).data;
+  const at = (x: number, y: number): number[] => (x < 0 || y < 0 || x >= w || y >= h ? [0, 0, 0, 0] : [d[(y * w + x) * 4], d[(y * w + x) * 4 + 1], d[(y * w + x) * 4 + 2], d[(y * w + x) * 4 + 3]]);
+  const solid = (p: number[]): boolean => p[3] > 0;
+  const dark = (p: number[]): boolean => p[3] > 0 && p[0] < 60 && p[1] < 60 && p[2] < 60;
+  const ty = Math.round(h * 0.7);
+  let a0 = 0;
+  let a1 = w - 1;
+  while (a0 < w && !solid(at(a0, ty))) a0++;
+  while (a1 > 0 && !solid(at(a1, ty))) a1--;
+  const eyes: { x: number; y: number; c: string }[] = [];
+  for (let y = Math.floor(h * 0.38); y < Math.floor(h * 0.5); y++) {
+    for (let x = 0; x < w; x++) {
+      if (!dark(at(x, y))) continue;
+      let up = y;
+      let down = y;
+      while (dark(at(x, up - 1))) up--;
+      while (dark(at(x, down + 1))) down++;
+      if (down - up > 3) continue; // a long dark run is the head outline, not an eye
+      const skin = (dx: number): boolean => [1, 2].some((k) => solid(at(x + dx * k, y)) && !dark(at(x + dx * k, y)));
+      if (!skin(-1) || !skin(1)) continue;
+      const above = at(x, up - 1);
+      const p = solid(above) && !dark(above) ? above : at(x, down + 1);
+      eyes.push({ x, y, c: `rgb(${p[0]},${p[1]},${p[2]})` });
+    }
+  }
+  return { w, h, headEnd: Math.round(h * 0.6), bodyEnd: Math.round(h * 0.82), mid: Math.round((a0 + a1 + 1) / 2), a0, a1, eyes };
+};
+const drawRig = (img: HTMLImageElement, rg: Rig, x: number, feet: number, t: number, mode: Mode, seed: number): void => {
+  const { w, h, headEnd, bodyEnd } = rg;
+  const m = motion(t, mode, seed);
+  const ox = Math.round(x - w / 2);
+  const oy = Math.round(feet - h);
+  const sub = (sx: number, sy: number, sw: number, sh: number, dx: number, dy: number): void => {
+    if (sw > 0 && sh > 0) cx.drawImage(img, sx, sy, sw, sh, ox + sx + dx, oy + dy, sw, sh);
+  };
+  const lean = (r: number): number => Math.round((m.lean * Math.max(0, bodyEnd - r)) / bodyEnd * 1.3);
+  const aw = 4;
+  const l1 = rg.a0 + aw;
+  const r0 = rg.a1 - aw + 1;
+  // legs first, so a lifted foot slides up behind the torso
+  sub(0, bodyEnd, rg.mid, h - bodyEnd, m.legLdx, bodyEnd + m.legLdy);
+  sub(rg.mid, bodyEnd, w - rg.mid, h - bodyEnd, m.legRdx, bodyEnd + m.legRdy);
+  // torso: an unshifted core (no gaps while bobbing), then the shifted torso with swinging arms
+  for (let r = headEnd; r < bodyEnd; r++) sub(l1, r, r0 - l1, 1, 0, r);
+  for (let r = headEnd; r < bodyEnd; r++) {
+    const dx = lean(r);
+    sub(0, r, l1, 1, dx, r - m.bob + m.armL);
+    sub(l1, r, r0 - l1, 1, dx, r - m.bob);
+    sub(r0, r, w - r0, 1, dx, r - m.bob + m.armR);
+  }
+  // head, sheared by the lean and dipping when breathing
+  for (let r = 0; r < headEnd; r++) sub(0, r, w, 1, lean(r), r - m.bob + m.headDy);
+  if (m.blink) {
+    for (const e of rg.eyes) {
+      cx.fillStyle = e.c;
+      cx.fillRect(ox + e.x + lean(e.y), oy + e.y - m.bob + m.headDy, 1, 1);
+    }
+  }
+};
+type Draw = (x: number, feet: number, t?: number, mode?: Mode, seed?: number) => void;
+/** Loads public/sprites/<name>.png (hand-drawn, drawn 1:1) and animates it; falls back to the code-drawn villager. */
+const loadSprite = (name: string, fallback: Draw): Draw => {
   const img = new Image();
-  let ready = false;
+  let rig: Rig | null = null;
   img.onload = (): void => {
-    ready = true;
+    rig = analyse(img);
   };
   img.src = `/sprites/${name}.png`;
-  return (x, feet) => {
-    if (!ready) return fallback(x, feet);
-    cx.drawImage(img, Math.round(x - img.width / 2), Math.round(feet - img.height));
+  return (x, feet, t = 0, mode = "idle", seed = 0) => {
+    if (!rig) return fallback(x, feet, t, mode, seed);
+    drawRig(img, rig, x, feet, t, mode, seed);
   };
 };
-const kid = loadSprite("kid", (x, f) => person(x, f, "#d96f9a", false));
-const tatay = loadSprite("tatay", (x, f) => person(x, f, "#c25a3a"));
-const nanay = loadSprite("nanay", (x, f) => person(x, f, "#3f7bb0", false));
+const kid = loadSprite("kid", (x, f, t, m, s) => person(x, f, "#d96f9a", false, 2, t, m, s));
+const tatay = loadSprite("tatay", (x, f, t, m, s) => person(x, f, "#c25a3a", true, 2, t, m, s));
+const nanay = loadSprite("nanay", (x, f, t, m, s) => person(x, f, "#3f7bb0", false, 2, t, m, s));
 /** soft ground shadow under a character */
 const shadow = (x: number, y: number, w = 26): void => R(x - w / 2, y - 1, w, 3, "rgba(0,0,0,0.22)");
 
@@ -716,10 +871,11 @@ function home(t: number): void {
   butterfly(120, 300, t, "#f2c94c");
   butterfly(300, 322, t, "#e07aa8");
   butterfly(380, 288, t, "#ffffff");
-  shadow(330, 305, 40);
+  const [tx, tm] = stroll(330, 26, t, 1);
+  shadow(tx, 305, 40);
   shadow(402, 311, 40);
-  tatay(330, 304);
-  nanay(402, 310);
+  tatay(tx, 304, t, tm, 1);
+  nanay(402, 310, t, "idle", 2);
   bigTree(-12, 380, 210, 56, t, 3);
   palm(30, 392, 250, t, 1, 34);
   fgBushes(11, 9);
@@ -925,20 +1081,20 @@ function fieldScene(t: number): void {
     R(156, 156, 14, 9, "#222222");
     R(206, 156, 14, 9, "#222222");
     shadow(300, 280, 28);
-    person(300, 280, "#2f4a6b", false);
+    person(300, 280, "#2f4a6b", false, 2, t, "idle", 4);
   }
 
   // Bert works with a small bob; Mang Ben joins from week 3, with a child at the harvest
-  const bob = field.working && !reduce ? Math.round(Math.sin(t / 180) * 2) : 0;
+  const wm: Mode = field.working ? "work" : "idle";
   shadow(92, 276);
-  tatay(92, 276 + bob);
+  tatay(92, 276, t, wm, 1);
   if (field.ben) {
     shadow(176, 282, 30);
-    person(176, 282 - bob, "#6f9a3f");
+    person(176, 282, "#6f9a3f", true, 2, t, wm, 3);
   }
   if (field.ben && field.week === 3) {
     shadow(250, 292);
-    kid(250, 292 + bob);
+    kid(250, 292, t, wm, 5);
   }
   bigTree(-16, 384, 200, 54, t, 5);
   fgBushes(21, 9);
@@ -962,10 +1118,10 @@ function market(t: number): void {
   // bunting over the street, a parked jeepney and a crowd along the shop fronts
   bunting(10, 420, 128);
   jeepney(344, 198, "#3f7bb0", "#f2c94c");
-  person(30, 200, "#8a4a9a", true, 1);
-  person(70, 202, "#d96f9a", false, 1);
-  person(338, 202, "#c25a3a", true, 1);
-  person(312, 200, "#6f9a3f", false, 1);
+  person(30, 200, "#8a4a9a", true, 1, t, "idle", 1);
+  person(70, 202, "#d96f9a", false, 1, t, "idle", 2);
+  person(338, 202, "#c25a3a", true, 1, t, "idle", 3);
+  person(312, 200, "#6f9a3f", false, 1, t, "idle", 4);
 
   // stall: posts, striped awning, counter
   R(112, 176, 5, 70, "#7b5836");
@@ -1000,11 +1156,11 @@ function market(t: number): void {
   palm(580, 240, 110, t, -1);
   // vendor behind the counter, family in front
   shadow(208, 226, 30);
-  person(208, 226, "#8a4a9a");
+  person(208, 226, "#8a4a9a", true, 2, t, "idle", 6);
   shadow(92, 298, 40);
-  tatay(92, 298);
+  tatay(92, 298, t, "idle", 7);
   shadow(372, 304, 40);
-  nanay(372, 304);
+  nanay(372, 304, t, "idle", 8);
   for (let i = 0; i < 30; i++) tuft(8 + rnd(i + 5) * 620, 330 + rnd(i + 70) * 24, "#8a9a50", "#6a7a3a");
   bigTree(-14, 384, 205, 54, t, 8);
   fgBushes(31, 8);
@@ -1205,7 +1361,8 @@ function titleScene(t: number): void {
   butterfly(330, 296, t, "#ffffff");
   butterfly(60, 270, t, "#e07aa8");
   carabao(452, 344, t);
-  kid(592, 232);
+  const [kx, km] = stroll(592, 10, t, 2);
+  kid(kx, 232, t, km, 3);
   bigTree(630, 366, 220, 60, t, 4);
   palm(-4, 396, 250, t, 1, 34);
   // dark grass in the foreground
