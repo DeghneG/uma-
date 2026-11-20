@@ -62,6 +62,27 @@ const en = {
     head: "Explore the barrio",
     hint: "Click a place on the map to walk there. Press Back to return home.",
     soon: "This place is not open yet. It will be soon.",
+    enter: "Go in",
+    visitHint: "Walk with W A S D. Stand near someone and press E to talk. Press Back to return to the map.",
+    talk: {
+      home: [
+        "Tatay Bert: The notice is still on the table. But the rice will not plant itself, and neither will the cane.",
+        "Nanay Flor: Eat something before you go. Whatever happens in five months, nobody works on an empty stomach.",
+      ],
+      rice: [
+        "Tatay Bert: Look at that. Weeds cleared, water in, seedlings standing. It is not ours, but we grew it.",
+        "Mang Ben: Forty years I have farmed this land, and still I read the sky every morning before I read anything else.",
+      ],
+      market: [
+        "Gulay seller: Tomatoes, eggplant, squash. Everything picked this morning. Buy two, I will add a bunch of greens.",
+        "Fruit seller: Sweet mangoes, ripe bananas. A good harvest means everyone buys, and a bad one means everyone bargains.",
+        "Fish seller: Fresh from the coast at dawn. The trader pays me by the day, so I cannot wait for better prices.",
+        "Poultry seller: Native chickens and eggs. Raise a few hens and the family always has something to sell.",
+        "Coconut seller: Buko juice, copra, coconut oil. Palms pay slowly, but they pay every year.",
+        "Tatay Bert: Your Nanay and I will wait by the truck. Bring the sacks to the stall when the harvest comes.",
+        "Nanay Flor: Stand tall at your stall, anak. Rice sells itself when it is honest weight.",
+      ],
+    },
     places: [
       { n: "HOME", d: "The bahay kubo where Nanay Flor, Tatay Bert and you live. The notice still sits on the table." },
       { n: "RICE FIELD", d: "The paddy your family farms but does not own. Weeds, water and seedlings wait here." },
@@ -70,7 +91,6 @@ const en = {
       { n: "LIVESTOCK", d: "A small farm with pigs, goats and hens. A good place to earn something between harvests." },
       { n: "COCONUT GROVE", d: "Palms by the coast. Coconuts and vegetables bring in cash all year round." },
       { n: "VEGETABLES", d: "Garden beds of tomato, eggplant, squash and greens. Quick crops for a quick peso." },
-      { n: "FACTORY", d: "The Sevilla factory. Its smoke already hangs over the barrio, and soon it will stand on your paddy." },
       { n: "BUS TO CEBU", d: "The bus to the city, where your cousin has a room. It leaves when the five months are up." },
     ],
   },
@@ -289,6 +309,27 @@ const fil: typeof en = {
     head: "Libutin ang barrio",
     hint: "Mag-click sa isang lugar sa mapa para pumunta roon. Pindutin ang Bumalik para umuwi.",
     soon: "Hindi pa bukas ang lugar na ito. Malapit na.",
+    enter: "Pumasok",
+    visitHint: "Maglakad gamit ang W A S D. Tumabi sa isang tao at pindutin ang E para makipag-usap. Pindutin ang Bumalik para bumalik sa mapa.",
+    talk: {
+      home: [
+        "Tatay Bert: Nasa mesa pa rin ang abiso. Pero hindi magtatanim ang palay nang mag-isa, at ang tubo rin.",
+        "Nanay Flor: Kumain ka muna bago umalis. Anuman ang mangyari sa limang buwan, walang nagtatrabaho nang gutom.",
+      ],
+      rice: [
+        "Tatay Bert: Tingnan mo iyan. Wala nang damo, may tubig, nakatayo ang mga punla. Hindi atin ito, pero tayo ang nagpatubo.",
+        "Mang Ben: Apatnapung taon na akong nagsasaka sa lupang ito, at tuwing umaga langit pa rin ang una kong binabasa.",
+      ],
+      market: [
+        "Nagtitinda ng gulay: Kamatis, talong, kalabasa. Pinitas lahat kaninang umaga. Bumili ka ng dalawa, dadagdagan ko ng gulay.",
+        "Nagtitinda ng prutas: Matamis na mangga, hinog na saging. Kapag maganda ang ani, lahat bumibili, at kapag masama, lahat tumatawad.",
+        "Nagtitinda ng isda: Galing sa dagat kaninang madaling-araw. Araw-araw ako binabayaran ng negosyante, kaya hindi ako makapaghihintay.",
+        "Nagtitinda ng manok: Native na manok at itlog. Mag-alaga ka ng ilang inahin at laging may maibebenta ang pamilya.",
+        "Nagtitinda ng niyog: Buko, kopra, langis ng niyog. Mabagal magbayad ang niyog, pero taun-taon itong nagbabayad.",
+        "Tatay Bert: Maghihintay kami ng Nanay mo sa tabi ng trak. Dalhin mo ang mga sako sa puwesto kapag dumating ang ani.",
+        "Nanay Flor: Tumindig ka sa puwesto mo, anak. Kusang nabebenta ang palay kapag tapat ang timbang.",
+      ],
+    },
     places: [
       { n: "BAHAY", d: "Ang bahay kubo kung saan nakatira sina Nanay Flor, Tatay Bert at ikaw. Nasa mesa pa rin ang abiso." },
       { n: "PALAYAN", d: "Ang palayang sinasaka ng pamilya mo pero hindi pag-aari. Naghihintay rito ang damo, tubig at punla." },
@@ -297,7 +338,6 @@ const fil: typeof en = {
       { n: "HAYOP", d: "Maliit na bukid na may baboy, kambing at manok. Magandang kitaan sa pagitan ng ani." },
       { n: "NIYUGAN", d: "Mga puno ng niyog sa tabing-dagat. Nagbibigay ng pera buong taon ang niyog at gulay." },
       { n: "GULAYAN", d: "Mga tanim na kamatis, talong, kalabasa at gulay. Mabilis na pananim para sa mabilis na pera." },
-      { n: "PABRIKA", d: "Ang pabrika ng mga Sevilla. Nakabitin na ang usok nito sa barrio, at malapit na itong tumayo sa palayan mo." },
       { n: "BUS PA-CEBU", d: "Ang bus papunta sa lungsod, kung saan may kuwarto ang pinsan mo. Aalis ito kapag tapos na ang limang buwan." },
     ],
   },

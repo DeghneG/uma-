@@ -214,3 +214,5 @@ html,body,#game,#game *{cursor:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A
 #game.closeup .panel,#game.closeup .panel *{pointer-events:none!important}
 
 #game.nocursor,#game.nocursor *{cursor:none!important}
+
+#game.closeup .panel .btn{pointer-events:auto!important}

@@ -115,8 +115,8 @@ export const customScenes: Record<string, (t: number) => void> = {};
 /** Canvas position (x centre, y top of head) of a speaking character in the current scene, or null when off screen. */
 export function speakerAnchor(name: string): [number, number] | null {
   const s = view.scene;
-  if (name.startsWith("Tatay")) return s === "home" ? [330, 247] : s === "field" ? [92, 237] : s === "market" ? [92, 259] : null;
-  if (name.startsWith("Nanay")) return s === "home" ? [402, 253] : s === "market" ? [372, 266] : null;
+  if (name.startsWith("Tatay")) return s === "home" ? [330, 247] : s === "field" ? [92, 237] : s === "market" ? [180, 247] : null;
+  if (name.startsWith("Nanay")) return s === "home" ? [402, 253] : s === "market" ? [206, 251] : null;
   if (name.startsWith("Mang Ben")) return s === "field" && field.ben ? [176, 250] : null;
   return null;
 }

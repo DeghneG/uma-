@@ -12,30 +12,28 @@ const H = 360;
 /* ---------- places and roads ---------- */
 export type Place = { id: string; x: number; y: number };
 export const PLACES: Place[] = [
-  { id: "home", x: 128, y: 252 },
-  { id: "rice", x: 252, y: 276 },
-  { id: "market", x: 404, y: 150 },
-  { id: "cane", x: 468, y: 244 },
-  { id: "farm", x: 76, y: 178 },
-  { id: "coconut", x: 508, y: 96 },
-  { id: "veg", x: 346, y: 312 },
-  { id: "factory", x: 528, y: 176 },
-  { id: "bus", x: 412, y: 56 },
+  { id: "home", x: 168, y: 214 },
+  { id: "rice", x: 380, y: 150 },
+  { id: "market", x: 336, y: 268 },
+  { id: "cane", x: 562, y: 168 },
+  { id: "farm", x: 92, y: 180 },
+  { id: "coconut", x: 450, y: 306 },
+  { id: "veg", x: 64, y: 262 },
+  { id: "bus", x: 590, y: 290 },
 ];
 const idx = (id: string): number => PLACES.findIndex((p) => p.id === id);
 /** Roads link two places through an optional bend, so they wind a little. */
 const ROADS: [string, string, [number, number]?][] = [
-  ["home", "rice", [190, 270]],
-  ["home", "farm", [92, 214]],
-  ["home", "veg", [230, 312]],
-  ["rice", "veg", [300, 300]],
-  ["rice", "market", [330, 224]],
-  ["market", "bus", [420, 100]],
-  ["market", "coconut", [470, 120]],
-  ["market", "factory", [470, 158]],
-  ["factory", "coconut", [524, 130]],
-  ["factory", "cane", [498, 214]],
-  ["cane", "rice", [370, 262]],
+  ["home", "rice", [270, 168]],
+  ["home", "veg", [108, 250]],
+  ["home", "market", [250, 262]],
+  ["home", "farm", [124, 186]],
+  ["rice", "cane", [480, 110]],
+  ["market", "coconut", [400, 296]],
+  ["market", "cane", [440, 190]],
+  ["coconut", "bus", [530, 312]],
+  ["cane", "bus", [592, 232]],
+  ["market", "rice", [360, 214]],
 ];
 
 export const mapState = {
@@ -45,7 +43,7 @@ export const mapState = {
   hover: -1,
   route: [] as [number, number][],
   to: -1,
-  arrived: -1,
+  arrived: 0,
   dir: 1,
 };
 
@@ -94,21 +92,23 @@ export function routeTo(from: number, to: number): [number, number][] {
 }
 
 /* ---------- terrain ---------- */
-type Water = "sea" | "lake" | "river" | "pond" | null;
+type Water = "sea" | "river" | null;
+const southCoast = (x: number): number => 326 + 11 * Math.sin(x / 37) + 6 * Math.sin(x / 15) - (x > 548 ? (x - 548) * 0.18 : 0);
+const westCoast = (y: number): number => 16 + 12 * Math.sin(y / 29) + (y > 250 ? (y - 250) * 0.55 : 0);
+const riverX = (y: number): number => 476 + 40 * Math.sin((y - 96) / 54);
 function waterAt(x: number, y: number): Water {
-  if (x > 592 + 22 * Math.sin(y / 33) + 9 * Math.sin(y / 13)) return "sea";
-  const lx = (x - 196) / 74;
-  const ly = (y - 148) / 46;
-  if (lx * lx + ly * ly < 1 + 0.14 * Math.sin(x / 9 + y / 7)) return "lake";
-  if (y < 112 && Math.abs(x - (338 + 14 * Math.sin(y / 26))) < 5 + (y > 96 ? 3 : 0)) return "river";
-  if (y > 188 && Math.abs(x - (232 + 11 * Math.sin(y / 21))) < 4) return "river";
-  const px = (x - 566) / 26;
-  const py = (y - 276) / 15;
-  if (px * px + py * py < 1) return "pond";
+  // the little islet off the south-west coast
+  const ix = (x - 92) / 28;
+  const iy = (y - 338) / 10;
+  if (ix * ix + iy * iy < 1) return null;
+  if (y > southCoast(x) || x < westCoast(y)) return "sea";
+  if (y > 98 && Math.abs(x - riverX(y)) < 4 + (y > 270 ? (y - 270) / 16 : 0)) return "river";
   return null;
 }
 const landNear = (x: number, y: number, d: number): boolean => !waterAt(x + d, y) || !waterAt(x - d, y) || !waterAt(x, y + d) || !waterAt(x, y - d);
 const waterNear = (x: number, y: number, d: number): boolean => !!(waterAt(x + d, y) || waterAt(x - d, y) || waterAt(x, y + d) || waterAt(x, y - d));
+/** The mountains rise along the north edge of the island. */
+const ridgeY = (x: number): number => 92 + 12 * Math.sin(x / 41) + 6 * Math.sin(x / 17);
 
 function pine(x: number, y: number, k: number): void {
   R(x - 1, y - 3, 3, 4, "#5a3010");
@@ -124,70 +124,122 @@ function round(x: number, y: number): void {
   disc(x - 1, y - 8, 4, "#37963a");
   R(x - 3, y - 11, 3, 2, "#6cc860");
 }
-function dune(x: number, y: number, w: number, h: number): void {
-  for (let j = -h; j <= h; j++) {
-    const ww = Math.round(w * Math.sqrt(1 - (j * j) / (h * h)));
-    R(x - ww, y + j, ww * 2, 1, "#f2dc96");
+/** A coconut palm seen from the side, leaning a little. */
+function palmTree(x: number, y: number, lean: number): void {
+  for (let i = 0; i < 16; i++) R(x + Math.round(i * 0.18 * lean), y - i, 2, 2, i % 3 ? "#8a5a2a" : "#6a4a22");
+  const tx = x + Math.round(16 * 0.18 * lean);
+  const ty = y - 16;
+  for (const [dx, dy] of [[-9, 2], [-6, -1], [-2, -3], [3, -3], [7, -1], [10, 2], [-5, 4], [6, 4]]) {
+    R(tx + dx, ty + dy, 6, 2, "#14340e");
+    R(tx + dx + 1, ty + dy, 4, 1, "#3fb048");
   }
-  for (let j = -h; j <= h; j += 4) {
-    const ww = Math.round(w * 0.8 * Math.sqrt(1 - (j * j) / (h * h)));
-    R(x - ww, y + j + 2, ww * 2, 1, "#d8b860");
+  R(tx - 1, ty + 1, 3, 3, "#6a4a22");
+  R(tx + 2, ty + 2, 3, 3, "#5a3a14");
+}
+/** A rocky, forested peak: lit on the left, shaded on the right. */
+function peak(cx: number, base: number, hgt: number): void {
+  for (let j = 0; j < hgt; j++) {
+    const w = Math.round((j / hgt) * (hgt * 0.95));
+    const y = base - hgt + j;
+    R(cx - w, y, w, 1, j < hgt * 0.35 ? "#b09a82" : "#8a8a6a");
+    R(cx, y, w, 1, j < hgt * 0.35 ? "#7a6a58" : "#4f6a3f");
+    if (j > hgt * 0.4 && j % 5 === 0) R(cx - w + 2, y, w * 2 - 4, 1, "#3f7a3a");
   }
-  for (let i = 0; i < w; i += 5) R(x - w + 4 + i * 2, y - 1 + (i % 3), 3, 1, "#fff4c8");
-  R(x - w / 2, y - h + 1, w, 1, "#fff4c8");
+  R(cx - 1, base - hgt, 2, 2, "#e8dcc8");
+  for (let k = 0; k < 6; k++) R(cx - (hgt >> 2) + k * 3, base - Math.round(hgt * 0.45) + (k % 3) * 3, 2, 2, "#2f6a2f");
+}
+/** Stepped rice terraces climbing a hillside: water and young rice in curved bands. */
+function terraces(x0: number, y0: number, w: number, rows: number): void {
+  for (let k = 0; k < rows; k++) {
+    const y = y0 + k * 11;
+    const xs = x0 + k * 7;
+    const xe = x0 + w - k * 4;
+    for (let x = xs; x < xe; x += 2) {
+      const yy = y + Math.round(Math.sin(x / 13 + k) * 2);
+      R(x, yy, 2, 9, "#3a5a28");
+      R(x, yy + 1, 2, 7, k % 2 ? "#6fd0e0" : "#86d84a");
+      R(x, yy, 2, 1, "#c8e890");
+      if (k % 2 === 0 && x % 6 === 0) R(x, yy + 3, 1, 4, "#3f9a2a");
+    }
+  }
+}
+/** A patchwork of small farm plots around the village. */
+function plots(x0: number, y0: number, nx: number, ny: number): void {
+  const cols = ["#7fc850", "#e8d070", "#9a7a4a", "#5fb040", "#c8a860"];
+  for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx; i++) {
+      const c = cols[Math.floor(rnd(i * 7 + j * 13) * 5)];
+      const x = x0 + i * 26;
+      const y = y0 + j * 17;
+      R(x, y, 24, 15, "#4a6a2a");
+      R(x + 1, y + 1, 22, 13, c);
+      for (let r = 0; r < 4; r++) R(x + 1, y + 3 + r * 3, 22, 1, "#00000022");
+    }
+  }
 }
 
 function paintTerrain(): void {
-  // grass and water in 2px cells
+  // grass and water in 2px cells; the sea is turquoise, the island lush
   for (let y = 0; y < H; y += 2) {
     for (let x = 0; x < W; x += 2) {
       const w = waterAt(x, y);
       if (w) {
         const shore = landNear(x, y, 3);
-        const mid = landNear(x, y, 7);
-        R(x, y, 2, 2, shore ? "#9ad8f8" : mid ? "#4aa0ec" : (x + y) % 8 === 0 ? "#3a8ce0" : "#2f80d8");
-        if (landNear(x, y, 1)) R(x, y, 2, 2, "#1f5fb0");
+        const mid = landNear(x, y, 8);
+        const deep = landNear(x, y, 16);
+        R(x, y, 2, 2, shore ? "#a8f0e0" : mid ? "#46d0d0" : deep ? "#2ab8c8" : (x + y) % 8 === 0 ? "#1a9ec0" : "#1e9ac8");
+        if (landNear(x, y, 1)) R(x, y, 2, 2, "#168a9a");
       } else {
         const r = rnd(x * 0.5 + y * 31.7);
-        let c = r > 0.82 ? "#58aa36" : r < 0.08 ? "#70c448" : "#62b83e";
-        if (waterNear(x, y, 3)) c = "#f0e0a0";
-        else if (waterNear(x, y, 6)) c = r > 0.5 ? "#8ac84a" : "#7ac040";
+        const dry = y < ridgeY(x) + 8;
+        let c = dry ? (r > 0.8 ? "#3f7a34" : "#4a8a3a") : r > 0.82 ? "#48a038" : r < 0.08 ? "#6cc050" : "#54ae3e";
+        if (waterNear(x, y, 4)) c = r > 0.5 ? "#f5e6b0" : "#ecd898";
+        else if (waterNear(x, y, 7)) c = r > 0.5 ? "#8cc84e" : "#7cc044";
         R(x, y, 2, 2, c);
-        if (waterNear(x, y, 1)) R(x, y, 2, 2, "#c8b070");
+        if (waterNear(x, y, 1)) R(x, y, 2, 2, "#c8a860");
       }
     }
   }
-  // dry dunes and cracked, dusty earth
-  dune(46, 96, 26, 12);
-  dune(34, 314, 22, 10);
-  dune(300, 214, 20, 9);
-  dune(560, 332, 28, 8);
-  dune(180, 330, 18, 8);
+  // the northern mountains, then the terraces below them and plots around the village
+  for (let px = 6; px < W + 30; px += 58) peak(px, 60 + Math.round(rnd(px * 7) * 14), 34 + Math.round(rnd(px * 5) * 24));
+  for (let px = 34; px < W + 30; px += 64) peak(px, 78 + Math.round(rnd(px * 9) * 10), 24 + Math.round(rnd(px * 3) * 18));
+  for (let px = 18; px < W + 30; px += 52) peak(px, ridgeY(px) + 22, 22 + Math.round(rnd(px) * 16));
+  for (let px = 44; px < W + 30; px += 70) peak(px, ridgeY(px) + 26, 14 + Math.round(rnd(px * 3) * 12));
+  terraces(296, 100, 164, 5);
+  plots(190, 196, 3, 3);
+  plots(366, 214, 3, 2);
   // dotted roads
   for (const r of roads()) {
     r.pts.forEach(([x, y], i) => {
       if (i % 2 === 0) {
-        R(x - 1, y - 1, 3, 3, "#e8d89a");
-        R(x, y, 1, 1, "#fff6d0");
+        R(x - 1, y - 1, 3, 3, "#f0e2a8");
+        R(x, y, 1, 1, "#fff8d8");
       }
     });
   }
-  // forests: dense where the noise is high, a few lone trees elsewhere
+  // forests where the noise is high, lone trees elsewhere, and palms along the beaches
   const roadPts = roads().flatMap((r) => r.pts);
   const trees: [number, number, number][] = [];
+  const busy = (x: number, y: number): boolean => PLACES.some((p) => Math.hypot(p.x - x, p.y - 8 - y) < 28) || roadPts.some(([rx, ry]) => Math.hypot(rx - x, ry - y) < 9);
   for (let gy = 12; gy < H - 6; gy += 12) {
     for (let gx = 8; gx < W - 6; gx += 11) {
       const x = gx + Math.round((rnd(gx * 3 + gy) - 0.5) * 8);
       const y = gy + Math.round((rnd(gy * 5 + gx) - 0.5) * 6);
-      if (waterAt(x, y) || waterNear(x, y, 7)) continue;
-      if (PLACES.some((p) => Math.hypot(p.x - x, p.y - 8 - y) < 26)) continue;
-      if (roadPts.some(([rx, ry]) => Math.hypot(rx - x, ry - y) < 9)) continue;
-      const f = Math.sin(x / 37) + Math.sin(y / 29) + Math.sin((x + y) / 23);
-      if (f > 0.85 ? rnd(x * 7 + y) < 0.78 : rnd(x * 11 + y) < 0.05) trees.push([x, y, Math.floor(rnd(x + y) * 4)]);
+      if (waterAt(x, y) || waterNear(x, y, 7) || y < ridgeY(x) + 30 || busy(x, y)) continue;
+      if (y > 96 && y < 168 && x > 286 && x < 466) continue;
+      if (y > 192 && y < 252 && ((x > 186 && x < 272) || (x > 362 && x < 444))) continue;
+      const f = Math.sin(x / 33) + Math.sin(y / 27) + Math.sin((x + y) / 21);
+      if (f > 1.0 ? rnd(x * 7 + y) < 0.74 : rnd(x * 11 + y) < 0.04) trees.push([x, y, Math.floor(rnd(x + y) * 4)]);
     }
   }
   trees.sort((a, b) => a[1] - b[1]);
   for (const [x, y, k] of trees) (k === 3 ? round : pine)(x, y, k);
+  for (let k = 0; k < 90; k++) {
+    const x = rnd(k * 3 + 1) * W;
+    const y = 150 + rnd(k * 5 + 2) * 190;
+    if (waterAt(x, y) || !waterNear(x, y, 12) || waterNear(x, y, 5) || busy(x, y)) continue;
+    palmTree(Math.round(x), Math.round(y), rnd(k) > 0.5 ? 1 : -1);
+  }
 }
 
 /* ---------- place icons (each ~24 wide, standing on (x, y)) ---------- */
@@ -267,23 +319,6 @@ function iconVeg(x: number, y: number): void {
   R(x - 14, y - 18, 2, 18, "#7b5836");
   R(x - 14, y - 19, 28, 2, "#a8844f");
 }
-function iconFactory(x: number, y: number, t: number): void {
-  R(x - 14, y - 12, 28, 12, "#1c1c20");
-  R(x - 13, y - 11, 26, 11, "#8f949b");
-  R(x - 13, y - 11, 26, 2, "#a5aab0");
-  for (let k = 0; k < 4; k++) R(x - 10 + k * 6, y - 7, 3, 4, "#4a4f55");
-  for (const cx of [x - 9, x + 4]) {
-    R(cx - 1, y - 28, 8, 17, "#1c1c20");
-    R(cx, y - 27, 6, 16, "#a85a3a");
-    R(cx, y - 22, 6, 2, "#f4f1e4");
-  }
-  if (!reduce) {
-    for (const cx of [x - 6, x + 7]) for (let k = 0; k < 7; k++) {
-      const age = (t / 90 + k * 5 + cx) % 36;
-      disc(Math.round(cx + age * 0.45), Math.round(y - 30 - age * 0.5), 2 + Math.round(age / 8), `rgba(50,50,56,${Math.max(0, 0.7 - age / 50).toFixed(2)})`);
-    }
-  }
-}
 function iconBus(x: number, y: number): void {
   R(x - 14, y - 12, 28, 11, "#1c1c20");
   R(x - 13, y - 11, 26, 9, "#f2c94c");
@@ -295,7 +330,7 @@ function iconBus(x: number, y: number): void {
   R(x + 13, y - 4, 2, 2, "#fff3a0");
 }
 const ICONS: Record<string, (x: number, y: number, t: number) => void> = {
-  home: iconHome, rice: iconRice, market: iconMarket, cane: iconCane, farm: iconFarm, coconut: iconCoconut, veg: iconVeg, factory: iconFactory, bus: iconBus,
+  home: iconHome, rice: iconRice, market: iconMarket, cane: iconCane, farm: iconFarm, coconut: iconCoconut, veg: iconVeg, bus: iconBus,
 };
 
 /* ---------- the little traveller ---------- */
