@@ -48,7 +48,10 @@ function newTarget(n: Npc): void {
   n.buying = 0;
 }
 
-export function enterMarket(count: number): void {
+/** What the truck carries: sacks of rice, or bundles of sugarcane in month 2. */
+let cargo: "rice" | "cane" = "rice";
+export function enterMarket(count: number, load: "rice" | "cane" = "rice"): void {
+  cargo = load;
   totalSacks = count;
   truckLeft = count;
   sacks.length = 0;
@@ -161,7 +164,26 @@ function stepSacks(dt: number): void {
 }
 
 /* ---------- drawing: pieces ---------- */
+/** A tied bundle of cane stalks, lying down. */
+function caneBundleArt(x: number, y: number, squash: number): void {
+  const sq = Math.round(squash * 2);
+  const w = SW + 4 + sq * 2;
+  const h = SH - sq - 1;
+  const x0 = Math.round(x - w / 2);
+  const y0 = Math.round(y - h);
+  R(x0 - 1, y0 - 1, w + 2, h + 2, "#2a2208");
+  for (let k = 0; k < 4; k++) {
+    R(x0, y0 + k * 3, w, 3, k % 2 ? "#bfae38" : "#cdbd48");
+    R(x0, y0 + k * 3, w, 1, "#e8dc78");
+  }
+  for (let k = 0; k < 4; k++) R(x0 + 3 + k * 6, y0, 1, h, "#7a6a20");
+  R(x0 + 5, y0 - 1, 3, h + 2, "#a02a1a");
+  R(x0 + w - 8, y0 - 1, 3, h + 2, "#a02a1a");
+  R(x0 - 3, y0 + 2, 4, 3, "#3f9a2a");
+  R(x0 + w - 1, y0 + h - 5, 4, 3, "#59b32f");
+}
 function sackArt(x: number, y: number, squash: number): void {
+  if (cargo === "cane") return caneBundleArt(x, y, squash);
   const sq = Math.round(squash * 2);
   const w = SW + sq * 2;
   const h = SH - sq;
@@ -294,7 +316,7 @@ function stallNames(): void {
     R(bx + w - 4, 124, 2, 4, "#3a2814");
     pixelText(name, x0 + STALL_W / 2, 112, 2, AWN[i][0]);
   }
-  const mine = T().market.mine;
+  const mine = cargo === "cane" ? T().cane.market.mine : T().market.mine;
   const mw = textWidth(mine, 2) + 14;
   const mx = Math.round((MY.x0 + MY.x1) / 2 - mw / 2);
   R(mx - 2, 186, mw + 4, 18, "#1c0d08");

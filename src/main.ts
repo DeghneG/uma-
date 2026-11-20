@@ -12,16 +12,24 @@ import { week3 } from "./scenes/week3";
 import { week4 } from "./scenes/week4";
 import { market } from "./scenes/market";
 import { summary } from "./scenes/summary";
+import { cane1, cane2, cane3, cane4, caneMarket, caneSummary } from "./scenes/cane";
+import { caneAtWeek } from "./caneworld";
 
-const steps: ((next: () => void, back?: () => void) => void)[] = [title, prologue, week1, week2, week3, week4, market, summary];
-const names = ["title", "prologue", "week1", "week2", "week3", "week4", "market", "summary"];
+const steps: ((next: () => void, back?: () => void) => void)[] = [title, prologue, week1, week2, week3, week4, market, summary, cane1, cane2, cane3, cane4, caneMarket, caneSummary];
+const names = ["title", "prologue", "week1", "week2", "week3", "week4", "market", "summary", "cane1", "cane2", "cane3", "cane4", "caneMarket", "caneSummary"];
 /** The score follows the story: warm at home, steady at work, tense in the dry spell, lively at the harvest. */
-const MOOD: Record<string, Mood> = { title: "home", prologue: "home", week1: "work", week2: "work", week3: "tense", week4: "harvest", market: "market", summary: "reflect" };
+const MOOD: Record<string, Mood> = { title: "home", prologue: "home", week1: "work", week2: "work", week3: "tense", week4: "harvest", market: "market", summary: "reflect", cane1: "work", cane2: "work", cane3: "tense", cane4: "harvest", caneMarket: "market", caneSummary: "reflect" };
 // Dev shortcut: open /#week3 to start at that scene.
 let i = Math.max(0, names.indexOf(location.hash.slice(1)));
 const wk = /^week(\d)$/.exec(names[i]);
 if (wk) fieldAtWeek(Number(wk[1]) - 1);
 if (names[i] === "market") patch({ sacks: 4 }); // dev jump: bring some sacks to sell
+const ck = /^cane(d)$/.exec(names[i]);
+if (ck) {
+  caneAtWeek(Number(ck[1]) - 1);
+  patch({ monthsLeft: 4 });
+}
+if (names[i] === "caneMarket" || names[i] === "caneSummary") patch({ tons: 4, monthsLeft: 4 }); // dev jumps: bring some cane
 
 function run(): void {
   // story mode starts when the family goes to the field (week 1); the title and prologue have no stats bar

@@ -2,13 +2,14 @@ import gsap from "gsap";
 import { BUNDLE, field, fieldAtWeek, plantAt, pump, resetSow, seedsLeft, setScene, shears, snipWeeds, sow, weedsLeft } from "../art";
 import { sfx } from "../sound";
 import { patch } from "../state";
-import { backToField, closeUp, zoomIn } from "../closeups";
+import { backToField, closeUp, setReturnScene, zoomIn } from "../closeups";
 import { T, h, reduce, resultPanel, setLabel, shake, show, starsFor, statusRow, storyPanel, tweenField } from "../ui";
 
 type Job = "weeds" | "water" | "plant";
 const ORDER: Job[] = ["weeds", "water", "plant"];
 
 export function week1(next: () => void): void {
+  setReturnScene("field");
   setScene("field");
   fieldAtWeek(0);
   setLabel(() => T().hud.week(1));

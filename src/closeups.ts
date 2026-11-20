@@ -80,24 +80,29 @@ export function closeUp(live: string, handlers: Handlers, pos: { x: number; y: n
 export const zoomIn = (): void => {
   if (!reduce) gsap.fromTo("#cv", { scale: 1.2, filter: "brightness(1.6)" }, { scale: 1, filter: "brightness(1)", duration: 0.5, ease: "power3.out", clearProps: "transform,filter" });
 };
+/** Which wide scene a close-up returns to: the rice paddy, or the sugarcane plot in month 2. */
+let returnScene = "field";
+export const setReturnScene = (k: string): void => {
+  returnScene = k;
+};
 export const backToField = (): void => {
-  setScene("field");
+  setScene(returnScene);
   if (!reduce) gsap.fromTo("#cv", { scale: 1.1 }, { scale: 1, duration: 0.5, ease: "power2.out", clearProps: "transform" });
 };
 
-const pos = { x: 320, y: 230 };
-const gameEl = (): HTMLElement | null => document.getElementById("game");
-type Run = { refresh: () => void; finish: (cb: () => void) => void };
-const cuText = (k: string, f: "Head" | "Hint"): string => (T().cu as Record<string, string>)[k + f];
+export const pos = { x: 320, y: 230 };
+export const gameEl = (): HTMLElement | null => document.getElementById("game");
+export type Run = { refresh: () => void; finish: (cb: () => void) => void };
+const cuText = (k: string, f: "Head" | "Hint", ns: "cu" | "cc"): string => (T()[ns] as Record<string, string>)[k + f];
 
 /** Start a close-up: switch the scene, show the panel (title, hint, one status chip) and listen for the hand. */
-function begin(kind: string, key: string, status: () => string, handlers: Handlers): Run {
+export function begin(kind: string, key: string, status: () => string, handlers: Handlers, ns: "cu" | "cc" = "cu"): Run {
   setScene(kind);
   zoomIn();
   gameEl()?.classList.add("closeup");
   show((p) => {
-    p.appendChild(h("h2", undefined, cuText(key, "Head")));
-    p.appendChild(h("p", "note cuhint", cuText(key, "Hint")));
+    p.appendChild(h("h2", undefined, cuText(key, "Head", ns)));
+    p.appendChild(h("p", "note cuhint", cuText(key, "Hint", ns)));
     p.appendChild(statusRow([status()]));
   });
   const stop = closeUp(".cuhint", handlers, pos);
@@ -118,7 +123,7 @@ function begin(kind: string, key: string, status: () => string, handlers: Handle
 }
 
 /** Animation frames for as long as the close-up panel is on screen. */
-function loop(fn: (dt: number, t: number) => void): () => void {
+export function loop(fn: (dt: number, t: number) => void): () => void {
   let raf = 0;
   let last = 0;
   let off = false;
@@ -136,16 +141,16 @@ function loop(fn: (dt: number, t: number) => void): () => void {
 }
 
 /* ---------- drawing helpers ---------- */
-const hex = (c: string): number[] => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
-const lerpHex = (a: string, b: string, t: number): string => {
+export const hex = (c: string): number[] => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+export const lerpHex = (a: string, b: string, t: number): string => {
   const A = hex(a);
   const B = hex(b);
   return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * Math.min(1, Math.max(0, t)))).join(",")})`;
 };
-const gradient = (y0: number, y1: number, a: string, b: string, step = 6): void => {
+export const gradient = (y0: number, y1: number, a: string, b: string, step = 6): void => {
   for (let y = y0; y < y1; y += step) R(0, y, 640, step, lerpHex(a, b, (y - y0) / (y1 - y0)));
 };
-const ripples = (t: number, y0: number, y1: number, n: number, c: string): void => {
+export const ripples = (t: number, y0: number, y1: number, n: number, c: string): void => {
   for (let k = 0; k < n; k++) {
     const y = y0 + ((k * 37) % (y1 - y0));
     R((((k * 71 + (reduce ? 0 : t / 45)) % 700) - 30), y, 14 + (k % 4) * 6, 1 + (y > (y0 + y1) / 2 ? 1 : 0), c);
@@ -156,6 +161,7 @@ const ripples = (t: number, y0: number, y1: number, n: number, c: string): void 
  * 1. Hand-pick and crush: pick pink snail-egg clusters and drop them on the stone
  * ============================================================ */
 type Egg = { x: number; y: number; done: boolean };
+let eggTheme: "rice" | "cane" = "rice";
 let eggs: Egg[] = [];
 let eggHeld = -1;
 const splats: { x: number; y: number; t: number }[] = [];
@@ -164,10 +170,11 @@ const STONE = { x: 468, y: 292, w: 140, h: 52 };
 function cluster(x: number, y: number): void {
   // a grape-like bunch of small bright-pink eggs with a wet shine
   const dots: [number, number][] = [[-9, -8], [-3, -9], [3, -9], [9, -8], [-12, -2], [-6, -3], [0, -3], [6, -3], [12, -2], [-9, 3], [-3, 3], [3, 3], [9, 3], [-6, 9], [0, 9], [6, 9], [0, 14]];
+  const cane = eggTheme === "cane";
   for (const [dx, dy] of dots) {
-    R(x + dx - 3, y + dy - 3, 7, 7, "#8a1f45");
-    R(x + dx - 2, y + dy - 2, 5, 5, "#ec5a8e");
-    R(x + dx - 2, y + dy - 2, 2, 2, "#ffc4da");
+    R(x + dx - 3, y + dy - 3, 7, 7, cane ? "#6a5a1a" : "#8a1f45");
+    R(x + dx - 2, y + dy - 2, 5, 5, cane ? "#e8d890" : "#ec5a8e");
+    R(x + dx - 2, y + dy - 2, 2, 2, cane ? "#fff8d0" : "#ffc4da");
   }
 }
 function cxAlphaRect(x: number, y: number, w: number, h: number): void {
@@ -208,7 +215,38 @@ function riceHill(bx: number, seed: number, t: number): void {
   R(bx - 13, 301, 26, 6, "#2f6a1f");
   R(bx - 9, 303, 18, 3, "#59b32f");
 }
+/** Tall cane seen close up: thick jointed stalks with long arching leaves, dry furrowed soil below. */
+function drawCaneEggs(t: number): void {
+  gradient(0, 300, "#f4e2b0", "#c0a860");
+  for (let i = 0; i < 30; i++) disc(rnd(i + 3) * 640, rnd(i + 8) * 290, 3 + Math.round(rnd(i) * 7), "rgba(255,250,220,0.12)");
+  for (let i = 0; i < 8; i++) {
+    const x = 36 + i * 84 + Math.round(rnd(i + 4) * 22);
+    const sway = reduce ? 0 : Math.sin(t / 1400 + i) * 2;
+    R(x - 2, 0, 16, 306, "#4a3a0c");
+    R(x, 0, 12, 306, i % 2 ? "#cdbd48" : "#bfae38");
+    R(x, 0, 4, 306, "#e8dc78");
+    R(x + 9, 0, 3, 306, "#8a7a24");
+    for (let n = 26; n < 306; n += 52) {
+      R(x - 2, n, 16, 5, "#4a3a0c");
+      R(x - 1, n + 1, 14, 3, "#a8962c");
+    }
+    for (const [lx, ly, dir] of [[x + 12, 110 + (i % 3) * 40, 1], [x, 190 - (i % 2) * 36, -1]] as [number, number, number][]) {
+      blade(lx, ly, lx + dir * 34, ly - 60 + sway, lx + dir * (66 + (i % 3) * 10), ly + 16 + sway, 9, "#59b32f", "#9bdc4a");
+    }
+  }
+  R(0, 304, 640, 56, "#9a7240");
+  for (let y = 304; y < 360; y += 8) {
+    R(0, y, 640, 3, "#6a4a2a");
+    R(0, y + 3, 640, 1, "#c29a60");
+  }
+  for (let i = 0; i < 50; i++) R(rnd(i + 11) * 640, 308 + rnd(i * 3) * 48, 8, 1, "#7a5a36");
+}
 function drawEggs(t: number): void {
+  if (eggTheme === "cane") return drawCaneEggs(t), drawEggFront(t);
+  drawRiceEggs(t);
+  drawEggFront(t);
+}
+function drawRiceEggs(t: number): void {
   gradient(0, 300, "#c6e4dc", "#7ab4b8");
   // far paddies fading into haze, then soft light spots
   for (let y = 0; y < 110; y += 4) {
@@ -223,6 +261,8 @@ function drawEggs(t: number): void {
   for (const bx of [60, 190, 330, 470, 590]) {
     cxAlphaRect(bx - 18, 312, 36, 22);
   }
+}
+function drawEggFront(t: number): void {
   // each cluster is stuck to its own stalk
   eggs.forEach((e, i) => {
     if (e.done) return;
@@ -252,7 +292,8 @@ function drawEggs(t: number): void {
     cluster(pos.x, pos.y);
   }
 }
-export function playEggs(done: () => void): void {
+export function playEggs(done: () => void, theme: "rice" | "cane" = "rice"): void {
+  eggTheme = theme;
   eggs = [[90, 178], [176, 250], [300, 165], [340, 220], [430, 150], [500, 240], [586, 120], [380, 60]].map(([x, y]) => ({ x, y, done: false }));
   eggHeld = -1;
   splats.length = 0;
@@ -290,7 +331,7 @@ export function playEggs(done: () => void): void {
       }
     }
   };
-  const run = begin("cuEggs", "eggs", () => `${T().cu.eggsLeft}: ${left()}`, {
+  const run = begin("cuEggs", "eggs", () => `${theme === "cane" ? T().cc.eggsLeft : T().cu.eggsLeft}: ${left()}`, {
     down: grab,
     up: drop,
     key: (e, x, y) => {
@@ -298,7 +339,7 @@ export function playEggs(done: () => void): void {
       if (!e.repeat) (eggHeld >= 0 ? drop : grab)(x, y);
       return true;
     },
-  });
+  }, theme === "cane" ? "cc" : "cu");
 }
 
 /* ============================================================
@@ -828,7 +869,7 @@ function drawRows(t: number): void {
     }
   }
 }
-export function playRows(done: () => void): void {
+export function playRows(done: () => void, cane = false): void {
   rowsState.dam.fill(0);
   rowsState.hover = -1;
   let finished = false;
@@ -850,7 +891,7 @@ export function playRows(done: () => void): void {
       run.finish(done);
     }
   };
-  const run = begin("cuRows", "rows", () => `${T().cu.rowsLeft}: ${2 - dammed()}`, {
+  const run = begin("cuRows", "rows", () => `${cane ? T().cc.rowsLeft : T().cu.rowsLeft}: ${2 - dammed()}`, {
     down: (_x, y) => toggle(rowAt(y)),
     move: (_x, y) => {
       rowsState.hover = rowAt(y);
@@ -860,7 +901,7 @@ export function playRows(done: () => void): void {
       if (!e.repeat) toggle(rowAt(y));
       return true;
     },
-  });
+  }, cane ? "cc" : "cu");
 }
 
 customScenes.cuEggs = drawEggs;

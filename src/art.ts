@@ -96,6 +96,7 @@ const WALK: Record<string, [number, number, number, number, number, number]> = {
   field: [14, 626, 196, 302, 150, 290],
   home: [14, 626, 252, 302, 300, 300],
   market: [14, 626, 216, 304, 320, 294],
+  cane: [14, 626, 196, 302, 150, 290],
 };
 export const setScene = (k: SceneKind): void => {
   const prev = view.scene;
@@ -115,9 +116,9 @@ export const customScenes: Record<string, (t: number) => void> = {};
 /** Canvas position (x centre, y top of head) of a speaking character in the current scene, or null when off screen. */
 export function speakerAnchor(name: string): [number, number] | null {
   const s = view.scene;
-  if (name.startsWith("Tatay")) return s === "home" ? [330, 247] : s === "field" ? [92, 237] : s === "market" ? [180, 247] : null;
+  if (name.startsWith("Tatay")) return s === "home" ? [330, 247] : s === "field" || s === "cane" ? [92, 237] : s === "market" ? [180, 247] : null;
   if (name.startsWith("Nanay")) return s === "home" ? [402, 253] : s === "market" ? [206, 251] : null;
-  if (name.startsWith("Mang Ben")) return s === "field" && field.ben ? [176, 250] : null;
+  if (name.startsWith("Mang Ben")) return s === "field" && field.ben ? [176, 250] : s === "cane" ? [176, 250] : null;
   return null;
 }
 
@@ -585,7 +586,7 @@ const duck = (x: number, y: number, t: number, seed: number, kids = 0): void => 
 
 
 /* ---------- foreground trees (drawn last, cropped at the edges) ---------- */
-const bigTree = (x: number, base: number, h: number, r: number, t: number, seed: number): void => {
+export const bigTree = (x: number, base: number, h: number, r: number, t: number, seed: number): void => {
   const sway = reduce ? 0 : Math.round(Math.sin(t / 1500 + seed) * 1.5);
   for (let y = 0; y < h; y += 2) {
     const p = y / h;
@@ -627,7 +628,7 @@ const bigTree = (x: number, base: number, h: number, r: number, t: number, seed:
     R(bx + 3, by + 5, 1, 3, "#2a6a2c");
   }
 };
-const fgBushes = (seed: number, n: number): void => {
+export const fgBushes = (seed: number, n: number): void => {
   for (let i = 0; i < n; i++) {
     const x = rnd(seed + i) * W;
     const r = 9 + Math.floor(rnd(seed + i + 20) * 10);

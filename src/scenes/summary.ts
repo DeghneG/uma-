@@ -40,7 +40,7 @@ export function summary(next: () => void): void {
     p.appendChild(table(rows));
 
     p.appendChild(h("p", "note", t.next));
-    const b = h("button", "btn alt", T().common.playAgain);
+    const b = h("button", "btn alt", t.nextMonth);
     b.addEventListener("click", next);
     p.appendChild(b);
   });
