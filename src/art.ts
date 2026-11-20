@@ -1035,17 +1035,34 @@ const ROWH = 25;
 /** One clump of grassy weeds: tall bright blades with yellow seed heads, swaying. */
 function weedClump(x: number, b: number, t: number): void {
   const sway = reduce ? 0 : Math.round(Math.sin(t / 420 + x * 0.13));
-  R(x - 8, b - 1, 17, 2, "#00000040");
-  R(x - 7, b - 4, 15, 4, "#2f7a1f");
-  for (let k = 0; k < 7; k++) {
-    const bx = x - 7 + k * 2;
-    const hgt = 14 + ((k * 5) % 4) * 3 + (k === 3 ? 4 : 0);
+  // soil mound, shadow and a few pebbles at the base
+  R(x - 10, b - 1, 21, 3, "#00000040");
+  R(x - 9, b - 5, 19, 5, "#7a5a36");
+  R(x - 8, b - 5, 17, 2, "#a07a48");
+  R(x - 11, b - 3, 3, 2, "#8f897c");
+  R(x + 9, b - 3, 3, 2, "#a39c8c");
+  // back leaves, wide and dark
+  for (let k = 0; k < 5; k++) {
+    const bx = x - 8 + k * 4;
+    const hgt = 11 + ((k * 7) % 5) * 2;
+    R(bx - 1, b - hgt - 1, 4, hgt, "#173d12");
+    R(bx, b - hgt, 2, hgt, "#2f7a1f");
+    R(bx + (k - 2) + sway, b - hgt - 2, 2, 3, "#3f9a2a");
+  }
+  // front blades: tall, lit on one side, arching tips, some with seed heads
+  for (let k = 0; k < 9; k++) {
+    const bx = x - 8 + k * 2;
+    const hgt = 14 + ((k * 5) % 4) * 3 + (k === 4 ? 6 : 0);
+    const lean = Math.round((k - 4) * 0.6);
     R(bx - 1, b - hgt - 1, 4, hgt + 1, "#1f4a14");
     R(bx, b - hgt, 2, hgt, k % 2 ? "#59b32f" : "#86d13a");
-    R(bx + Math.round((k - 3) * 0.5) + sway, b - hgt - 2, 2, 3, "#a7e04a");
+    R(bx, b - hgt, 1, hgt, k % 2 ? "#6fcb3c" : "#a7e04a");
+    R(bx + lean + sway, b - hgt - 2, 2, 3, "#a7e04a");
+    R(bx + lean * 2 + sway, b - hgt - 3, 2, 2, "#c8ee6a");
     if (k % 3 === 0) {
-      R(bx + sway - 1, b - hgt - 6, 4, 5, "#1f4a14");
-      R(bx + sway, b - hgt - 5, 2, 4, "#f0dc4a");
+      R(bx + sway - 1, b - hgt - 8, 4, 7, "#1f4a14");
+      R(bx + sway, b - hgt - 7, 2, 5, "#f0dc4a");
+      R(bx + sway, b - hgt - 7, 1, 2, "#fff3a0");
     }
   }
 }
@@ -1256,23 +1273,92 @@ function fieldScene(t: number): void {
 }
 
 /** Close-up for the weeding job: bare cracked soil, big weed clumps, and the shears in hand. */
+/** The detailed dry soil for the weeding close-up: tone patches, grain, clods, pebbles, cracks and stray grass. Painted once and cached. */
+function weedSoil(): void {
+  const depth = (y: number): number => 1 + (y - 116) / 90;
+  // the grassy bank at the far edge of the paddy
+  R(0, 104, W, 14, "#5d9a48");
+  for (let x = 0; x < W; x += 2) R(x, 104 + (rnd(x) > 0.5 ? 1 : 0), 2, 12, rnd(x + 4) > 0.5 ? "#4f8e3c" : "#6aa850");
+  for (let i = 0; i < 110; i++) tuft(rnd(i + 200) * W, 116 + rnd(i + 77) * 2, "#2f6f2a", "#4aa045");
+  R(0, 116, W, 2, "#3a2a18");
+  // base soil with big soft tone patches
+  R(0, 118, W, H - 118, "#b58f58");
+  for (let i = 0; i < 260; i++) {
+    const y = 120 + rnd(i * 5 + 3) * 236;
+    const k = depth(y);
+    R(rnd(i * 11) * W, y, (10 + rnd(i) * 26) * k, (3 + rnd(i + 9) * 5) * k, i % 2 ? "#bd9760" : "#ab854e");
+  }
+  // furrows: a shaded ridge with a lit lip, wider toward the player
+  for (let k = 0; k < 7; k++) {
+    const y = 120 + Math.round(240 * Math.pow(k / 7, 1.25));
+    R(0, y, W, 2 + k, "#7a5a36");
+    R(0, y + 2 + k, W, 1, "#d2ac72");
+    R(0, y + 3 + k, W, Math.max(1, Math.round(k / 2)), "#9c7a46");
+    for (let x = 0; x < W; x += 3) if (rnd(x + k * 31) > 0.55) R(x, y + (rnd(x) > 0.5 ? 0 : 1), 3, 1, "#8a6a3e");
+  }
+  // fine grain
+  const grain = ["#c9a46b", "#9c7a46", "#d6b17a", "#8a6a3e"];
+  for (let i = 0; i < 2600; i++) {
+    const y = 120 + rnd(i * 3 + 1) * 238;
+    const k = depth(y);
+    R(rnd(i * 7 + 2) * W, y, Math.ceil(k), Math.ceil(k * 0.7), grain[i % 4]);
+  }
+  // clods of dried earth: shadow, body, lit top
+  for (let i = 0; i < 70; i++) {
+    const y = 126 + rnd(i * 13) * 226;
+    const k = depth(y);
+    const x = rnd(i * 17 + 5) * W;
+    const w = (4 + rnd(i) * 5) * k;
+    R(x, y + k, w, 2 * k, "#6a4c2a");
+    R(x, y, w, 2.4 * k, "#a07a48");
+    R(x + k, y, w - 2 * k, k, "#d0aa70");
+    R(x + w - k, y + k, k, k, "#86653a");
+  }
+  // pebbles
+  for (let i = 0; i < 55; i++) {
+    const y = 128 + rnd(i * 19 + 4) * 224;
+    const k = depth(y);
+    const x = rnd(i * 23 + 6) * W;
+    const w = (2 + rnd(i + 2) * 3) * k;
+    R(x + 1, y + w * 0.5, w, Math.max(1, w * 0.45), "#5a4226");
+    R(x, y, w, w * 0.6, i % 3 ? "#8f897c" : "#a39c8c");
+    R(x, y, Math.max(1, w * 0.5), Math.max(1, w * 0.2), "#cbc5b6");
+  }
+  // cracks branching out of the dry earth
+  for (let i = 0; i < 30; i++) {
+    let x = rnd(i * 29 + 8) * W;
+    let y = 132 + rnd(i * 31 + 9) * 222;
+    const k = depth(y);
+    let dir = rnd(i + 50) * 6.28;
+    for (let s = 0; s < 9; s++) {
+      dir += (rnd(i * 41 + s) - 0.5) * 1.1;
+      const nx = x + Math.cos(dir) * 4 * k;
+      const ny = y + Math.sin(dir) * 2 * k;
+      R(Math.min(x, nx), Math.min(y, ny), Math.max(k, Math.abs(nx - x)), Math.max(k, Math.abs(ny - y)), "#5e4426");
+      R(Math.min(x, nx) + 1, Math.min(y, ny) + Math.ceil(k), Math.max(k, Math.abs(nx - x)), 1, "#c9a46b");
+      if (s % 3 === 2) {
+        R(nx, ny, 3 * k * (rnd(s + i) > 0.5 ? 1 : -1), k, "#5e4426");
+      }
+      x = nx;
+      y = ny;
+    }
+  }
+  // stray tufts of dry and green grass, too small to be weeds
+  for (let i = 0; i < 90; i++) {
+    const y = 128 + rnd(i * 37 + 3) * 226;
+    const k = depth(y) * 0.8;
+    cx.save();
+    cx.translate(Math.round(rnd(i * 43 + 7) * W), Math.round(y));
+    cx.scale(k, k);
+    if (i % 3) tuft(0, 0, "#3f8a2f", "#6abf3a");
+    else tuft(0, 0, "#a8943a", "#cdb85a");
+    cx.restore();
+  }
+}
+
 function weeding(t: number): void {
   backdrop(t, 104);
-  R(0, 104, W, 12, "#5d9a48");
-  R(0, 116, W, H - 116, "#b58f58");
-  // furrows get wider apart toward the player
-  for (let k = 0; k < 7; k++) {
-    const y = 116 + Math.round(244 * Math.pow(k / 7, 1.25));
-    R(0, y, W, 2 + k, "#7a5a36");
-    R(0, y + 2 + k, W, 1, "#c4a068");
-  }
-  for (let i = 0; i < 70; i++) {
-    const y = 124 + rnd(i + 5) * 230;
-    const k = 1 + (y - 116) / 90;
-    const x = rnd(i * 3 + 1) * W;
-    R(x, y, 7 * k, k, "#7a5c34");
-    R(x + 3 * k, y + k, k, 3 * k, "#7a5c34");
-  }
+  layer("weeding-soil", weedSoil);
   const order = [...weedPatch].sort((a, b) => a.cy - b.cy);
   const now = performance.now();
   for (const w of order) {

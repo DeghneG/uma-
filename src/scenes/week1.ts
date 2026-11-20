@@ -142,6 +142,7 @@ export function week1(next: () => void): void {
         shears.y = Math.min(350, Math.max(150, ((e.clientY - r.top) / r.height) * 360));
       };
       const down = (e: PointerEvent): void => {
+        if ((e.target as HTMLElement).closest("button")) return;
         if (!live()) return cleanup();
         at(e);
         snip(14);
@@ -166,12 +167,12 @@ export function week1(next: () => void): void {
         } else return;
         if (k !== " " && k !== "enter") e.preventDefault();
       };
-      cv.addEventListener("pointerdown", down);
-      cv.addEventListener("pointermove", move);
+      window.addEventListener("pointerdown", down);
+      window.addEventListener("pointermove", move);
       document.addEventListener("keydown", key);
       stop.push(
-        () => cv.removeEventListener("pointerdown", down),
-        () => cv.removeEventListener("pointermove", move),
+        () => window.removeEventListener("pointerdown", down),
+        () => window.removeEventListener("pointermove", move),
         () => document.removeEventListener("keydown", key),
       );
     };
@@ -199,6 +200,7 @@ export function week1(next: () => void): void {
       return [pos.x, pos.y];
     };
     const d = (e: PointerEvent): void => {
+      if ((e.target as HTMLElement).closest("button")) return;
       if (alive()) handlers.down?.(...xy(e));
     };
     const m = (e: PointerEvent): void => {
@@ -222,18 +224,18 @@ export function week1(next: () => void): void {
       e.preventDefault();
       handlers.move?.(pos.x, pos.y);
     };
-    cv.addEventListener("pointerdown", d);
-    cv.addEventListener("pointermove", m);
+    window.addEventListener("pointerdown", d);
+    window.addEventListener("pointermove", m);
     window.addEventListener("pointerup", u);
     document.addEventListener("keydown", k);
     function stop(): void {
       if (off) return;
       off = true;
-      cv.removeEventListener("pointerdown", d);
-      cv.removeEventListener("pointermove", m);
+      window.removeEventListener("pointerdown", d);
+      window.removeEventListener("pointermove", m);
       window.removeEventListener("pointerup", u);
       document.removeEventListener("keydown", k);
-      document.getElementById("game")?.classList.remove("grab");
+      document.getElementById("game")?.classList.remove("grab", "planting");
     }
     return stop;
   }
@@ -343,6 +345,7 @@ export function week1(next: () => void): void {
     resetSow();
     field.working = true;
     const game = document.getElementById("game");
+    game?.classList.add("planting");
     let finished = false;
     const refresh = (): void => {
       const s = document.querySelector("#panel .status span");
