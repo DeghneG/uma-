@@ -94,11 +94,12 @@ const WALK: Record<string, [number, number, number, number, number, number]> = {
   // minX, maxX, minY, maxY, spawnX, spawnY
   field: [14, 626, 196, 302, 150, 290],
   home: [14, 626, 252, 302, 300, 300],
-  market: [14, 626, 216, 302, 210, 300],
+  market: [14, 626, 216, 304, 320, 294],
 };
 export const setScene = (k: SceneKind): void => {
   const prev = view.scene;
   view.scene = k;
+  if (prev !== k) solids.length = 0;
   const w = WALK[k];
   if (w && prev !== k && (prev === "title" || prev in WALK)) {
     player.x = w[4];
@@ -106,6 +107,8 @@ export const setScene = (k: SceneKind): void => {
   }
 };
 /** Extra close-up scenes (the pest and drought jobs) register their drawing here. */
+/** Footprints (x0, y0, x1, y1) the hero cannot walk into: stalls, trucks, crates. */
+export const solids: [number, number, number, number][] = [];
 export const customScenes: Record<string, (t: number) => void> = {};
 
 /** Canvas position (x centre, y top of head) of a speaking character in the current scene, or null when off screen. */
@@ -435,7 +438,7 @@ const clothesline = (x0: number, x1: number, y: number, t: number): void => {
     R(cx0 + sw, y + 14, 9, 3, cols[i]);
   }
 };
-const bunting = (x0: number, x1: number, y: number): void => {
+export const bunting = (x0: number, x1: number, y: number): void => {
   const cols = ["#d0452d", "#f2c94c", "#4aa0b8", "#f0f0e8", "#5fa84a"];
   for (let x = x0; x < x1; x += 2) R(x, y + Math.round(Math.sin(((x - x0) / (x1 - x0)) * Math.PI) * 8), 2, 1, "#3a2a1c");
   for (let x = x0 + 4, i = 0; x < x1 - 6; x += 10, i++) {
@@ -445,7 +448,7 @@ const bunting = (x0: number, x1: number, y: number): void => {
     R(x + 2, sy + 6, 3, 2, cols[i % 5]);
   }
 };
-const lantern = (x: number, y: number, t: number): void => {
+export const lantern = (x: number, y: number, t: number): void => {
   const glow = reduce ? 0.3 : 0.25 + Math.sin(t / 400 + x) * 0.06;
   disc(x, y + 6, 12, `rgba(255,200,90,${glow})`);
   R(x, y - 8, 1, 8, "#222222");
@@ -484,7 +487,7 @@ const wander = (t: number, seed: number, range: number): [number, number] => {
   const p = t / 2600 + seed;
   return [Math.sin(p) * range, Math.cos(p) >= 0 ? 1 : -1];
 };
-const hen = (x: number, g: number, t: number, seed: number, col = "#c9783a"): void => {
+export const hen = (x: number, g: number, t: number, seed: number, col = "#c9783a"): void => {
   const [dx, dir] = wander(t, seed, 10);
   const hx = Math.round(x + dx);
   flipAt(hx, dir, () => {
@@ -518,7 +521,7 @@ const rooster = (x: number, g: number, t: number, seed: number): void => {
     R(hx + 8, g - 3, 1, 3, "#e0a030");
   });
 };
-const chick = (x: number, g: number, t: number, seed: number): void => {
+export const chick = (x: number, g: number, t: number, seed: number): void => {
   const hop = reduce ? 0 : Math.max(0, Math.round(Math.sin(t / 180 + seed * 5) * 2));
   R(x, g - 4 - hop, 4, 4, "#f2d13a");
   R(x + 4, g - 3 - hop, 1, 1, "#f2994a");
@@ -543,7 +546,7 @@ const pig = (x: number, g: number, t: number, seed: number, scale = 1): void => 
     R(px + U(28), g - U(13) + wig, U(1), U(2), "#e58a98");
   });
 };
-const goat = (x: number, g: number, t: number, seed: number, col = "#e8e2d4", patch = "#8a6a43"): void => {
+export const goat = (x: number, g: number, t: number, seed: number, col = "#e8e2d4", patch = "#8a6a43"): void => {
   const [dx, dir] = wander(t, seed, 12);
   const gx = Math.round(x + dx);
   flipAt(gx, dir, () => {
@@ -887,7 +890,7 @@ const analyse = (img: HTMLImageElement): Rig => {
   }
   return { w, h, headEnd: Math.round(h * 0.6), bodyEnd: Math.round(h * 0.82), mid: Math.round((a0 + a1 + 1) / 2), a0, a1, eyes };
 };
-const drawRig = (img: HTMLImageElement, rg: Rig, x: number, feet: number, t: number, mode: Mode, seed: number): void => {
+const drawRig = (img: CanvasImageSource, rg: Rig, x: number, feet: number, t: number, mode: Mode, seed: number): void => {
   const { w, h, headEnd, bodyEnd } = rg;
   const m = motion(t, mode, seed);
   const ox = Math.round(x - w / 2);
@@ -921,11 +924,54 @@ const drawRig = (img: HTMLImageElement, rg: Rig, x: number, feet: number, t: num
 };
 type Draw = (x: number, feet: number, t?: number, mode?: Mode, seed?: number) => void;
 /** Loads public/sprites/<name>.png (hand-drawn, drawn 1:1) and animates it; falls back to the code-drawn villager. */
+const spriteReg: Record<string, { img: HTMLImageElement; rig: Rig }> = {};
+type Variant = { base: "nanay" | "tatay" | "kid"; shirt: string; pants: string };
+/** Villagers are the family's own art in different clothes, so everyone shares one style. */
+const VARIANTS: Variant[] = [
+  { base: "nanay", shirt: "#d96f9a", pants: "#3a5a9a" },
+  { base: "tatay", shirt: "#3f7bb0", pants: "#6a4d33" },
+  { base: "kid", shirt: "#e8a23a", pants: "#3f8a4a" },
+  { base: "nanay", shirt: "#3f9a5a", pants: "#8a5a2a" },
+  { base: "tatay", shirt: "#c0392b", pants: "#2f3a4a" },
+  { base: "nanay", shirt: "#8a4a9a", pants: "#d0b070" },
+  { base: "kid", shirt: "#3a7bd0", pants: "#6a4d33" },
+  { base: "tatay", shirt: "#e0c040", pants: "#4a6a3a" },
+];
+const variantCache = new Map<number, { c: HTMLCanvasElement; rig: Rig }>();
+/** A villager in clothes number `v`: the family sprite with a recoloured shirt and trousers. */
+export const villager = (v: number, x: number, feet: number, t = 0, mode: Mode = "idle", seed = 0, face = 0): void => {
+  const i = ((v % VARIANTS.length) + VARIANTS.length) % VARIANTS.length;
+  const vr = VARIANTS[i];
+  const base = spriteReg[vr.base];
+  if (!base) {
+    person(x, feet, vr.shirt, vr.base !== "nanay", 2, t, mode, seed);
+    return;
+  }
+  let cached = variantCache.get(i);
+  if (!cached) {
+    const c = document.createElement("canvas");
+    c.width = base.rig.w;
+    c.height = base.rig.h;
+    const g = c.getContext("2d") as CanvasRenderingContext2D;
+    g.drawImage(base.img, 0, 0);
+    g.globalCompositeOperation = "source-atop";
+    g.globalAlpha = 0.58;
+    g.fillStyle = vr.shirt;
+    g.fillRect(0, base.rig.headEnd, c.width, base.rig.bodyEnd - base.rig.headEnd);
+    g.fillStyle = vr.pants;
+    g.fillRect(0, base.rig.bodyEnd, c.width, c.height - base.rig.bodyEnd);
+    cached = { c, rig: base.rig };
+    variantCache.set(i, cached);
+  }
+  const k = cached;
+  flipAt(x, face, () => drawRig(k.c, k.rig, x, feet, t, mode, seed));
+};
 const loadSprite = (name: string, fallback: Draw): Draw => {
   const img = new Image();
   let rig: Rig | null = null;
   img.onload = (): void => {
     rig = analyse(img);
+    spriteReg[name] = { img, rig };
   };
   img.src = `/sprites/${name}.png`;
   return (x, feet, t = 0, mode = "idle", seed = 0) => {
@@ -937,7 +983,7 @@ const kid = loadSprite("kid", (x, f, t, m, s) => person(x, f, "#d96f9a", false, 
 const tatay = loadSprite("tatay", (x, f, t, m, s) => person(x, f, "#c25a3a", true, 2, t, m, s));
 const nanay = loadSprite("nanay", (x, f, t, m, s) => person(x, f, "#3f7bb0", false, 2, t, m, s));
 /** soft ground shadow under a character */
-const shadow = (x: number, y: number, w = 26): void => R(x - w / 2, y - 1, w, 3, "rgba(0,0,0,0.22)");
+export const shadow = (x: number, y: number, w = 26): void => R(x - w / 2, y - 1, w, 3, "rgba(0,0,0,0.22)");
 
 /* ---------- scenes ---------- */
 export function backdrop(t: number, horizon: number): void {
@@ -1907,11 +1953,14 @@ function stepPlayer(): void {
   if (!player.moving) return;
   const len = Math.hypot(vx, vy);
   const sp = (dt / 1000) * 82;
-  player.x = Math.min(w[1], Math.max(w[0], player.x + (vx / len) * sp));
-  player.y = Math.min(w[3], Math.max(w[2], player.y + (vy / len) * sp * 0.8));
+  const nx = Math.min(w[1], Math.max(w[0], player.x + (vx / len) * sp));
+  const ny = Math.min(w[3], Math.max(w[2], player.y + (vy / len) * sp * 0.8));
+  const blocked = (x: number, y: number): boolean => solids.some((b) => x > b[0] && x < b[2] && y > b[1] && y < b[3]);
+  if (!blocked(nx, player.y)) player.x = nx;
+  if (!blocked(player.x, ny)) player.y = ny;
   if (vx !== 0) player.face = vx > 0 ? 1 : -1;
 }
-const drawPlayer = (t: number): void => {
+export const drawPlayer = (t: number): void => {
   const x = Math.round(player.x);
   const y = Math.round(player.y);
   shadow(x, y);

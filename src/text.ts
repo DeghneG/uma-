@@ -174,6 +174,9 @@ const en = {
   },
   market: {
     tag: "Market day",
+    unloadHead: "Set up your stall",
+    unloadHint: "The sacks are on the truck. Walk to it with W A S D and press E to lift a sack, carry it to your stall, and press E again to put it on the counter.",
+    unloadLeft: "Sacks on the stall",
     ben: "The cooperative two towns over pays better than the trader. It is a long ride, but ask them.",
     h: "Sell the rice harvest",
     none: "There is nothing to sell this month. The cart goes home empty, and the family looks at the savings jar.",
@@ -380,6 +383,9 @@ const fil: typeof en = {
   },
   market: {
     tag: "Araw ng palengke",
+    unloadHead: "Ayusin ang puwesto mo",
+    unloadHint: "Nasa trak ang mga sako. Lumakad papunta rito gamit ang W A S D at pindutin ang E para buhatin ang sako, dalhin sa puwesto mo, at pindutin ulit ang E para ilagay sa mesa.",
+    unloadLeft: "Sako sa puwesto",
     ben: "Mas mataas magbayad ang kooperatiba sa kabilang bayan kaysa sa negosyante. Mahaba ang biyahe, pero magtanong ka.",
     h: "Ibenta ang ani ng palay",
     none: "Walang maibebenta ngayong buwan. Uuwing walang laman ang kariton, at titingnan ng pamilya ang garapon ng ipon.",

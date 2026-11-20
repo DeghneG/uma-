@@ -1,10 +1,12 @@
 import { COOP_FEE, COOP_MULT, SACK_PRICE, addMoney, addMorale, patch, peso, state } from "../state";
 import { setScene, view } from "../art";
+import { enterMarket, stalledCount, startUnload, totalToUnload } from "../marketworld";
 import { sfx } from "../sound";
-import { T, h, setLabel, show } from "../ui";
+import { T, h, setLabel, show, statusRow } from "../ui";
 
 export function market(next: () => void): void {
   setScene("market");
+  enterMarket(state.sacks);
   view.sacks = state.sacks;
   setLabel(() => `${T().hud.month1} · ${T().market.tag}`);
 
@@ -16,7 +18,7 @@ export function market(next: () => void): void {
     next();
   };
 
-  show((p) => {
+  const offers = (): void => show((p) => {
     const t = T().market;
     p.appendChild(h("div", "tag", t.tag));
     p.appendChild(h("h2", undefined, t.h));
@@ -43,4 +45,23 @@ export function market(next: () => void): void {
     grid.append(b1, b2);
     p.appendChild(grid);
   });
+
+  /** First the sacks must come off the truck and onto the stall, by hand. */
+  if (state.sacks <= 0) return offers();
+  show((p) => {
+    const t = T().market;
+    p.appendChild(h("h2", undefined, t.unloadHead));
+    p.appendChild(h("p", "note mkhint", t.unloadHint));
+    p.appendChild(statusRow([`${t.unloadLeft}: ${stalledCount()} / ${totalToUnload()}`]));
+  });
+  const stop = startUnload(
+    () => {
+      const s = document.querySelector("#panel .status span");
+      if (s) s.textContent = `${T().market.unloadLeft}: ${stalledCount()} / ${totalToUnload()}`;
+    },
+    () => {
+      stop();
+      offers();
+    },
+  );
 }

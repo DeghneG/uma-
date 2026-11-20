@@ -21,6 +21,7 @@ const MOOD: Record<string, Mood> = { title: "home", prologue: "home", week1: "wo
 let i = Math.max(0, names.indexOf(location.hash.slice(1)));
 const wk = /^week(\d)$/.exec(names[i]);
 if (wk) fieldAtWeek(Number(wk[1]) - 1);
+if (names[i] === "market") patch({ sacks: 4 }); // dev jump: bring some sacks to sell
 
 function run(): void {
   // story mode starts when the family goes to the field (week 1); the title and prologue have no stats bar
