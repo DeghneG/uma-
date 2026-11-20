@@ -4,6 +4,7 @@ import { setScene, view as artView } from "../art";
 import { soundOn, sfx } from "../sound";
 import { cycleDisplay, displayMode } from "../display";
 import { musicOn, toggleMusic } from "../music";
+import { explore as exploreMap } from "./explore";
 import { $, T, h, reduce, rerender, setBack, setLabel, show } from "../ui";
 
 type Item = { label: string; run: () => void };
@@ -218,8 +219,8 @@ export function prologue(next: () => void, back?: () => void): void {
       addMorale(10);
       next();
     });
-    const explore = h("button", "card", `<span class="kind ex">${t.exploreTag}</span><b>${t.explore[0]}</b><small>${t.explore[1]}</small><small><b>${t.soon}</b></small>`);
-    (explore as HTMLButtonElement).disabled = true;
+    const explore = h("button", "card", `<span class="kind ex">${t.exploreTag}</span><b>${t.explore[0]}</b><small>${t.explore[1]}</small>`);
+    explore.addEventListener("click", () => exploreMap(() => prologue(next, back)));
 
     cards.appendChild(help);
     cards.appendChild(explore);
