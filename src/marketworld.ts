@@ -4,9 +4,10 @@
  * them on the stall counter, where they fall, bounce and stack.
  */
 import {
-  R, backdrop, bunting, chick, customScenes, disc, drawPlayer, getCtx, goat, hen, lantern, layer, player, reduce, rnd, shadow, solids, tuft, villager,
+  R, backdrop, bunting, chick, customScenes, disc, drawPlayer, getCtx, goat, hen, lantern, layer, nanay, player, reduce, rnd, shadow, solids, tatay, tuft, villager,
 } from "./art";
 import { sfx } from "./sound";
+import { T } from "./ui";
 
 /* ---------- layout ---------- */
 const STALL_N = 5;
@@ -54,9 +55,9 @@ export function enterMarket(count: number): void {
   doneFired = false;
   unloadLive = false;
   solids.length = 0;
-  solids.push([TRUCK.x0, TRUCK.y0, TRUCK.x1, TRUCK.y1], [MY.x0, MY.top - 2, MY.x1, MY.bottom]);
+  solids.push([TRUCK.x0, TRUCK.y0, TRUCK.x1, TRUCK.y1], [MY.x0, MY.top - 2, MY.x1, MY.bottom], [168, 276, 192, 288], [194, 280, 218, 292]);
   npcs = Array.from({ length: 8 }, (_, i) => {
-    const n: Npc = { v: i * 3 + 1, x: 30 + i * 74, y: 226 + (i % 3) * 8, tx: 0, ty: 0, stall: 0, wait: 0, buying: 0, face: 0, seed: i + 1 };
+    const n: Npc = { v: 5 + i, x: 30 + i * 74, y: 226 + (i % 3) * 8, tx: 0, ty: 0, stall: 0, wait: 0, buying: 0, face: 0, seed: i + 1 };
     newTarget(n);
     return n;
   });
@@ -94,7 +95,9 @@ function interact(): void {
     carrying = false;
     const onCounter = nearStall();
     const sx = onCounter ? Math.min(MY.x1 - 14, Math.max(MY.x0 + 14, player.x)) : player.x;
-    sacks.push({ x: sx, y: player.y - 46, vx: (player.face || 1) * 8 + (Math.random() - 0.5) * 36, vy: -60, floor: Math.min(304, Math.max(228, player.y)), mode: "fall", squash: 0 });
+    // set on the counter from just above it, or let go of at the hands' height when put down elsewhere
+    const y0 = onCounter ? MY.top - 22 : player.y - 8;
+    sacks.push({ x: sx, y: y0, vx: (onCounter ? 0 : (player.face || 1) * 10) + (Math.random() - 0.5) * 30, vy: onCounter ? -20 : 0, floor: Math.min(304, Math.max(228, player.y)), mode: "fall", squash: 0 });
     sfx("click");
     return;
   }
@@ -273,6 +276,50 @@ function goods(i: number, x0: number): void {
   }
 }
 
+/* ---------- stall names ---------- */
+const GLYPHS: Record<string, string> = {
+  A: "010101111101101", B: "110101110101110", C: "011100100100011", D: "110101101101110", E: "111100110100111",
+  F: "111100110100100", G: "011100101101011", H: "101101111101101", I: "111010010010111", J: "001001001101010",
+  K: "101101110101101", L: "100100100100111", M: "101111111101101", N: "110101101101101", O: "010101101101010",
+  P: "110101110100100", Q: "010101101111011", R: "110101110101101", S: "011100010001110", T: "111010010010010",
+  U: "101101101101111", V: "101101101101010", W: "101101111111101", X: "101101010101101", Y: "101101010010010",
+  Z: "111001010100111", " ": "000000000000000",
+};
+const textWidth = (s: string, k: number): number => s.length * 4 * k - k;
+function pixelText(s: string, cx: number, y: number, k: number, c: string): void {
+  let x = Math.round(cx - textWidth(s, k) / 2);
+  for (const ch of s) {
+    const g = GLYPHS[ch] ?? GLYPHS[" "];
+    for (let i = 0; i < 15; i++) if (g[i] === "1") R(x + (i % 3) * k, y + Math.floor(i / 3) * k, k, k, c);
+    x += 4 * k;
+  }
+}
+/** A painted board above each awning, so every stall is easy to tell apart. */
+function stallNames(): void {
+  const names = T().market.stalls;
+  for (let i = 0; i < STALL_N; i++) {
+    const x0 = stallX(i);
+    const name = names[i];
+    const w = Math.max(60, textWidth(name, 2) + 14);
+    const bx = Math.round(x0 + STALL_W / 2 - w / 2);
+    R(bx - 2, 107, w + 4, 18, "#1c0d08");
+    R(bx, 109, w, 14, "#f0e2b8");
+    R(bx, 109, w, 2, "#fff8dc");
+    R(bx, 121, w, 2, "#cdbf8c");
+    R(bx + 2, 124, 2, 4, "#3a2814");
+    R(bx + w - 4, 124, 2, 4, "#3a2814");
+    pixelText(name, x0 + STALL_W / 2, 112, 2, AWN[i][0]);
+  }
+  const mine = T().market.mine;
+  const mw = textWidth(mine, 2) + 14;
+  const mx = Math.round((MY.x0 + MY.x1) / 2 - mw / 2);
+  R(mx - 2, 186, mw + 4, 18, "#1c0d08");
+  R(mx, 188, mw, 14, "#fff2c0");
+  R(mx, 188, mw, 2, "#ffffff");
+  R(mx, 200, mw, 2, "#e8d08a");
+  pixelText(mine, (MY.x0 + MY.x1) / 2, 191, 2, "#a02a1a");
+}
+
 /* ---------- static layers ---------- */
 function paintBack(): void {
   for (let i = 0; i < STALL_N; i++) {
@@ -432,8 +479,9 @@ function drawMarketWorld(t: number): void {
   stepSacks(dt);
   backdrop(t, 96);
   layer("mk-back", paintBack);
+  stallNames();
   // vendors behind their counters
-  for (let i = 0; i < STALL_N; i++) villager(i * 2 + 3, stallX(i) + 24 + (i % 2) * 36, COUNTER_TOP + 4, t, "idle", i + 1, i % 2 ? 1 : 0);
+  for (let i = 0; i < STALL_N; i++) villager(i, stallX(i) + 24 + (i % 2) * 36, COUNTER_TOP + 4, t, "idle", i + 1, i % 2 ? 1 : 0);
   layer("mk-front", paintFront);
   myStall(t);
   // the street's animals
@@ -476,6 +524,20 @@ function drawMarketWorld(t: number): void {
     });
   }
   ents.push({ y: TRUCK.y1, draw: () => truck(t) });
+  ents.push({
+    y: 286,
+    draw: () => {
+      shadow(180, 286, 24);
+      tatay(180, 286, t, "idle", 4);
+    },
+  });
+  ents.push({
+    y: 290,
+    draw: () => {
+      shadow(206, 290, 24);
+      nanay(206, 290, t, "idle", 5);
+    },
+  });
   for (const s of sacks) {
     const base = s.mode === "stall" ? MY.bottom + 1 + (MY.top - s.y) * 0.01 : s.y + 1;
     ents.push({ y: base + (s.mode === "stall" ? 0.5 : 0), draw: () => sackArt(s.x, s.y, s.squash) });
@@ -485,8 +547,15 @@ function drawMarketWorld(t: number): void {
     draw: () => {
       drawPlayer(t);
       if (carrying) {
-        carryBob = reduce ? 0 : Math.round(Math.abs(Math.sin(t / 110)) * (player.moving ? 2 : 0));
-        sackArt(player.x, player.y - 36 - carryBob, 0);
+        // hugged against the belly with both hands on it
+        carryBob = reduce ? 0 : Math.round(Math.abs(Math.sin(t / 110)) * (player.moving ? 1.4 : 0));
+        const sx = Math.round(player.x);
+        const by = Math.round(player.y - 6 - carryBob);
+        sackArt(sx, by, 0);
+        R(sx - 13, by - 12, 4, 5, "#1a1a1a");
+        R(sx - 12, by - 11, 3, 3, "#edc39a");
+        R(sx + 9, by - 12, 4, 5, "#1a1a1a");
+        R(sx + 9, by - 11, 3, 3, "#edc39a");
       }
     },
   });

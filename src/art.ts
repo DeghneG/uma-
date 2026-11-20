@@ -3,6 +3,7 @@
  * is shown at exactly 3x. Hand-drawn character sprites (public/sprites) are drawn 1:1 on this grid.
  * Swap any scene for a painted background later without touching the game logic.
  */
+import { BEN, LOOKS, buildSprite, type Look } from "./people";
 export type SceneKind = "title" | "home" | "field" | "market" | "weeding" | "pumping" | "planting" | (string & {});
 
 /**
@@ -855,7 +856,7 @@ interface Rig {
   a1: number;
   eyes: { x: number; y: number; c: string }[];
 }
-const analyse = (img: HTMLImageElement): Rig => {
+const analyse = (img: HTMLImageElement | HTMLCanvasElement): Rig => {
   const w = img.width;
   const h = img.height;
   const c = document.createElement("canvas");
@@ -924,54 +925,28 @@ const drawRig = (img: CanvasImageSource, rg: Rig, x: number, feet: number, t: nu
 };
 type Draw = (x: number, feet: number, t?: number, mode?: Mode, seed?: number) => void;
 /** Loads public/sprites/<name>.png (hand-drawn, drawn 1:1) and animates it; falls back to the code-drawn villager. */
-const spriteReg: Record<string, { img: HTMLImageElement; rig: Rig }> = {};
-type Variant = { base: "nanay" | "tatay" | "kid"; shirt: string; pants: string };
-/** Villagers are the family's own art in different clothes, so everyone shares one style. */
-const VARIANTS: Variant[] = [
-  { base: "nanay", shirt: "#d96f9a", pants: "#3a5a9a" },
-  { base: "tatay", shirt: "#3f7bb0", pants: "#6a4d33" },
-  { base: "kid", shirt: "#e8a23a", pants: "#3f8a4a" },
-  { base: "nanay", shirt: "#3f9a5a", pants: "#8a5a2a" },
-  { base: "tatay", shirt: "#c0392b", pants: "#2f3a4a" },
-  { base: "nanay", shirt: "#8a4a9a", pants: "#d0b070" },
-  { base: "kid", shirt: "#3a7bd0", pants: "#6a4d33" },
-  { base: "tatay", shirt: "#e0c040", pants: "#4a6a3a" },
-];
-const variantCache = new Map<number, { c: HTMLCanvasElement; rig: Rig }>();
-/** A villager in clothes number `v`: the family sprite with a recoloured shirt and trousers. */
-export const villager = (v: number, x: number, feet: number, t = 0, mode: Mode = "idle", seed = 0, face = 0): void => {
-  const i = ((v % VARIANTS.length) + VARIANTS.length) % VARIANTS.length;
-  const vr = VARIANTS[i];
-  const base = spriteReg[vr.base];
-  if (!base) {
-    person(x, feet, vr.shirt, vr.base !== "nanay", 2, t, mode, seed);
-    return;
+const lookCache = new Map<Look, { c: HTMLCanvasElement; rig: Rig }>();
+/** Draw one of the code-built people (their own face, hair and clothes) in the family's art style. */
+const drawLook = (l: Look, x: number, feet: number, t: number, mode: Mode, seed: number, face: number): void => {
+  let k = lookCache.get(l);
+  if (!k) {
+    const c = buildSprite(l);
+    k = { c, rig: analyse(c) };
+    lookCache.set(l, k);
   }
-  let cached = variantCache.get(i);
-  if (!cached) {
-    const c = document.createElement("canvas");
-    c.width = base.rig.w;
-    c.height = base.rig.h;
-    const g = c.getContext("2d") as CanvasRenderingContext2D;
-    g.drawImage(base.img, 0, 0);
-    g.globalCompositeOperation = "source-atop";
-    g.globalAlpha = 0.58;
-    g.fillStyle = vr.shirt;
-    g.fillRect(0, base.rig.headEnd, c.width, base.rig.bodyEnd - base.rig.headEnd);
-    g.fillStyle = vr.pants;
-    g.fillRect(0, base.rig.bodyEnd, c.width, c.height - base.rig.bodyEnd);
-    cached = { c, rig: base.rig };
-    variantCache.set(i, cached);
-  }
-  const k = cached;
-  flipAt(x, face, () => drawRig(k.c, k.rig, x, feet, t, mode, seed));
+  const e = k;
+  flipAt(x, face, () => drawRig(e.c, e.rig, x, feet, t, mode, seed));
 };
+/** Villager number `v`: everyone in the crowd has a different face. */
+export const villager = (v: number, x: number, feet: number, t = 0, mode: Mode = "idle", seed = 0, face = 0): void =>
+  drawLook(LOOKS[((v % LOOKS.length) + LOOKS.length) % LOOKS.length], x, feet, t, mode, seed, face);
+/** Mang Ben, the old neighbor. */
+export const mangBen = (x: number, feet: number, t = 0, mode: Mode = "idle", seed = 0, face = 0): void => drawLook(BEN, x, feet, t, mode, seed, face);
 const loadSprite = (name: string, fallback: Draw): Draw => {
   const img = new Image();
   let rig: Rig | null = null;
   img.onload = (): void => {
     rig = analyse(img);
-    spriteReg[name] = { img, rig };
   };
   img.src = `/sprites/${name}.png`;
   return (x, feet, t = 0, mode = "idle", seed = 0) => {
@@ -980,8 +955,8 @@ const loadSprite = (name: string, fallback: Draw): Draw => {
   };
 };
 const kid = loadSprite("kid", (x, f, t, m, s) => person(x, f, "#d96f9a", false, 2, t, m, s));
-const tatay = loadSprite("tatay", (x, f, t, m, s) => person(x, f, "#c25a3a", true, 2, t, m, s));
-const nanay = loadSprite("nanay", (x, f, t, m, s) => person(x, f, "#3f7bb0", false, 2, t, m, s));
+export const tatay = loadSprite("tatay", (x, f, t, m, s) => person(x, f, "#c25a3a", true, 2, t, m, s));
+export const nanay = loadSprite("nanay", (x, f, t, m, s) => person(x, f, "#3f7bb0", false, 2, t, m, s));
 /** soft ground shadow under a character */
 export const shadow = (x: number, y: number, w = 26): void => R(x - w / 2, y - 1, w, 3, "rgba(0,0,0,0.22)");
 
@@ -1340,7 +1315,7 @@ function fieldScene(t: number): void {
   tatay(92, 276, t, wm, 1);
   if (field.ben) {
     shadow(176, 282, 30);
-    person(176, 282, "#6f9a3f", true, 2, t, wm, 3);
+    mangBen(176, 282, t, wm, 3);
   }
   drawPlayer(t);
   bigTree(-16, 384, 200, 54, t, 5);
