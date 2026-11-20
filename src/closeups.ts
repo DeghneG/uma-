@@ -32,13 +32,19 @@ export function closeUp(live: string, handlers: Handlers, pos: { x: number; y: n
   };
   const d = (e: PointerEvent): void => {
     if ((e.target as HTMLElement).closest("button")) return;
-    if (alive()) handlers.down?.(...xy(e));
+    if (!alive()) return;
+    const [x, y] = xy(e);
+    handlers.down?.(x, y);
   };
   const m = (e: PointerEvent): void => {
-    if (alive()) handlers.move?.(...xy(e));
+    if (!alive()) return;
+    const [x, y] = xy(e);
+    handlers.move?.(x, y);
   };
   const u = (e: PointerEvent): void => {
-    if (alive()) handlers.up?.(...xy(e));
+    if (!alive()) return;
+    const [x, y] = xy(e);
+    handlers.up?.(x, y);
   };
   const k = (e: KeyboardEvent): void => {
     if (!alive()) return;
@@ -102,7 +108,7 @@ function begin(kind: string, key: string, status: () => string, handlers: Handle
     },
     finish: (cb) => {
       stop();
-      gameEl()?.classList.remove("closeup", "grab");
+      gameEl()?.classList.remove("closeup", "grab", "nocursor");
       setTimeout(() => {
         backToField();
         cb();
@@ -156,41 +162,73 @@ const splats: { x: number; y: number; t: number }[] = [];
 const STONE = { x: 468, y: 292, w: 140, h: 52 };
 
 function cluster(x: number, y: number): void {
-  const dots: [number, number][] = [[-8, -6], [0, -8], [8, -6], [-12, 2], [-4, 0], [4, 0], [12, 2], [-8, 8], [0, 7], [8, 8]];
+  // a grape-like bunch of small bright-pink eggs with a wet shine
+  const dots: [number, number][] = [[-9, -8], [-3, -9], [3, -9], [9, -8], [-12, -2], [-6, -3], [0, -3], [6, -3], [12, -2], [-9, 3], [-3, 3], [3, 3], [9, 3], [-6, 9], [0, 9], [6, 9], [0, 14]];
   for (const [dx, dy] of dots) {
-    R(x + dx - 4, y + dy - 4, 9, 9, "#8a1f45");
-    R(x + dx - 3, y + dy - 3, 7, 7, "#e75480");
-    R(x + dx - 2, y + dy - 2, 3, 3, "#f8b4cc");
+    R(x + dx - 3, y + dy - 3, 7, 7, "#8a1f45");
+    R(x + dx - 2, y + dy - 2, 5, 5, "#ec5a8e");
+    R(x + dx - 2, y + dy - 2, 2, 2, "#ffc4da");
   }
 }
-function leaf(x0: number, y0: number, dir: number, len: number, light: string, dark: string): void {
-  for (let i = 0; i < len; i++) {
-    const x = x0 + dir * i * 2;
-    const y = y0 - i * 1.4 + i * i * 0.012;
-    const w = Math.max(2, Math.round(7 - (i / len) * 5));
-    R(x, y, w + 2, 4, dark);
-    R(x + 1, y, w, 3, light);
+function cxAlphaRect(x: number, y: number, w: number, h: number): void {
+  for (let k = 0; k < h; k += 3) R(x + k * 0.3, y + k, w - k * 0.6, 3, `rgba(20,52,14,${0.35 - k / 90})`);
+}
+/** A tapering blade along a curve from base to tip (quadratic Bezier), dark outline, lit centre. */
+function blade(x0: number, y0: number, cxm: number, cym: number, x1: number, y1: number, w0: number, mid: string, lit: string): void {
+  const n = 130;
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const u = 1 - t;
+    const x = u * u * x0 + 2 * u * t * cxm + t * t * x1;
+    const y = u * u * y0 + 2 * u * t * cym + t * t * y1;
+    const w = Math.max(1, Math.round(w0 * (1 - t * 0.85)));
+    R(x - w / 2 - 1, y, w + 2, 4, "#14340e");
+    R(x - w / 2, y, w, 4, mid);
+    R(x - w / 2, y, Math.max(1, Math.round(w / 3)), 4, lit);
   }
+}
+const GREENS: [string, string][] = [["#3f9a2a", "#6fcb3c"], ["#59b32f", "#9bdc4a"], ["#86d13a", "#c8ee6a"], ["#2f8a28", "#59b32f"]];
+/** One rice hill: a fan of thin tillers and a few long arching leaves rising out of the water. */
+function riceHill(bx: number, seed: number, t: number): void {
+  const sway = reduce ? 0 : Math.sin(t / 1300 + seed) * 3;
+  for (let k = 0; k < 10; k++) {
+    const dx = (k - 4.5) * 15 + (rnd(seed * 9 + k) - 0.5) * 8;
+    const tipY = 60 + rnd(seed * 5 + k) * 150;
+    const g = GREENS[k % 4];
+    blade(bx + dx * 0.15, 306, bx + dx * 0.5, 306 + (tipY - 306) * 0.6, bx + dx + sway * (1 - tipY / 300), tipY, 5, g[0], g[1]);
+  }
+  for (let k = 0; k < 4; k++) {
+    const dir = k % 2 ? 1 : -1;
+    const sy = 200 + rnd(seed * 3 + k) * 70;
+    const g = GREENS[(k + 1) % 4];
+    blade(bx + dir * 6, sy, bx + dir * (30 + rnd(seed + k) * 20), sy - 90, bx + dir * (62 + rnd(seed * 2 + k) * 26), sy + 8 + sway, 8, g[0], g[1]);
+  }
+  // the hill's base: dark roots and mud where the tillers meet the water
+  R(bx - 16, 300, 32, 10, "#14340e");
+  R(bx - 13, 301, 26, 6, "#2f6a1f");
+  R(bx - 9, 303, 18, 3, "#59b32f");
 }
 function drawEggs(t: number): void {
-  gradient(0, 300, "#b8dde0", "#6aa4b4");
-  for (let i = 0; i < 40; i++) disc(rnd(i + 3) * 640, rnd(i + 8) * 290, 3 + Math.round(rnd(i) * 7), "rgba(255,255,255,0.1)");
-  R(0, 300, 640, 60, "#4d8fa0");
-  ripples(t, 304, 356, 18, "#a8dde8");
-  // big rice stalks with nodes and arching leaves
-  for (let i = 0; i < 7; i++) {
-    const x = 36 + i * 92 + Math.round(rnd(i + 4) * 20);
-    R(x - 2, 0, 12, 300, "#14340e");
-    R(x, 0, 8, 300, "#3f9a2a");
-    R(x, 0, 3, 300, "#7fd04a");
-    R(x + 6, 0, 2, 300, "#2f7a1f");
-    for (let n = 40; n < 300; n += 70) {
-      R(x - 2, n, 12, 4, "#14340e");
-      R(x - 1, n + 1, 10, 2, "#a8e060");
-    }
-    leaf(x + 8, 120 + (i % 3) * 30, 1, 34, "#59b32f", "#14340e");
-    leaf(x, 200 - (i % 2) * 40, -1, 30, "#86d13a", "#14340e");
+  gradient(0, 300, "#c6e4dc", "#7ab4b8");
+  // far paddies fading into haze, then soft light spots
+  for (let y = 0; y < 110; y += 4) {
+    R(0, y, 640, 4, `rgba(140,196,120,${0.35 - y / 400})`);
   }
+  for (let i = 0; i < 36; i++) disc(rnd(i + 3) * 640, rnd(i + 8) * 290, 3 + Math.round(rnd(i) * 7), "rgba(255,255,255,0.1)");
+  // the water and the hills' reflections
+  R(0, 304, 640, 56, "#4d8fa0");
+  for (let y = 304; y < 360; y += 4) R(0, y, 640, 4, `rgba(26,70,80,${(y - 304) / 120})`);
+  ripples(t, 310, 356, 18, "#a8dde8");
+  [60, 190, 330, 470, 590].forEach((bx, i) => riceHill(bx, i + 1, t));
+  for (const bx of [60, 190, 330, 470, 590]) {
+    cxAlphaRect(bx - 18, 312, 36, 22);
+  }
+  // each cluster is stuck to its own stalk
+  eggs.forEach((e, i) => {
+    if (e.done) return;
+    const g = GREENS[i % 4];
+    blade(e.x + (e.x > 320 ? -6 : 6), 306, e.x + (e.x > 320 ? 4 : -4), (306 + e.y) / 2, e.x, e.y - 34, 5, g[0], g[1]);
+  });
   // the flat stone, with what is left of the crushed clusters
   R(STONE.x - 3, STONE.y - 3, STONE.w + 6, STONE.h + 6, "#1c1c20");
   R(STONE.x, STONE.y, STONE.w, STONE.h, "#8a8f98");
@@ -198,11 +236,11 @@ function drawEggs(t: number): void {
   R(STONE.x, STONE.y + STONE.h - 8, STONE.w, 8, "#5f646c");
   for (let i = 0; i < 18; i++) R(STONE.x + rnd(i + 1) * (STONE.w - 6), STONE.y + 8 + rnd(i + 9) * (STONE.h - 20), 3, 2, i % 2 ? "#6f747c" : "#a8adb5");
   const now = performance.now();
-  for (const s of splats) {
-    const a = Math.min(1, (now - s.t) / 200);
-    R(s.x - 12 * a, s.y - 2, 24 * a, 6, "#c43a6a");
-    R(s.x - 8 * a, s.y - 4, 16 * a, 4, "#e75480");
-    for (let k = 0; k < 6; k++) R(s.x + (k - 3) * 6 * a, s.y - 8 * a - (k % 2) * 3, 3, 3, "#f08ab0");
+  for (const sp of splats) {
+    const a2 = Math.min(1, (now - sp.t) / 200);
+    R(sp.x - 12 * a2, sp.y - 2, 24 * a2, 6, "#c43a6a");
+    R(sp.x - 8 * a2, sp.y - 4, 16 * a2, 4, "#e75480");
+    for (let k = 0; k < 6; k++) R(sp.x + (k - 3) * 6 * a2, sp.y - 8 * a2 - (k % 2) * 3, 3, 3, "#f08ab0");
   }
   eggs.forEach((e, i) => {
     if (e.done || i === eggHeld) return;
@@ -386,7 +424,6 @@ export function playTraps(done: () => void): void {
 type Patch = { x: number; y: number; r: number; heal: number };
 let patches: Patch[] = [];
 let spraying = false;
-let sprayUntil = 0;
 
 function drawSpray(t: number): void {
   gradient(0, 360, "#1d4a14", "#3f8a2a", 8);
@@ -417,46 +454,74 @@ function drawSpray(t: number): void {
     }
     if (p.heal >= 1 && !reduce) R(p.x + Math.round(Math.sin(t / 200 + p.x) * 6), p.y - p.r - 6, 3, 3, "#f4f1e4");
   }
-  const on = spraying || performance.now() < sprayUntil;
+  const on = spraying;
+  const x = Math.round(pos.x);
+  const y = Math.round(pos.y);
+  // aim ring around the nozzle, so it is clear where the spray lands
+  if (!on) for (let k = 0; k < 14; k++) {
+    const ang = (k / 14) * 6.28 + (reduce ? 0 : t / 900);
+    R(x + Math.cos(ang) * 16 - 1, y + Math.sin(ang) * 16 - 1, 3, 3, "#f4f1e4");
+  }
   if (on) {
-    for (let k = 0; k < 26; k++) {
-      const a = reduce ? k : (t / 70 + k * 1.7) % 9;
-      const sp = ((k * 7) % 9) - 4;
-      R(pos.x + sp * a * 0.9 - 2, pos.y + a * 3.2 + (k % 3) * 2 - 6, 4, 4, k % 3 ? "#d6f0f6" : "#8fd2e2");
+    for (let k = 0; k < 30; k++) {
+      const a = reduce ? k : (t / 60 + k * 1.7) % 10;
+      const sp = ((k * 7) % 11) - 5;
+      R(x + sp * a * 0.9 - 2, y + a * 2.6 + (k % 3) * 2 - 4, 4, 4, k % 3 ? "#e4f6fa" : "#8fd2e2");
     }
   }
-  // the sprayer: a bottle with a trigger head, nozzle at the pointer
-  R(pos.x + 4, pos.y - 34, 30, 40, "#14284a");
-  R(pos.x + 6, pos.y - 32, 26, 36, "#3a7bd0");
-  R(pos.x + 6, pos.y - 32, 5, 36, "#7fb0f0");
-  R(pos.x + 2, pos.y - 44, 22, 12, "#1c0d08");
-  R(pos.x + 4, pos.y - 42, 18, 8, "#d9432e");
-  R(pos.x - 8, pos.y - 8, 14, 7, "#1c0d08");
-  R(pos.x - 6, pos.y - 7, 10, 5, "#e8e8ea");
-  R(pos.x - 3, pos.y - 2, 4, 4, "#1c0d08");
+  // the sprayer: nozzle at the pointer, trigger head, bottle, and a gloved hand on it
+  R(x - 2, y - 4, 10, 7, "#1c0d08");
+  R(x - 1, y - 3, 8, 5, "#e8e8ea");
+  R(x + 8, y - 14, 26, 16, "#1c0d08");
+  R(x + 9, y - 13, 24, 14, "#d9432e");
+  R(x + 9, y - 13, 24, 3, "#f08a78");
+  R(x + 14, y + 2, 6, 11, "#1c0d08");
+  R(x + 15, y + 3, 4, 9, on ? "#1c1c20" : "#3a3f44");
+  R(x + 22, y + 2, 26, 40, "#14284a");
+  R(x + 24, y + 4, 22, 36, "#3a7bd0");
+  R(x + 24, y + 4, 5, 36, "#7fb0f0");
+  R(x + 24, y + 20, 22, 2, "#d6f0f6");
+  R(x + 18, y + 16, 34, 14, "#1c0d08");
+  R(x + 19, y + 17, 32, 12, "#e0a85c");
+  R(x + 19, y + 17, 32, 3, "#f4cf8a");
+  R(x + 19, y + 26, 32, 3, "#b97d36");
+  // the E key to hold
+  const b = reduce ? 0 : Math.round(Math.sin(t / 180) * 2);
+  R(x + 25, y - 34 + b, 18, 18, "#1c0d08");
+  R(x + 26, y - 33 + b, 16, 16, on ? "#8fd2e2" : "#f4f1e4");
+  R(x + 26, y - 21 + b, 16, 3, on ? "#4aa0b8" : "#cdbf8c");
+  R(x + 30, y - 30 + b, 2, 9, "#1c0d08");
+  R(x + 30, y - 30 + b, 7, 2, "#1c0d08");
+  R(x + 30, y - 26 + b, 6, 2, "#1c0d08");
+  R(x + 30, y - 22 + b, 7, 2, "#1c0d08");
 }
 export function playSpray(done: () => void): void {
   patches = [[110, 180, 24], [220, 190, 28], [330, 80, 22], [430, 230, 30], [540, 120, 26], [150, 280, 24], [560, 300, 22]].map(([x, y, r]) => ({ x, y, r, heal: 0 }));
   spraying = false;
-  sprayUntil = 0;
   let finished = false;
   const left = (): number => patches.filter((p) => p.heal < 1).length;
-  const run = begin("cuSpray", "spray", () => `${T().cu.sprayLeft}: ${left()}`, {
-    down: () => {
-      spraying = true;
-      sfx("click");
-    },
-    up: () => {
+  gameEl()?.classList.add("nocursor");
+  const eUp = (e: KeyboardEvent): void => {
+    if (e.key.toLowerCase() === "e") spraying = false;
+    if (!document.querySelector(".cuhint")) {
       spraying = false;
-    },
+      document.removeEventListener("keyup", eUp);
+    }
+  };
+  document.addEventListener("keyup", eUp);
+  window.addEventListener("blur", () => (spraying = false));
+  const run = begin("cuSpray", "spray", () => `${T().cu.sprayLeft}: ${left()}`, {
     key: (e) => {
-      if (e.key !== " " && e.key !== "Enter") return false;
-      sprayUntil = performance.now() + 420;
+      if (e.key.toLowerCase() !== "e") return false;
+      if (!e.repeat) {
+        spraying = true;
+        sfx("click");
+      }
       return true;
     },
   });
   const stopLoop = loop((dt) => {
-    if (!(spraying || performance.now() < sprayUntil)) return;
+    if (!spraying) return;
     let healed = false;
     for (const p of patches) {
       if (p.heal < 1 && Math.hypot(p.x - pos.x, p.y - pos.y) < p.r + 14) {
@@ -471,8 +536,8 @@ export function playSpray(done: () => void): void {
     if (left() === 0 && !finished) {
       finished = true;
       spraying = false;
-      sprayUntil = 0;
       stopLoop();
+      document.removeEventListener("keyup", eUp);
       run.finish(done);
     }
   });
