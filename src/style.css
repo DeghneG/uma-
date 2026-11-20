@@ -210,3 +210,5 @@ html,body,#game,#game *{cursor:url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A
 /* close-up jobs: the caption must not block the hand or shears from reaching the whole scene */
 #game.weeding .panel,#game.weeding .panel *,#game.planting .panel{pointer-events:none!important}
 #game.planting .panel *{pointer-events:none!important}
+
+#game.closeup .panel,#game.closeup .panel *{pointer-events:none!important}

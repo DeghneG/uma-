@@ -1,4 +1,5 @@
 import { field, fieldAtWeek, setScene } from "../art";
+import { playEggs, playSpray, playTraps } from "../closeups";
 import { sfx } from "../sound";
 import { addMoney, addMorale, patch } from "../state";
 import { T, h, resultPanel, setLabel, shake, show, statusRow, storyPanel, tweenPest } from "../ui";
@@ -65,7 +66,13 @@ export function week2(next: () => void): void {
     }, animate);
   }
 
+  /** Each fix is done by hand in a close-up first; the result follows when the job is finished. */
   function pick(tool: Tool): void {
+    const job = tool === "hand" ? playEggs : tool === "trap" ? playTraps : playSpray;
+    job(() => apply(tool));
+  }
+
+  function apply(tool: Tool): void {
     const t = T().w2;
     const r = RANK[i][tool];
     if (tool === "hand") addMorale(-2);

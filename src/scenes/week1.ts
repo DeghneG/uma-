@@ -2,6 +2,7 @@ import gsap from "gsap";
 import { BUNDLE, field, fieldAtWeek, plantAt, pump, resetSow, seedsLeft, setScene, shears, snipWeeds, sow, weedsLeft } from "../art";
 import { sfx } from "../sound";
 import { patch } from "../state";
+import { backToField, closeUp, zoomIn } from "../closeups";
 import { T, h, reduce, resultPanel, setLabel, shake, show, starsFor, statusRow, storyPanel, tweenField } from "../ui";
 
 type Job = "weeds" | "water" | "plant";
@@ -179,74 +180,6 @@ export function week1(next: () => void): void {
     equip();
   }
 
-  /** Shared plumbing for a close-up job: pointer position on the canvas, a liveness check, and clean-up. */
-  type Handlers = {
-    down?: (x: number, y: number) => void;
-    move?: (x: number, y: number) => void;
-    up?: (x: number, y: number) => void;
-    key?: (e: KeyboardEvent, x: number, y: number) => boolean;
-  };
-  function closeUp(live: string, handlers: Handlers, pos: { x: number; y: number }): () => void {
-    const cv = document.getElementById("cv") as HTMLCanvasElement;
-    let off = false;
-    const alive = (): boolean => {
-      if (!off && !document.querySelector(live)) stop();
-      return !off;
-    };
-    const xy = (e: PointerEvent): [number, number] => {
-      const r = cv.getBoundingClientRect();
-      pos.x = Math.min(634, Math.max(4, ((e.clientX - r.left) / r.width) * 640));
-      pos.y = Math.min(350, Math.max(120, ((e.clientY - r.top) / r.height) * 360));
-      return [pos.x, pos.y];
-    };
-    const d = (e: PointerEvent): void => {
-      if ((e.target as HTMLElement).closest("button")) return;
-      if (alive()) handlers.down?.(...xy(e));
-    };
-    const m = (e: PointerEvent): void => {
-      if (alive()) handlers.move?.(...xy(e));
-    };
-    const u = (e: PointerEvent): void => {
-      if (alive()) handlers.up?.(...xy(e));
-    };
-    const k = (e: KeyboardEvent): void => {
-      if (!alive()) return;
-      const step = 9;
-      const key = e.key.toLowerCase();
-      if (key === "a") pos.x = Math.max(4, pos.x - step);
-      else if (key === "d") pos.x = Math.min(634, pos.x + step);
-      else if (key === "w") pos.y = Math.max(120, pos.y - step);
-      else if (key === "s") pos.y = Math.min(350, pos.y + step);
-      else if (handlers.key?.(e, pos.x, pos.y)) {
-        e.preventDefault();
-        return;
-      } else return;
-      e.preventDefault();
-      handlers.move?.(pos.x, pos.y);
-    };
-    window.addEventListener("pointerdown", d);
-    window.addEventListener("pointermove", m);
-    window.addEventListener("pointerup", u);
-    document.addEventListener("keydown", k);
-    function stop(): void {
-      if (off) return;
-      off = true;
-      window.removeEventListener("pointerdown", d);
-      window.removeEventListener("pointermove", m);
-      window.removeEventListener("pointerup", u);
-      document.removeEventListener("keydown", k);
-      document.getElementById("game")?.classList.remove("grab", "planting");
-    }
-    return stop;
-  }
-
-  const zoomIn = (): void => {
-    if (!reduce) gsap.fromTo("#cv", { scale: 1.2, filter: "brightness(1.6)" }, { scale: 1, filter: "brightness(1)", duration: 0.5, ease: "power3.out", clearProps: "transform,filter" });
-  };
-  const backToField = (): void => {
-    setScene("field");
-    if (!reduce) gsap.fromTo("#cv", { scale: 1.1 }, { scale: 1, duration: 0.5, ease: "power2.out", clearProps: "transform" });
-  };
   /** A job is finished: show the whole field again, then the job list. */
   function jobDone(job: Job): void {
     backToField();

@@ -3,7 +3,7 @@
  * is shown at exactly 3x. Hand-drawn character sprites (public/sprites) are drawn 1:1 on this grid.
  * Swap any scene for a painted background later without touching the game logic.
  */
-export type SceneKind = "title" | "home" | "field" | "market" | "weeding" | "pumping" | "planting";
+export type SceneKind = "title" | "home" | "field" | "market" | "weeding" | "pumping" | "planting" | (string & {});
 
 /**
  * Field state. Numbers are 0..1 fractions so GSAP can tween them for visible progress
@@ -88,9 +88,25 @@ export function snipWeeds(x: number, y: number, r: number): number {
 export const weedsLeft = (): number => weedPatch.filter((w) => w.t === 0).length;
 export const weedsTotal = (): number => weedPatch.length;
 export const view: { scene: SceneKind; sacks: number; logoA: number } = { scene: "home", sacks: 0, logoA: 1 };
-export const setScene = (k: SceneKind): void => {
-  view.scene = k;
+/** The hero: the kid, who walks around the wide scenes with W A S D. */
+export const player = { x: 150, y: 288, face: 0, moving: false };
+const WALK: Record<string, [number, number, number, number, number, number]> = {
+  // minX, maxX, minY, maxY, spawnX, spawnY
+  field: [14, 626, 196, 302, 150, 290],
+  home: [14, 626, 252, 302, 300, 300],
+  market: [14, 626, 216, 302, 210, 300],
 };
+export const setScene = (k: SceneKind): void => {
+  const prev = view.scene;
+  view.scene = k;
+  const w = WALK[k];
+  if (w && prev !== k && (prev === "title" || prev in WALK)) {
+    player.x = w[4];
+    player.y = w[5];
+  }
+};
+/** Extra close-up scenes (the pest and drought jobs) register their drawing here. */
+export const customScenes: Record<string, (t: number) => void> = {};
 
 /** Canvas position (x centre, y top of head) of a speaking character in the current scene, or null when off screen. */
 export function speakerAnchor(name: string): [number, number] | null {
@@ -119,18 +135,39 @@ export function fieldAtWeek(week: number): void {
   }
 }
 
-const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+export const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const W = 640;
 const H = 360;
 let cx: CanvasRenderingContext2D;
 
 /* ---------- drawing helpers ---------- */
-const R = (x: number, y: number, w: number, h: number, c: string): void => {
-  cx.fillStyle = c;
-  cx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+const Zm = { s: 1, ox: 0, oy: 0 };
+/** Draw `fn` scaled by `s` about (ox, oy). Rectangles snap to whole pixels, so enlarged art stays crisp. */
+export const zoom = (ox: number, oy: number, s: number, fn: () => void): void => {
+  const prev = { ...Zm };
+  Zm.s = s;
+  Zm.ox = ox;
+  Zm.oy = oy;
+  fn();
+  Zm.s = prev.s;
+  Zm.ox = prev.ox;
+  Zm.oy = prev.oy;
 };
+export const R = (x: number, y: number, w: number, h: number, c: string): void => {
+  cx.fillStyle = c;
+  if (Zm.s === 1) {
+    cx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+    return;
+  }
+  const x0 = Math.round(Zm.ox + x * Zm.s);
+  const y0 = Math.round(Zm.oy + y * Zm.s);
+  const x1 = Math.round(Zm.ox + (x + w) * Zm.s);
+  const y1 = Math.round(Zm.oy + (y + h) * Zm.s);
+  cx.fillRect(x0, y0, Math.max(1, x1 - x0), Math.max(1, y1 - y0));
+};
+export const getCtx = (): CanvasRenderingContext2D => cx;
 /** Deterministic pseudo random 0..1 so scenery does not flicker between frames. */
-const rnd = (n: number): number => {
+export const rnd = (n: number): number => {
   const s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
   return s - Math.floor(s);
 };
@@ -140,7 +177,7 @@ const mix = (a: string, b: string, t: number): string => {
   const B = rgb(b);
   return `rgb(${A.map((v, i) => Math.round(v + (B[i] - v) * t)).join(",")})`;
 };
-const disc = (x: number, y: number, r: number, c: string): void => {
+export const disc = (x: number, y: number, r: number, c: string): void => {
   for (let j = -r; j <= r; j++) {
     const w = Math.floor(Math.sqrt(r * r - j * j));
     R(x - w, y + j, w * 2 + 1, 1, c);
@@ -206,7 +243,7 @@ const treeline = (base: number, amp: number, ph: number, sharp: number, n: numbe
 };
 /** Paint a static layer once into an offscreen canvas and blit it every frame. */
 const layerCache = new Map<string, HTMLCanvasElement>();
-const layer = (key: string, paint: () => void): void => {
+export const layer = (key: string, paint: () => void): void => {
   let c = layerCache.get(key);
   if (!c) {
     c = document.createElement("canvas");
@@ -220,7 +257,7 @@ const layer = (key: string, paint: () => void): void => {
   }
   cx.drawImage(c, 0, 0);
 };
-const tuft = (x: number, y: number, c1: string, c2: string): void => {
+export const tuft = (x: number, y: number, c1: string, c2: string): void => {
   R(x, y - 6, 1, 6, c1);
   R(x - 2, y - 4, 1, 4, c2);
   R(x + 2, y - 5, 1, 5, c2);
@@ -903,7 +940,7 @@ const nanay = loadSprite("nanay", (x, f, t, m, s) => person(x, f, "#3f7bb0", fal
 const shadow = (x: number, y: number, w = 26): void => R(x - w / 2, y - 1, w, 3, "rgba(0,0,0,0.22)");
 
 /* ---------- scenes ---------- */
-function backdrop(t: number, horizon: number): void {
+export function backdrop(t: number, horizon: number): void {
   sky("#4aa6e6", "#d3ecf6", horizon);
   sun(430, 84);
   cloud(20, 56, 1.5, t, 0.012);
@@ -992,6 +1029,7 @@ function home(t: number): void {
   shadow(402, 293, 40);
   tatay(tx, 286, t, tm, 1);
   nanay(402, 292, t, "idle", 2);
+  drawPlayer(t);
   bigTree(-12, 380, 210, 56, t, 3);
   palm(30, 392, 250, t, 1, 34);
   fgBushes(11, 9);
@@ -1258,15 +1296,7 @@ function fieldScene(t: number): void {
     shadow(176, 282, 30);
     person(176, 282, "#6f9a3f", true, 2, t, wm, 3);
   }
-  if (field.week === 0) {
-    // the child (the hero of the story) helps in the paddy from the first week
-    shadow(150, 284);
-    kid(150, 284, t, wm, 5);
-  }
-  if (field.ben && field.week === 3) {
-    shadow(250, 292);
-    kid(250, 292, t, wm, 5);
-  }
+  drawPlayer(t);
   bigTree(-16, 384, 200, 54, t, 5);
   fgBushes(21, 9);
   if (shears.on) drawShears(Math.round(shears.x), Math.round(shears.y), shears.snip);
@@ -1274,7 +1304,7 @@ function fieldScene(t: number): void {
 
 /** Close-up for the weeding job: bare cracked soil, big weed clumps, and the shears in hand. */
 /** The detailed dry soil for the weeding close-up: tone patches, grain, clods, pebbles, cracks and stray grass. Painted once and cached. */
-function weedSoil(): void {
+export function weedSoil(): void {
   const depth = (y: number): number => 1 + (y - 116) / 90;
   // the grassy bank at the far edge of the paddy
   R(0, 104, W, 14, "#5d9a48");
@@ -1347,12 +1377,10 @@ function weedSoil(): void {
   for (let i = 0; i < 90; i++) {
     const y = 128 + rnd(i * 37 + 3) * 226;
     const k = depth(y) * 0.8;
-    cx.save();
-    cx.translate(Math.round(rnd(i * 43 + 7) * W), Math.round(y));
-    cx.scale(k, k);
-    if (i % 3) tuft(0, 0, "#3f8a2f", "#6abf3a");
-    else tuft(0, 0, "#a8943a", "#cdb85a");
-    cx.restore();
+    zoom(Math.round(rnd(i * 43 + 7) * W), Math.round(y), k, () => {
+      if (i % 3) tuft(0, 0, "#3f8a2f", "#6abf3a");
+      else tuft(0, 0, "#a8943a", "#cdb85a");
+    });
   }
 }
 
@@ -1363,19 +1391,13 @@ function weeding(t: number): void {
   const now = performance.now();
   for (const w of order) {
     if (w.t !== 0 && now - w.t >= 450) continue;
-    cx.save();
-    cx.translate(Math.round(w.cx), Math.round(w.cy));
-    cx.scale(w.s, w.s);
-    if (w.t === 0) weedClump(0, 0, t + w.cx * 3);
-    else weedCut(0, 0, now - w.t);
-    cx.restore();
+    zoom(Math.round(w.cx), Math.round(w.cy), w.s, () => {
+      if (w.t === 0) weedClump(0, 0, t + w.cx * 3);
+      else weedCut(0, 0, now - w.t);
+    });
   }
   if (shears.on) {
-    cx.save();
-    cx.translate(Math.round(shears.x), Math.round(shears.y));
-    cx.scale(2, 2);
-    drawShears(0, 0, shears.snip);
-    cx.restore();
+    zoom(Math.round(shears.x), Math.round(shears.y), 2, () => drawShears(0, 0, shears.snip));
   }
 }
 
@@ -1468,47 +1490,93 @@ function pumping(t: number): void {
 }
 
 /** Muddy flooded soil with a mark for every seedling; a bundle of seedlings waits at the bottom left. */
-function seedling(x: number, y: number, s: number, grow = 1): void {
-  cx.save();
-  cx.translate(Math.round(x), Math.round(y));
-  cx.scale(s, s);
+export function seedling(x: number, y: number, s: number, grow = 1): void {
   const g = Math.max(0.2, grow);
-  const hh = (n: number): number => Math.round(n * g);
-  R(-3, -1, 7, 2, "#1c0d08");
-  R(-2, -hh(13), 4, hh(13), "#1f4a14");
-  R(-1, -hh(12), 2, hh(12), "#59b32f");
-  R(-5, -hh(10), 4, hh(10), "#1f4a14");
-  R(-4, -hh(9), 2, hh(9), "#86d13a");
-  R(2, -hh(11), 4, hh(11), "#1f4a14");
-  R(3, -hh(10), 2, hh(10), "#a7e04a");
-  cx.restore();
+  const hh = (n: number): number => Math.max(1, Math.round(n * g));
+  zoom(Math.round(x), Math.round(y), s, () => {
+    // mud mound, roots and a little shadow in the water
+    R(-5, -1, 11, 3, "#2a1a0e");
+    R(-4, -2, 9, 2, "#6a4d33");
+    R(-3, -3, 7, 1, "#8a6c45");
+    R(-2, 1, 1, 2, "#e8dcc0");
+    R(2, 1, 1, 2, "#e8dcc0");
+    // three leaves with a dark edge, a lit side and an arching tip
+    const blade = (dx: number, hgt: number, lean: number, mid: string, lit: string): void => {
+      R(dx - 1, -hh(hgt) - 1, 4, hh(hgt) + 1, "#14340e");
+      R(dx, -hh(hgt), 2, hh(hgt), mid);
+      R(dx, -hh(hgt), 1, hh(hgt), lit);
+      R(dx + lean, -hh(hgt) - 2, 2, 2, lit);
+      R(dx + lean * 2, -hh(hgt) - 3, 1, 1, "#d6f58a");
+    };
+    blade(-5, 9, -1, "#3f9a2a", "#6fcb3c");
+    blade(3, 10, 1, "#3f9a2a", "#6fcb3c");
+    blade(-2, 14, 0, "#59b32f", "#9bdc4a");
+    R(0, -hh(6), 1, hh(6), "#b8ea6a");
+  });
+}
+function plantingMud(): void {
+  // churned mud under shallow water: darker and murkier toward the viewer
+  for (let y = 116; y < H; y += 4) {
+    const k = (y - 116) / (H - 116);
+    R(0, y, W, 4, `rgb(${Math.round(110 - 44 * k)},${Math.round(88 - 36 * k)},${Math.round(58 - 26 * k)})`);
+  }
+  for (let i = 0; i < 2400; i++) {
+    const y = 118 + rnd(i * 3 + 1) * 240;
+    const k = 1 + (y - 116) / 90;
+    R(rnd(i * 7 + 2) * W, y, Math.ceil(k), Math.ceil(k * 0.7), i % 3 ? "#4a3826" : i % 2 ? "#7a6244" : "#3a2a1a");
+  }
+  for (let i = 0; i < 64; i++) {
+    const y = 124 + rnd(i * 13) * 228;
+    const k = 1 + (y - 116) / 90;
+    const x = rnd(i * 17 + 5) * W;
+    const w = (5 + rnd(i) * 7) * k;
+    R(x, y + k, w, 2 * k, "#2a1c10");
+    R(x, y, w, 2.4 * k, "#6a5238");
+    R(x + k, y, w - 2 * k, k, "#8a7050");
+  }
+  for (let i = 0; i < 40; i++) {
+    const y = 130 + rnd(i * 19 + 4) * 220;
+    const k = 1 + (y - 116) / 90;
+    R(rnd(i * 23 + 6) * W, y, (2 + rnd(i) * 3) * k, (1.5 + rnd(i + 2) * 2) * k, i % 2 ? "#8f897c" : "#a39c8c");
+  }
+  // the shallow water over it: pale and reflective far away, deeper green-blue near
+  for (let y = 116; y < H; y += 4) {
+    const k = (y - 116) / (H - 116);
+    cx.globalAlpha = 0.5 - 0.1 * k;
+    R(0, y, W, 4, `rgb(${Math.round(150 - 80 * k)},${Math.round(200 - 50 * k)},${Math.round(206 - 40 * k)})`);
+  }
+  cx.globalAlpha = 1;
+  // sky and hills mirrored in the far water
+  for (let y = 116; y < 186; y += 3) {
+    cx.globalAlpha = 0.32 * (1 - (y - 116) / 70);
+    R(0, y, W, 3, y < 134 ? "#6fa862" : y < 156 ? "#8fc4a0" : "#bfe0ea");
+  }
+  cx.globalAlpha = 1;
+  R(0, 116, W, 2, "#2a1c10");
 }
 function planting(t: number): void {
   backdrop(t, 104);
   R(0, 104, W, 12, "#5d9a48");
-  // a flooded paddy: muddy ground under a sheet of shallow water
-  R(0, 116, W, H - 116, "#5b4630");
-  for (let i = 0; i < 60; i++) R(rnd(i + 11) * W, 120 + rnd(i * 7) * 236, 10 + rnd(i) * 18, 2, "#4a3826");
-  cx.globalAlpha = 0.5;
-  R(0, 116, W, H - 116, "#6fb4c6");
-  cx.globalAlpha = 1;
-  // the hills and sky reflected in the water, fading with distance
-  for (let y = 116; y < 176; y += 4) {
-    cx.globalAlpha = 0.28 * (1 - (y - 116) / 60);
-    R(0, y, W, 4, "#a8d2b0");
-  }
-  cx.globalAlpha = 1;
-  // bright ripples drifting along the surface, longer and lower toward the viewer
-  for (let k = 0; k < 26; k++) {
+  for (let i = 0; i < 90; i++) tuft(rnd(i + 200) * W, 114 + rnd(i + 77) * 2, "#2f6f2a", "#4aa045");
+  layer("planting-mud", plantingMud);
+  // ripples drifting over the surface, longer and lower toward the viewer
+  for (let k = 0; k < 30; k++) {
     const row = k % 7;
-    const y = 126 + row * 36 + (k % 3) * 6;
-    const len = 14 + row * 5;
-    R(((k * 53 + (reduce ? 0 : t / (60 - row * 4))) % (W + 40)) - 20, y, len, 1 + (row > 3 ? 1 : 0), "#d6f0f6");
+    const y = 126 + row * 34 + (k % 3) * 7;
+    R((((k * 53 + (reduce ? 0 : t / (62 - row * 4))) % (W + 40)) - 20), y, 14 + row * 5, 1 + (row > 3 ? 1 : 0), "#e4f6fa");
   }
-  // dark mud showing through in patches
-  cx.globalAlpha = 0.16;
-  for (let i = 0; i < 18; i++) R(rnd(i + 31) * W, 150 + rnd(i * 3) * 190, 16 + rnd(i) * 26, 5, "#3a2a1a");
-  cx.globalAlpha = 1;
+  // duckweed and fallen leaves floating by, and a water strider skating across
+  for (let k = 0; k < 18; k++) {
+    const x = ((k * 97 + (reduce ? 0 : t / 90)) % (W + 30)) - 10;
+    const y = 140 + ((k * 61) % 210);
+    R(x, y, 3, 2, "#3f8a2f");
+    R(x + 2, y + 1, 3, 2, "#6abf3a");
+  }
+  const sx = reduce ? 300 : (t / 28) % (W + 40) - 20;
+  R(sx, 250, 6, 2, "#14100a");
+  R(sx - 3, 248, 2, 1, "#14100a");
+  R(sx + 7, 252, 2, 1, "#14100a");
+  R(sx - 6, 253, 18, 1, "rgba(255,255,255,0.5)");
   for (const q of sow.slots) {
     // an empty mark is a pale dimple in the mud; planting fills it
     if (q.t === 0) {
@@ -1535,9 +1603,9 @@ function planting(t: number): void {
   }
   // the bundle
   R(BUNDLE.x - 30, BUNDLE.y + 4, 62, 5, "rgba(0,0,0,0.3)");
-  for (let k = 0; k < 6; k++) seedling(BUNDLE.x - 20 + k * 8, BUNDLE.y + (k % 2) * 3, 2.2);
+  for (let k = 0; k < 6; k++) seedling(BUNDLE.x - 20 + k * 8, BUNDLE.y + (k % 2) * 3, 2);
   R(BUNDLE.x - 24, BUNDLE.y - 12, 54, 4, "#d9432e");
-  if (sow.held) seedling(sow.x, sow.y + 10, 2.6);
+  if (sow.held) seedling(sow.x, sow.y + 10, 3);
 }
 
 function market(t: number): void {
@@ -1601,6 +1669,7 @@ function market(t: number): void {
   tatay(92, 298, t, "idle", 7);
   shadow(372, 304, 40);
   nanay(372, 304, t, "idle", 8);
+  drawPlayer(t);
   for (let i = 0; i < 30; i++) tuft(8 + rnd(i + 5) * 620, 330 + rnd(i + 70) * 24, "#8a9a50", "#6a7a3a");
   bigTree(-14, 384, 205, 54, t, 8);
   fgBushes(31, 8);
@@ -1811,13 +1880,54 @@ function titleScene(t: number): void {
   logo(t);
 }
 
+const keysDown = new Set<string>();
+let lastStep = 0;
+export function initPlayer(): void {
+  document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const k = e.key.toLowerCase();
+    if (k === "w" || k === "a" || k === "s" || k === "d") keysDown.add(k);
+  });
+  document.addEventListener("keyup", (e) => keysDown.delete(e.key.toLowerCase()));
+  window.addEventListener("blur", () => keysDown.clear());
+}
+/** Move the hero on the wide scenes only; close-ups use W A S D for the hand instead. */
+function stepPlayer(): void {
+  const now = performance.now();
+  const dt = Math.min(50, now - lastStep || 16);
+  lastStep = now;
+  const w = WALK[view.scene];
+  if (!w) {
+    player.moving = false;
+    return;
+  }
+  const vx = (keysDown.has("d") ? 1 : 0) - (keysDown.has("a") ? 1 : 0);
+  const vy = (keysDown.has("s") ? 1 : 0) - (keysDown.has("w") ? 1 : 0);
+  player.moving = vx !== 0 || vy !== 0;
+  if (!player.moving) return;
+  const len = Math.hypot(vx, vy);
+  const sp = (dt / 1000) * 82;
+  player.x = Math.min(w[1], Math.max(w[0], player.x + (vx / len) * sp));
+  player.y = Math.min(w[3], Math.max(w[2], player.y + (vy / len) * sp * 0.8));
+  if (vx !== 0) player.face = vx > 0 ? 1 : -1;
+}
+const drawPlayer = (t: number): void => {
+  const x = Math.round(player.x);
+  const y = Math.round(player.y);
+  shadow(x, y);
+  const mode: Mode = player.moving ? "walk" : field.working ? "work" : "idle";
+  flipAt(x, player.face, () => kid(x, y, t, mode, 5));
+};
+
 function draw(t: number): void {
+  stepPlayer();
   if (view.scene === "title") titleScene(t);
   else if (view.scene === "home") home(t);
   else if (view.scene === "field") fieldScene(t);
   else if (view.scene === "weeding") weeding(t);
   else if (view.scene === "pumping") pumping(t);
   else if (view.scene === "planting") planting(t);
+  else if (customScenes[view.scene]) customScenes[view.scene](t);
   else market(t);
 }
 

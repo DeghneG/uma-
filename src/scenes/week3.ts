@@ -1,4 +1,5 @@
 import { fieldAtWeek, setScene } from "../art";
+import { playCanal, playFuel, playRows } from "../closeups";
 import { sfx } from "../sound";
 import { addMoney, addMorale, patch } from "../state";
 import { T, h, setLabel, show, storyPanel } from "../ui";
@@ -27,7 +28,7 @@ export function week3(next: () => void): void {
       const grid = h("div", "cards");
       t.choices.forEach((c, idx) => {
         const b = h("button", "card", `<b>${c[0]}</b><small>${c[1]}</small>`);
-        b.addEventListener("click", () => apply(idx));
+        b.addEventListener("click", () => (idx === 0 ? playFuel : idx === 1 ? playCanal : playRows)(() => apply(idx)));
         grid.appendChild(b);
       });
       p.appendChild(grid);

@@ -1,5 +1,5 @@
 import "./style.css";
-import { fieldAtWeek, initArt } from "./art";
+import { fieldAtWeek, initArt, initPlayer } from "./art";
 import { toggleSound } from "./sound";
 import { armMusic, refreshMusic, setMood, type Mood } from "./music";
 import { initDisplay } from "./display";
@@ -74,6 +74,7 @@ initDisplay();
   for (const ev of ["pointerup", "pointercancel", "blur"]) window.addEventListener(ev, press(false));
 }
 
+initPlayer();
 armMusic();
 initArt($<HTMLCanvasElement>("cv"));
 initHud();
