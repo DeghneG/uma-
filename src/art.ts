@@ -471,7 +471,7 @@ const mangoes = (x: number, y: number): void => {
 
 /* ---------- livestock ---------- */
 /** Draw fn mirrored around x when dir > 0 (all animal art faces left). */
-const flipAt = (x: number, dir: number, fn: () => void): void => {
+export const flipAt = (x: number, dir: number, fn: () => void): void => {
   if (dir <= 0) {
     fn();
     return;

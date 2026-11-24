@@ -2,7 +2,7 @@
  * Hands-on close-ups for the sugarcane month: plow the furrows, spread fertilizer, plant the setts and mulch the rows.
  * They build on the same helpers as the rice-month close-ups (closeups.ts).
  */
-import { R, backdrop, carabao, customScenes, disc, layer, reduce, rnd, weedSoil } from "./art";
+import { R, backdrop, carabao, customScenes, disc, flipAt, layer, reduce, rnd, weedSoil } from "./art";
 import { begin, gameEl, gradient, lerpHex, loop, pos } from "./closeups";
 import { sfx } from "./sound";
 import { T } from "./ui";
@@ -362,10 +362,26 @@ export function playPress(n: number, done: () => void): void {
     bg: (t) => {
       millYard(t);
       const now = performance.now();
-      // a long pole, and the carabao that walks it round
-      R(350, 186, 168, 9, "#1c0d08");
-      R(352, 188, 164, 5, "#9a7440");
-      carabao(Math.round(468 + (reduce ? 0 : Math.sin(t / 700) * 12)), 268, t);
+      // the carabao walks a slow circle round the press, hitched to a long pole (behind it, then in front)
+      const phi = reduce ? 1.2 : t / 2400;
+      const cxn = Math.round(340 + 128 * Math.cos(phi));
+      const cyn = Math.round(244 + 34 * Math.sin(phi));
+      const front = Math.sin(phi) > 0;
+      const walk = (): void => {
+        // the pole runs from the middle roller to the carabao's shoulder, with its yoke
+        const sx = cxn;
+        const sy = cyn - 26;
+        const n = 60;
+        for (let k = 0; k <= n; k++) {
+          const px = 340 + ((sx - 340) * k) / n;
+          const py = 192 + ((sy - 192) * k) / n;
+          R(px - 2, py - 2, 5, 5, "#1c0d08");
+          R(px - 1, py - 1, 3, 3, "#a8742e");
+        }
+        flipAt(cxn, Math.sin(phi) < 0 ? 1 : -1, () => carabao(cxn, cyn, t));
+        R(cxn - 5, cyn - 32, 10, 4, "#6a4a22");
+      };
+      if (!front) walk();
       // the three rollers
       R(250, 232, 100, 32, "#1c0d08");
       R(252, 234, 96, 28, "#6a4a22");
@@ -382,6 +398,7 @@ export function playPress(n: number, done: () => void): void {
       R(246, 112, 108, 32, "#1c0d08");
       R(248, 114, 104, 28, "#7a5a36");
       R(256, 116, 88, 8, "#1c0d08");
+      if (front) walk();
       // the juice vat below, filling as cane goes in
       const p = n ? placed() / n : 0;
       R(294, 264, 12, 12, "#aeb6bc");

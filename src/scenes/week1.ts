@@ -154,8 +154,8 @@ export function week1(next: () => void): void {
       };
       const at = (e: PointerEvent): void => {
         const r = cv.getBoundingClientRect();
-        shears.x = Math.min(634, Math.max(4, ((e.clientX - r.left) / r.width) * 640));
-        shears.y = Math.min(350, Math.max(150, ((e.clientY - r.top) / r.height) * 360));
+        shears.x = Math.min(640, Math.max(0, ((e.clientX - r.left) / r.width) * 640));
+        shears.y = Math.min(360, Math.max(0, ((e.clientY - r.top) / r.height) * 360));
       };
       const down = (e: PointerEvent): void => {
         if ((e.target as HTMLElement).closest("button")) return;
@@ -172,10 +172,10 @@ export function week1(next: () => void): void {
         if (!live()) return cleanup();
         const k = e.key.toLowerCase();
         const step = 9;
-        if (k === "a") shears.x = Math.max(4, shears.x - step);
-        else if (k === "d") shears.x = Math.min(634, shears.x + step);
-        else if (k === "w") shears.y = Math.max(150, shears.y - step);
-        else if (k === "s") shears.y = Math.min(350, shears.y + step);
+        if (k === "a") shears.x = Math.max(0, shears.x - step);
+        else if (k === "d") shears.x = Math.min(640, shears.x + step);
+        else if (k === "w") shears.y = Math.max(0, shears.y - step);
+        else if (k === "s") shears.y = Math.min(360, shears.y + step);
         else if (k === " " || k === "enter") {
           if (e.repeat) return;
           e.preventDefault();

@@ -26,8 +26,8 @@ export function closeUp(live: string, handlers: Handlers, pos: { x: number; y: n
   };
   const xy = (e: PointerEvent): [number, number] => {
     const r = cv.getBoundingClientRect();
-    pos.x = Math.min(634, Math.max(4, ((e.clientX - r.left) / r.width) * 640));
-    pos.y = Math.min(350, Math.max(4, ((e.clientY - r.top) / r.height) * 360));
+    pos.x = Math.min(640, Math.max(0, ((e.clientX - r.left) / r.width) * 640));
+    pos.y = Math.min(360, Math.max(0, ((e.clientY - r.top) / r.height) * 360));
     return [pos.x, pos.y];
   };
   const d = (e: PointerEvent): void => {
@@ -50,10 +50,10 @@ export function closeUp(live: string, handlers: Handlers, pos: { x: number; y: n
     if (!alive()) return;
     const step = 9;
     const key = e.key.toLowerCase();
-    if (key === "a") pos.x = Math.max(4, pos.x - step);
-    else if (key === "d") pos.x = Math.min(634, pos.x + step);
-    else if (key === "w") pos.y = Math.max(4, pos.y - step);
-    else if (key === "s") pos.y = Math.min(350, pos.y + step);
+    if (key === "a") pos.x = Math.max(0, pos.x - step);
+    else if (key === "d") pos.x = Math.min(640, pos.x + step);
+    else if (key === "w") pos.y = Math.max(0, pos.y - step);
+    else if (key === "s") pos.y = Math.min(360, pos.y + step);
     else if (handlers.key?.(e, pos.x, pos.y)) {
       e.preventDefault();
       return;
@@ -311,29 +311,57 @@ function drawCaneBase(t: number): void {
   }
   for (let i = 0; i < 50; i++) R(rnd(i + 11) * 640, 308 + rnd(i * 3) * 48, 8, 1, "#7a5a36");
 }
-/** A stem borer grub inching up a stalk: a cream, segmented body with a brown head. */
+/** A stem borer caterpillar: a fat cream body of round segments with a brown head and tiny legs, inching along a leaf. */
 function borer(t: number): void {
-  const bx = caneStalkX(3) + 6;
-  const top = 270 - ((reduce ? 40 : t / 70) % 190);
-  R(bx + 2, top + 20, 3, 4, "#1c0d08");
-  for (let k = 6; k >= 1; k--) {
-    const sq = reduce ? 0 : Math.round(Math.sin(t / 150 + k) * 1.5);
-    const yy = top + k * 7;
-    R(bx - 5 + sq, yy, 11, 8, "#4a3a14");
-    R(bx - 4 + sq, yy + 1, 9, 6, k % 2 ? "#f4ecc0" : "#e6dba0");
-    R(bx + sq, yy + 3, 2, 2, "#9a8a4a");
+  const P = [[110, 322], [270, 256], [440, 324]] as const;
+  const at = (u: number): [number, number] => {
+    const v = 1 - u;
+    return [v * v * P[0][0] + 2 * v * u * P[1][0] + u * u * P[2][0], v * v * P[0][1] + 2 * v * u * P[1][1] + u * u * P[2][1]];
+  };
+  // a broad leaf for it to crawl on
+  for (let i = 0; i <= 140; i++) {
+    const u = i / 140;
+    const [x, y] = at(u);
+    const taper = 1 - Math.pow(Math.abs(2 * u - 1), 3) * 0.75;
+    const hh = Math.round(20 * taper);
+    R(x - 3, y - hh / 2 - 1, 7, hh + 2, "#14340e");
+    R(x - 3, y - hh / 2, 7, hh, i % 9 < 4 ? "#59b32f" : "#4aa02a");
+    R(x - 3, y - hh / 2, 7, Math.max(1, Math.round(hh / 4)), "#9bdc4a");
   }
-  R(bx - 5, top - 6, 11, 9, "#3a1a08");
-  R(bx - 4, top - 5, 9, 7, "#8a4a1a");
-  R(bx - 3, top - 3, 2, 2, "#1a1a1a");
-  R(bx + 1, top - 3, 2, 2, "#1a1a1a");
+  const head = reduce ? 0.4 : 0.12 + ((t / 11000) % 1) * 0.76;
+  // a wave of squeezing runs down the body as it crawls
+  for (let k = 9; k >= 1; k--) {
+    const u = Math.max(0.02, head - k * 0.02);
+    const [x, y0] = at(u);
+    const sq = reduce ? 0 : Math.sin(t / 150 - k * 0.9);
+    const x1 = Math.round(x);
+    const y1 = Math.round(y0 - 10 - Math.max(0, sq) * 2);
+    disc(x1, y1, 8, "#4a3a14");
+    disc(x1, y1, 7, k % 2 ? "#f6efd0" : "#ecdfb4");
+    R(x1 - 4, y1 - 5, 7, 2, "#fffbe6");
+    R(x1 - 1, y1 + 1, 3, 3, "#6a5a30");
+    if (k < 4) {
+      R(x1 - 3, y1 + 7, 2, 3, "#2a1c08");
+      R(x1 + 2, y1 + 7, 2, 3, "#2a1c08");
+    }
+  }
+  const [hx, hy0] = at(head);
+  const hx1 = Math.round(hx + 3);
+  const hy1 = Math.round(hy0 - 10);
+  disc(hx1, hy1, 9, "#2a1004");
+  disc(hx1, hy1, 8, "#8a4a1a");
+  R(hx1 - 5, hy1 - 6, 8, 3, "#c88a4a");
+  disc(hx1 + 3, hy1 - 1, 2, "#111111");
+  disc(hx1 - 3, hy1 - 1, 2, "#111111");
+  R(hx1 - 5, hy1 + 4, 10, 2, "#4a2408");
+  R(hx1 + 6, hy1 - 12, 2, 5, "#2a1004");
+  R(hx1 + 1, hy1 - 12, 2, 5, "#2a1004");
 }
 function drawCaneEggs(t: number): void {
   drawCaneBase(t);
-  borer(t);
 }
 function drawEggs(t: number): void {
-  if (eggTheme === "cane") return drawCaneEggs(t), drawEggFront(t);
+  if (eggTheme === "cane") return drawCaneEggs(t), drawEggFront(t), borer(t);
   drawRiceEggs(t);
   drawEggFront(t);
 }
