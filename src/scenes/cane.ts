@@ -139,7 +139,7 @@ export function cane2(next: () => void): void {
   }
   /** Each fix is done by hand in a close-up first; the result follows when the job is finished. */
   function pick(tool: Tool): void {
-    const job = tool === "hand" ? (d: () => void) => playEggs(d, "cane") : tool === "trap" ? playTraps : playSpray;
+    const job = tool === "hand" ? (d: () => void) => playEggs(d, "cane") : tool === "trap" ? (d: () => void) => playTraps(d, "cane") : (d: () => void) => playSpray(d, "cane");
     job(() => apply(tool));
   }
   function apply(tool: Tool): void {

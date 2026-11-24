@@ -278,9 +278,10 @@ function drawEggFront(t: number): void {
   const now = performance.now();
   for (const sp of splats) {
     const a2 = Math.min(1, (now - sp.t) / 200);
-    R(sp.x - 12 * a2, sp.y - 2, 24 * a2, 6, "#c43a6a");
-    R(sp.x - 8 * a2, sp.y - 4, 16 * a2, 4, "#e75480");
-    for (let k = 0; k < 6; k++) R(sp.x + (k - 3) * 6 * a2, sp.y - 8 * a2 - (k % 2) * 3, 3, 3, "#f08ab0");
+    const cane = eggTheme === "cane";
+    R(sp.x - 12 * a2, sp.y - 2, 24 * a2, 6, cane ? "#a89a40" : "#c43a6a");
+    R(sp.x - 8 * a2, sp.y - 4, 16 * a2, 4, cane ? "#e8d890" : "#e75480");
+    for (let k = 0; k < 6; k++) R(sp.x + (k - 3) * 6 * a2, sp.y - 8 * a2 - (k % 2) * 3, 3, 3, cane ? "#fff2b0" : "#f08ab0");
   }
   eggs.forEach((e, i) => {
     if (e.done || i === eggHeld) return;
@@ -369,20 +370,85 @@ function paw(x: number, y: number, c: string): void {
   R(x - 1, y - 4, 2, 2, c);
   R(x + 2, y - 3, 2, 2, c);
 }
-function drawTraps(t: number): void {
+let trapTheme: "rice" | "cane" = "rice";
+/** A paddy dike: flooded rice behind it, wet dark mud underfoot, grass on the near bank. */
+function riceTrapBg(t: number): void {
   backdrop(t, 104);
-  layer("weeding-soil", weedSoil);
+  layer("trap-rice-bg", () => {
+    // flooded paddy with seedling rows at the back
+    R(0, 104, 640, 72, "#4aa0b8");
+    R(0, 104, 640, 3, "#8fd2e2");
+    for (let r = 0; r < 3; r++) for (let x = 6 + (r % 2) * 8; x < 640; x += 16) {
+      R(x, 122 + r * 16, 2, 8, "#14340e");
+      R(x - 2, 124 + r * 16, 2, 6, "#3f9a2a");
+      R(x + 2, 123 + r * 16, 2, 7, "#86d13a");
+    }
+    // the dike: wet, dark, shining mud with puddles
+    R(0, 172, 640, 132, "#5e4429");
+    for (let i = 0; i < 2400; i++) R(rnd(i * 7 + 2) * 640, 174 + rnd(i * 3 + 1) * 128, 2, 1, i % 3 ? "#4a3624" : i % 2 ? "#74583a" : "#3a2a1a");
+    for (let i = 0; i < 40; i++) {
+      const x = rnd(i + 70) * 600;
+      const y = 180 + rnd(i * 5 + 9) * 110;
+      R(x, y, 18 + rnd(i) * 22, 5, "#2a1c10");
+      R(x + 1, y + 1, 16 + rnd(i) * 22, 3, "#8fb7c9");
+      R(x + 3, y + 1, 8, 1, "#e4f6fa");
+    }
+    R(0, 172, 640, 5, "#3f9a2a");
+    for (let x = 0; x < 640; x += 5) R(x, 168 + (x % 3), 3, 6, x % 2 ? "#2f7a1f" : "#59b32f");
+    // the grassy near bank
+    R(0, 304, 640, 56, "#5d9a48");
+    for (let x = 0; x < 640; x += 4) R(x, 300 + (x % 5), 3, 8, x % 2 ? "#3f8a2f" : "#6abf3a");
+    for (let i = 0; i < 70; i++) tuft(rnd(i + 21) * 640, 312 + rnd(i * 3) * 44, "#3f8a3f", "#6abf3a");
+    for (let i = 0; i < 20; i++) R(rnd(i + 55) * 640, 312 + rnd(i * 7) * 44, 3, 3, i % 2 ? "#f2c94c" : "#ffffff");
+  });
+  for (let k = 0; k < 10; k++) R(((k * 71 + (reduce ? 0 : t / 40)) % 660) - 20, 110 + (k % 4) * 14, 14, 1, "#d6f0f6");
+}
+/** A cane furrow: a wall of tall cane behind, dry earth with fallen trash leaves in front. */
+function caneTrapBg(t: number): void {
+  backdrop(t, 104);
+  layer("trap-cane-bg", () => {
+    weedSoil();
+    // dense cane at the back
+    R(0, 100, 640, 110, "#6a5a14");
+    for (let i = 0; i < 30; i++) {
+      const x = i * 22 + Math.round(rnd(i + 3) * 8);
+      R(x - 1, 96, 14, 116, "#3a2e08");
+      R(x, 96, 12, 116, i % 2 ? "#cdbd48" : "#bfae38");
+      R(x, 96, 4, 116, "#e8dc78");
+      R(x + 9, 96, 3, 116, "#8a7a24");
+      for (let n = 112; n < 212; n += 34) {
+        R(x - 1, n, 14, 3, "#3a2e08");
+        R(x, n + 1, 12, 1, "#a8962c");
+      }
+    }
+    R(0, 100, 640, 10, "#3f6a1f");
+    for (let i = 0; i < 40; i++) R(rnd(i + 8) * 620, 98 + rnd(i * 3) * 8, 30, 3, i % 2 ? "#59b32f" : "#3f9a2a");
+    R(0, 208, 640, 4, "#2a1c10");
+    // fallen dry leaves between the rows
+    for (let i = 0; i < 60; i++) {
+      const x = rnd(i * 5 + 1) * 620;
+      const y = 216 + rnd(i * 9 + 4) * 130;
+      R(x, y, 24, 2, i % 2 ? "#d8b44a" : "#c89a3a");
+      R(x + 4, y + 2, 16, 1, "#8a6a2a");
+    }
+  });
+}
+function drawTraps(t: number): void {
+  const wet = trapTheme === "rice";
+  if (wet) riceTrapBg(t);
+  else caneTrapBg(t);
   // the packed earth of the rat trail, with paw prints and a dragged tail
   for (let x = 0; x < 640; x += 4) {
     const y = 214 + Math.round(Math.sin(x * 0.014) * 24);
-    R(x, y - 18, 4, 44, "#8a6a3e");
-    R(x, y - 18, 4, 3, "#6a4d2a");
-    R(x, y + 24, 4, 3, "#a07a48");
+    R(x, y - 18, 4, 44, wet ? "#4a3220" : "#8a6a3e");
+    R(x, y - 18, 4, 3, wet ? "#2e1f12" : "#6a4d2a");
+    R(x, y + 24, 4, 3, wet ? "#6a4d30" : "#a07a48");
+    if (wet && x % 20 === 0) R(x, y - 4 + (x % 12), 8, 2, "#8fb7c9");
     if (x % 28 === 0) {
-      paw(x + 4, y - 4, "#4a3418");
-      paw(x + 16, y + 8, "#4a3418");
+      paw(x + 4, y - 4, wet ? "#1c120a" : "#4a3418");
+      paw(x + 16, y + 8, wet ? "#1c120a" : "#4a3418");
     }
-    if (x % 8 === 0) R(x, y + 2, 4, 1, "#6a4d2a");
+    if (x % 8 === 0) R(x, y + 2, 4, 1, wet ? "#2e1f12" : "#6a4d2a");
   }
   // marks to drop traps on
   spots.forEach((s) => {
@@ -411,7 +477,8 @@ function drawTraps(t: number): void {
     trapArt(pos.x, pos.y, false);
   }
 }
-export function playTraps(done: () => void): void {
+export function playTraps(done: () => void, theme: "rice" | "cane" = "rice"): void {
+  trapTheme = theme;
   spots = [{ x: 130, y: 224, set: 0 }, { x: 318, y: 204, set: 0 }, { x: 510, y: 232, set: 0 }];
   trapsInBox = 3;
   trapHeld = false;
@@ -466,34 +533,66 @@ type Patch = { x: number; y: number; r: number; heal: number };
 let patches: Patch[] = [];
 let spraying = false;
 
+let sprayTheme: "rice" | "cane" = "rice";
 function drawSpray(t: number): void {
-  gradient(0, 360, "#1d4a14", "#3f8a2a", 8);
-  // broad leaves with a pale midrib, running across the view
-  for (let k = 0; k < 6; k++) {
-    const base = -120 + k * 130;
-    for (let y = 0; y < 360; y += 3) {
-      const x = base + y * 0.55;
-      R(x, y, 120, 3, k % 2 ? "#59b32f" : "#4aa02a");
-      R(x, y, 5, 3, "#14340e");
-      R(x + 115, y, 5, 3, "#14340e");
-      R(x + 58, y, 4, 3, "#a8e060");
-      R(x + 20, y, 2, 3, "#6fcb3c");
-      R(x + 92, y, 2, 3, "#3f8a2a");
+  const cane = sprayTheme === "cane";
+  gradient(0, 360, cane ? "#1d4a14" : "#27553a", cane ? "#3f8a2a" : "#4f9a5e", 8);
+  if (cane) {
+    // broad cane leaves with a pale midrib
+    for (let k = 0; k < 6; k++) {
+      const base = -120 + k * 130;
+      for (let y = 0; y < 360; y += 3) {
+        const x = base + y * 0.55;
+        R(x, y, 120, 3, k % 2 ? "#59b32f" : "#4aa02a");
+        R(x, y, 5, 3, "#14340e");
+        R(x + 115, y, 5, 3, "#14340e");
+        R(x + 56, y, 8, 3, "#e8f0c0");
+        R(x + 20, y, 2, 3, "#6fcb3c");
+        R(x + 92, y, 2, 3, "#3f8a2a");
+      }
+    }
+  } else {
+    // slim rice blades, closer together, with fine veins
+    for (let k = 0; k < 12; k++) {
+      const base = -140 + k * 66;
+      for (let y = 0; y < 360; y += 3) {
+        const x = base + y * 0.55;
+        R(x, y, 58, 3, k % 2 ? "#5fb06a" : "#4f9a5a");
+        R(x, y, 3, 3, "#14340e");
+        R(x + 55, y, 3, 3, "#14340e");
+        R(x + 26, y, 3, 3, "#b8e8a0");
+        for (let v = 10; v < 52; v += 8) R(x + v, y, 1, 3, "#3f8a4a");
+      }
     }
   }
   for (const p of patches) {
-    const c = lerpHex("#e6d24a", "#59b32f", p.heal);
-    const rim = lerpHex("#b89a2a", "#3f9a2a", p.heal);
-    for (let dy = -p.r; dy <= p.r; dy += 3) {
-      const w = Math.floor(Math.sqrt(p.r * p.r - dy * dy) * (1 + 0.15 * Math.sin(dy * 0.5 + p.x)));
-      R(p.x - w - 2, p.y + dy, w * 2 + 4, 3, rim);
-      R(p.x - w, p.y + dy, w * 2, 3, c);
+    if (cane) {
+      // an aphid colony: a crowd of tiny pale-green insects on a sticky shine, thinning out as it is sprayed
+      const alive = 1 - p.heal;
+      R(p.x - p.r, p.y - p.r * 0.6, p.r * 2, p.r * 1.2, `rgba(220,240,160,${0.28 * alive})`);
+      for (let k = 0; k < 46; k++) {
+        if (k / 46 > alive) continue;
+        const a = rnd(k * 3 + p.x) * 6.28;
+        const d = Math.sqrt(rnd(k * 7 + p.y)) * p.r;
+        const bx = p.x + Math.cos(a) * d;
+        const by = p.y + Math.sin(a) * d * 0.65;
+        R(bx - 1, by - 1, 5, 5, "#3f5a14");
+        R(bx, by, 3, 3, k % 3 ? "#d8e060" : "#f0f4a0");
+        R(bx, by, 1, 1, "#ffffff");
+      }
+      continue;
     }
-    for (let k = 0; k < 6; k++) {
-      if (p.heal > 0.85) continue;
-      R(p.x + (rnd(k + p.x) - 0.5) * p.r * 1.3, p.y + (rnd(k * 3 + p.y) - 0.5) * p.r * 1.2, 4, 4, lerpHex("#8a6a1a", "#59b32f", p.heal));
+    // a rice blast lesion: a spindle of brown with a grey centre and a yellow halo, along the blade
+    const heal = p.heal;
+    for (let dy = -p.r * 1.3; dy <= p.r * 1.3; dy += 3) {
+      const u = dy / (p.r * 1.3);
+      const w = Math.floor(Math.sqrt(Math.max(0, 1 - u * u)) * p.r * 0.7);
+      const sx = Math.round(dy * 0.55);
+      R(p.x + sx - w - 5, p.y + dy, w * 2 + 10, 3, lerpHex("#e6d24a", "#4f9a5a", heal));
+      R(p.x + sx - w - 1, p.y + dy, w * 2 + 2, 3, lerpHex("#8a5a2a", "#4f9a5a", heal));
+      R(p.x + sx - Math.max(0, w - 4), p.y + dy, Math.max(0, w - 4) * 2, 3, lerpHex("#c4c0a8", "#4f9a5a", heal));
     }
-    if (p.heal >= 1 && !reduce) R(p.x + Math.round(Math.sin(t / 200 + p.x) * 6), p.y - p.r - 6, 3, 3, "#f4f1e4");
+    if (heal >= 1 && !reduce) R(p.x + Math.round(Math.sin(t / 200 + p.x) * 6), p.y - p.r - 6, 3, 3, "#f4f1e4");
   }
   const on = spraying;
   const x = Math.round(pos.x);
@@ -536,7 +635,8 @@ function drawSpray(t: number): void {
   R(x + 30, y - 26 + b, 6, 2, "#1c0d08");
   R(x + 30, y - 22 + b, 7, 2, "#1c0d08");
 }
-export function playSpray(done: () => void): void {
+export function playSpray(done: () => void, theme: "rice" | "cane" = "rice"): void {
+  sprayTheme = theme;
   patches = [[110, 180, 24], [220, 190, 28], [330, 80, 22], [430, 230, 30], [540, 120, 26], [150, 280, 24], [560, 300, 22]].map(([x, y, r]) => ({ x, y, r, heal: 0 }));
   spraying = false;
   let finished = false;
