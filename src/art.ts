@@ -4,6 +4,7 @@
  * Swap any scene for a painted background later without touching the game logic.
  */
 import { BEN, LOOKS, buildSprite, type Look } from "./people";
+import { sfx } from "./sound";
 export type SceneKind = "title" | "home" | "field" | "market" | "weeding" | "pumping" | "planting" | (string & {});
 
 /**
@@ -568,8 +569,9 @@ export const goat = (x: number, g: number, t: number, seed: number, col = "#e8e2
   });
 };
 /** A frog that sits hidden in the water with only its eyes showing, leaps out in an arc, and dives back with a splash. */
+const frogZone = new Map<string, number>();
 export const frogJump = (x: number, y: number, t: number, seed: number, s = 1): void => {
-  const T = 4600;
+  const T = 2700;
   const ph = (((t + seed * 1700) % T) + T) % T / T;
   const dir = Math.floor((t + seed * 1700) / T) % 2 === 0 ? 1 : -1;
   const frog = (fx: number, fy: number, pose: number): void => {
@@ -591,18 +593,27 @@ export const frogJump = (x: number, y: number, t: number, seed: number, s = 1): 
     });
   };
   const now = ph;
-  if (now < 0.6) {
+  // sound: a plip as it pushes off and a splash as it lands, once per frog and cycle
+  const key = `${x},${y},${seed}`;
+  const zone = now < 0.38 ? 0 : now < 0.8 ? 1 : 2;
+  const prev = frogZone.get(key);
+  frogZone.set(key, zone);
+  if (prev !== undefined && prev !== zone) {
+    if (zone === 1) sfx("splashSmall");
+    else if (zone === 2) sfx("splash");
+  }
+  if (now < 0.38) {
     // only the eyes above the surface, and a ripple now and then
     R(x - 1, y - 2 * s, 2 * s, 2 * s, "#2a6a24");
     R(x, y - 2 * s, s, s, "#f2e04a");
-    if (now > 0.3 && now < 0.5) R(x - (4 + (now - 0.3) * 30) * s, y, (8 + (now - 0.3) * 60) * s, 1, "rgba(255,255,255,0.55)");
-  } else if (now < 0.88) {
-    const u = (now - 0.6) / 0.28;
+    if (now > 0.15 && now < 0.35) R(x - (4 + (now - 0.15) * 30) * s, y, (8 + (now - 0.15) * 60) * s, 1, "rgba(255,255,255,0.55)");
+  } else if (now < 0.8) {
+    const u = (now - 0.38) / 0.42;
     const hgt = Math.sin(Math.PI * u) * 30 * s;
     frog(Math.round(x + (u - 0.5) * 26 * s * dir), Math.round(y - hgt), u < 0.5 ? 0 : 1);
   } else {
     // the splash: rings spreading and droplets
-    const u = (now - 0.88) / 0.12;
+    const u = (now - 0.8) / 0.2;
     const sx = x + 13 * s * dir;
     R(sx - (4 + u * 12) * s, y, (8 + u * 24) * s, 1, `rgba(255,255,255,${(0.8 - u * 0.7).toFixed(2)})`);
     for (let k = 0; k < 5; k++) R(sx + (k - 2) * 3 * s, y - (1 - u) * (6 + (k % 2) * 4) * s - 1, Math.max(1, s), Math.max(1, s), "#e4f6fa");
@@ -1978,7 +1989,13 @@ function stepPlayer(): void {
   if (!blocked(nx, player.y)) player.x = nx;
   if (!blocked(player.x, ny)) player.y = ny;
   if (vx !== 0) player.face = vx > 0 ? 1 : -1;
+  stepDist += sp;
+  if (stepDist > 15) {
+    stepDist = 0;
+    sfx("step");
+  }
 }
+let stepDist = 0;
 export const drawPlayer = (t: number): void => {
   const x = Math.round(player.x);
   const y = Math.round(player.y);

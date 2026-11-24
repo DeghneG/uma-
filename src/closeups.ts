@@ -5,7 +5,7 @@
  */
 import gsap from "gsap";
 import { R, backdrop, customScenes, disc, frogJump, layer, reduce, rnd, setScene, tuft, weedSoil, zoom } from "./art";
-import { setMotor, sfx } from "./sound";
+import { hold, setMotor, sfx, stopHolds } from "./sound";
 import { T, getBack, getView, h, setBack, show, statusRow } from "./ui";
 
 /* ---------- shared plumbing ---------- */
@@ -111,6 +111,7 @@ export function begin(kind: string, key: string, status: () => string, handlers:
   // Back: give the job up (nothing is paid or changed) and return to the choices
   setBack(() => {
     stop();
+    stopHolds();
     gameEl()?.classList.remove("closeup", "grab", "nocursor");
     backToField();
     setBack(prevBack);
@@ -123,6 +124,7 @@ export function begin(kind: string, key: string, status: () => string, handlers:
     },
     finish: (cb) => {
       stop();
+      stopHolds();
       setBack(prevBack);
       gameEl()?.classList.remove("closeup", "grab", "nocursor");
       setTimeout(() => {
@@ -434,7 +436,7 @@ export function playEggs(done: () => void, theme: "rice" | "cane" = "rice"): voi
     if (best < 0) return;
     eggHeld = best;
     gameEl()?.classList.add("grab");
-    sfx("click");
+    sfx("pluck");
   };
   const drop = (x: number, y: number): void => {
     if (eggHeld < 0) return;
@@ -444,7 +446,7 @@ export function playEggs(done: () => void, theme: "rice" | "cane" = "rice"): voi
     if (x > STONE.x - 10 && x < STONE.x + STONE.w + 10 && y > STONE.y - 24 && y < STONE.y + STONE.h) {
       e.done = true;
       splats.push({ x: Math.min(STONE.x + STONE.w - 14, Math.max(STONE.x + 14, x)), y: STONE.y + 16 + rnd(splats.length) * 18, t: performance.now() });
-      sfx("cut");
+      sfx("squish");
       run.refresh();
       if (left() === 0 && !finished) {
         finished = true;
@@ -608,7 +610,7 @@ export function playTraps(done: () => void, theme: "rice" | "cane" = "rice"): vo
     trapHeld = true;
     trapsInBox--;
     gameEl()?.classList.add("grab");
-    sfx("click");
+    sfx("lift");
   };
   const drop = (x: number, y: number): void => {
     if (!trapHeld) return;
@@ -628,7 +630,7 @@ export function playTraps(done: () => void, theme: "rice" | "cane" = "rice"): vo
       return;
     }
     best.set = performance.now();
-    sfx("cut");
+    sfx("snap");
     run.refresh();
     if (spots.every((s) => s.set) && !finished) {
       finished = true;
@@ -826,7 +828,6 @@ export function playSpray(done: () => void, theme: "rice" | "cane" | "rot" = "ri
         if (e.key.toLowerCase() !== "e") return false;
         if (!e.repeat) {
           spraying = true;
-          sfx("click");
         }
         return true;
       },
@@ -834,6 +835,7 @@ export function playSpray(done: () => void, theme: "rice" | "cane" | "rot" = "ri
     rot ? "cc" : "cu",
   );
   const stopLoop = loop((dt) => {
+    hold(rot ? "sprinkle" : "hiss", spraying);
     if (!spraying) return;
     let healed = false;
     for (const p of patches) {
@@ -843,7 +845,7 @@ export function playSpray(done: () => void, theme: "rice" | "cane" | "rot" = "ri
       }
     }
     if (healed) {
-      sfx("cut");
+      sfx("pop");
       run.refresh();
     }
     if (left() === 0 && !finished) {
@@ -945,7 +947,7 @@ export function playFuel(done: () => void): void {
         if (Math.hypot(x - 120, y - 236) < 40 && !finished) {
           fuelState.pulls++;
           fuelState.pullAt = performance.now();
-          sfx("cut");
+          sfx("pull");
           run.refresh();
           if (fuelState.pulls >= 3) {
             finished = true;
@@ -972,7 +974,7 @@ export function playFuel(done: () => void): void {
         if (!finished && Math.hypot(x - 120, y - 236) < 70) {
           fuelState.pulls++;
           fuelState.pullAt = performance.now();
-          sfx("cut");
+          sfx("pull");
           run.refresh();
           if (fuelState.pulls >= 3) {
             finished = true;
@@ -985,6 +987,7 @@ export function playFuel(done: () => void): void {
     },
   });
   const stopLoop = loop((dt) => {
+    hold("pour", fuelState.pours && fuelState.level < 1);
     if (fuelState.pours && fuelState.level < 1) {
       fuelState.level = Math.min(1, fuelState.level + dt / 2400);
       run.refresh();
@@ -1063,7 +1066,7 @@ export function playCanal(done: () => void): void {
     if (Math.abs(x - g.x) > 34 || y < 150 || y > 215) return;
     if (!canal.open) {
       canal.open = true;
-      sfx("good");
+      sfx("gate");
       return;
     }
     if (canal.fill[canal.turn] < 0.98) {
@@ -1072,7 +1075,7 @@ export function playCanal(done: () => void): void {
       return;
     }
     canal.open = false;
-    sfx("cut");
+    sfx("gate");
     canal.turn++;
     run.refresh();
     if (canal.turn >= 3) {
@@ -1156,7 +1159,7 @@ export function playRows(done: () => void, cane = false): void {
     if (rowsState.dam[i]) rowsState.dam[i] = 0;
     else if (dammed() < 2) rowsState.dam[i] = performance.now();
     else return;
-    sfx("cut");
+    sfx("thud");
     run.refresh();
     if (dammed() === 2) {
       finished = true;

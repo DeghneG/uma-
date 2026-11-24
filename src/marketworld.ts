@@ -107,21 +107,21 @@ function interact(): void {
     // set on the counter from just above it, or let go of at the hands' height when put down elsewhere
     const y0 = onCounter ? MY.top - 22 : player.y - 8;
     sacks.push({ x: sx, y: y0, vx: (onCounter ? 0 : (player.face || 1) * 10) + (Math.random() - 0.5) * 30, vy: onCounter ? -20 : 0, floor: Math.min(304, Math.max(228, player.y)), mode: "fall", squash: 0 });
-    sfx("click");
+    sfx("lift");
     return;
   }
   const g = nearGround();
   if (g) {
     sacks.splice(sacks.indexOf(g), 1);
     carrying = true;
-    sfx("click");
+    sfx("lift");
     onProgress?.();
     return;
   }
   if (nearTruck() && truckLeft > 0) {
     truckLeft--;
     carrying = true;
-    sfx("cut");
+    sfx("lift");
   }
 }
 
@@ -149,12 +149,13 @@ function stepSacks(dt: number): void {
         s.vy = -s.vy * 0.32;
         s.vx *= 0.5;
         s.squash = 1;
-        sfx("click");
+        sfx("thud");
       } else {
         s.vy = 0;
         s.vx = 0;
         s.mode = overStall && floor <= MY.top ? "stall" : "ground";
         s.squash = 0.6;
+        sfx("thud");
         if (s.mode === "stall") {
           sfx("coin");
           onProgress?.();

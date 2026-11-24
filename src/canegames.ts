@@ -4,7 +4,7 @@
  */
 import { R, backdrop, carabao, customScenes, disc, flipAt, layer, reduce, rnd, weedSoil } from "./art";
 import { begin, gameEl, gradient, lerpHex, loop, pos } from "./closeups";
-import { sfx } from "./sound";
+import { hold, sfx, stopHolds } from "./sound";
 import { T } from "./ui";
 
 const ROW_Y = [176, 226, 276, 326];
@@ -90,6 +90,7 @@ export function playTrace(mode: "plow" | "fert", done: () => void): void {
   const fedRows = (): number => fedBins.filter((r) => r.filter(Boolean).length >= BINS * 0.9).length;
   const doneRows = (): number => (mode === "plow" ? rowProg.filter((p) => p >= 612).length : fedRows());
   const apply = (x: number, y: number): void => {
+    hold(mode === "plow" ? "plow" : "sprinkle", held || keyHeld);
     if (!(held || keyHeld)) return;
     ROW_Y.forEach((ry, i) => {
       if (Math.abs(y - ry) > 20) return;
@@ -107,6 +108,7 @@ export function playTrace(mode: "plow" | "fert", done: () => void): void {
       finished = true;
       held = false;
       keyHeld = false;
+      stopHolds();
       sfx("good");
       run.finish(done);
     }
@@ -114,11 +116,11 @@ export function playTrace(mode: "plow" | "fert", done: () => void): void {
   const run = begin(mode === "plow" ? "ccPlow" : "ccFert", mode, () => `${mode === "plow" ? T().cc.plowLeft : T().cc.fertLeft}: ${doneRows()} / 4`, {
     down: (x, y) => {
       held = true;
-      sfx("click");
       apply(x, y);
     },
     up: () => {
       held = false;
+      stopHolds();
     },
     move: apply,
     key: (e, x, y) => {
@@ -136,7 +138,10 @@ export function playTrace(mode: "plow" | "fert", done: () => void): void {
     },
   }, "cc");
   const eUp = (e: KeyboardEvent): void => {
-    if (e.key.toLowerCase() === "e" && mode === "fert") keyHeld = false;
+    if (e.key.toLowerCase() === "e" && mode === "fert") {
+      keyHeld = false;
+      stopHolds();
+    }
     if (!document.querySelector(".cuhint")) document.removeEventListener("keyup", eUp);
   };
   document.addEventListener("keyup", eUp);
@@ -213,7 +218,7 @@ function dragGame(kind: string, key: "setts" | "mulch" | "press" | "bag", d: Dra
     if (d.held || left() === 0 || Math.hypot(x - d.src.x, y - d.src.y) > 44) return;
     d.held = true;
     gameEl()?.classList.add("grab");
-    sfx("click");
+    sfx(key === "press" || key === "bag" ? "lift" : "pluck");
   };
   const drop = (x: number, y: number): void => {
     if (!d.held) return;
@@ -230,7 +235,7 @@ function dragGame(kind: string, key: "setts" | "mulch" | "press" | "bag", d: Dra
     }
     if (!best) return;
     best.t = performance.now();
-    sfx("cut");
+    sfx(key === "setts" ? "thud" : key === "mulch" ? "rustle" : key === "press" ? "crunch" : "thud");
     run.refresh();
     if (left() === 0 && !finished) {
       finished = true;
@@ -512,7 +517,7 @@ export function playBoil(done: (quality: number) => void): void {
   const feed = (): void => {
     boil.heat = Math.min(1, boil.heat + 0.13);
     boil.fuelAt = performance.now();
-    sfx("click");
+    sfx("crunch");
   };
   const run = begin("ccBoil", "boil", () => `${T().cc.boilLeft}: ${Math.round(boil.prog * 100)}%`, {
     down: feed,
@@ -524,6 +529,7 @@ export function playBoil(done: (quality: number) => void): void {
   }, "cc");
   let acc = 0;
   const stop = loop((dt) => {
+    hold("bubble", boil.heat > 0.3);
     boil.heat = Math.max(0, boil.heat - dt * 0.00011);
     if (boil.heat >= HEAT_LO && boil.heat <= HEAT_HI) boil.prog = Math.min(1, boil.prog + dt / 7000);
     if (boil.heat > 0.84) boil.burn += dt / 1000;
