@@ -41,7 +41,12 @@ type Npc = { v: number; x: number; y: number; tx: number; ty: number; stall: num
 let npcs: Npc[] = [];
 const pops: { x: number; y: number; t: number; c: string }[] = [];
 
-const front = (i: number): [number, number] => [stallX(i) + 28 + rnd(i + Math.floor(performance.now() / 4000)) * (STALL_W - 56), 222 + rnd(i * 5 + Math.floor(performance.now() / 3000)) * 14];
+const front = (i: number): [number, number] => {
+  let x = stallX(i) + 28 + rnd(i + Math.floor(performance.now() / 4000)) * (STALL_W - 56);
+  // the kiosk hides everything behind it, so shoppers at the stalls it overlaps wait just beside it
+  if (x > MY.x0 - 24 && x < MY.x1 + 24) x = i === 3 ? MY.x0 - 26 - rnd(i) * 14 : MY.x1 + 22 + rnd(i) * 8;
+  return [x, 222 + rnd(i * 5 + Math.floor(performance.now() / 3000)) * 14];
+};
 function newTarget(n: Npc): void {
   n.stall = Math.floor(rnd(n.seed * 7 + performance.now() / 2500) * STALL_N);
   [n.tx, n.ty] = front(n.stall);
@@ -319,11 +324,11 @@ function stallNames(): void {
   const mine = cargo === "cane" ? T().cane.market.mine : T().market.mine;
   const mw = textWidth(mine, 2) + 14;
   const mx = Math.round((MY.x0 + MY.x1) / 2 - mw / 2);
-  R(mx - 2, 186, mw + 4, 18, "#1c0d08");
-  R(mx, 188, mw, 14, "#fff2c0");
-  R(mx, 188, mw, 2, "#ffffff");
-  R(mx, 200, mw, 2, "#e8d08a");
-  pixelText(mine, (MY.x0 + MY.x1) / 2, 191, 2, "#a02a1a");
+  R(mx - 2, 170, mw + 4, 18, "#1c0d08");
+  R(mx, 172, mw, 14, "#fff2c0");
+  R(mx, 172, mw, 2, "#ffffff");
+  R(mx, 184, mw, 2, "#e8d08a");
+  pixelText(mine, (MY.x0 + MY.x1) / 2, 175, 2, "#a02a1a");
 }
 
 /* ---------- static layers ---------- */
@@ -448,22 +453,32 @@ function truck(t: number): void {
   }
 }
 function myStall(t: number): void {
-  // posts and a blue tarp roof behind the counter
-  R(MY.x0 + 2, 214, 6, 48, "#7b5836");
-  R(MY.x1 - 8, 214, 6, 48, "#7b5836");
-  R(MY.x0 - 6, 204, MY.x1 - MY.x0 + 12, 14, "#1c3a6a");
-  for (let k = 0; k < (MY.x1 - MY.x0 + 12) / 12; k++) R(MY.x0 - 6 + k * 12, 204, 6, 14, "#3a7bd0");
-  R(MY.x0 - 6, 204, MY.x1 - MY.x0 + 12, 3, "#7fb0f0");
-  R(MY.x0 - 6, 217, MY.x1 - MY.x0 + 12, 2, "#0c1c3a");
+  // roof of blue tarp, a plank back wall behind the counter, and posts
+  const x0 = MY.x0 - 6;
+  const w = MY.x1 - MY.x0 + 12;
+  R(MY.x0 - 2, 190, MY.x1 - MY.x0 + 4, MY.top - 190, "#1c0d08");
+  R(MY.x0, 206, MY.x1 - MY.x0, MY.top - 206, "#9a7a4a");
+  for (let k = 0; k < MY.x1 - MY.x0; k += 14) R(MY.x0 + k, 206, 2, MY.top - 206, "#6a4d2a");
+  for (let y = 206; y < MY.top; y += 12) R(MY.x0, y, MY.x1 - MY.x0, 1, "#7a5a36");
+  R(MY.x0, 206, MY.x1 - MY.x0, 3, "#c4a068");
+  R(x0, 188, w, 20, "#1c3a6a");
+  for (let k = 0; k < w / 12; k++) R(x0 + k * 12, 188, 6, 20, "#3a7bd0");
+  R(x0, 188, w, 3, "#7fb0f0");
+  R(x0, 206, w, 2, "#0c1c3a");
+  for (let k = 0; k < w / 6; k++) R(x0 + k * 6, 208, 6, 2 + (k % 2), k % 2 ? "#1c3a6a" : "#3a7bd0");
+  R(MY.x0 + 2, 206, 6, MY.top - 206, "#7b5836");
+  R(MY.x1 - 8, 206, 6, MY.top - 206, "#7b5836");
+  R(MY.x0 + 2, 206, 2, MY.top - 206, "#a8844f");
+  R(MY.x1 - 8, 206, 2, MY.top - 206, "#a8844f");
   // sign with a golden grain
-  R(MY.x0 + 56, 220, 52, 18, "#1c0d08");
-  R(MY.x0 + 57, 221, 50, 16, "#f0e2b8");
+  R(MY.x0 + 56, 222, 52, 18, "#1c0d08");
+  R(MY.x0 + 57, 223, 50, 16, "#f0e2b8");
   for (let k = 0; k < 5; k++) {
-    R(MY.x0 + 66 + k * 7, 226 + (k % 2), 3, 8, "#c9a02a");
-    R(MY.x0 + 65 + k * 7, 224 + (k % 2), 5, 3, "#f2c94c");
+    R(MY.x0 + 66 + k * 7, 228 + (k % 2), 3, 8, "#c9a02a");
+    R(MY.x0 + 65 + k * 7, 226 + (k % 2), 5, 3, "#f2c94c");
   }
-  lantern(MY.x0 + 6, 220, t);
-  lantern(MY.x1 - 6, 220, t);
+  lantern(MY.x0 + 14, 222, t);
+  lantern(MY.x1 - 14, 222, t);
   // the counter itself
   R(MY.x0, MY.top, MY.x1 - MY.x0, MY.bottom - MY.top, "#1c0d08");
   R(MY.x0 + 1, MY.top + 1, MY.x1 - MY.x0 - 2, 4, "#c49a5c");
@@ -489,7 +504,6 @@ function drawMarketWorld(t: number): void {
   // vendors behind their counters
   for (let i = 0; i < STALL_N; i++) villager(i, stallX(i) + 24 + (i % 2) * 36, COUNTER_TOP + 4, t, "idle", i + 1, i % 2 ? 1 : 0);
   layer("mk-front", paintFront);
-  myStall(t);
   // the street's animals
   hen(236, 300, t, 3);
   hen(250, 306, t, 6, "#a8452a");
@@ -530,6 +544,7 @@ function drawMarketWorld(t: number): void {
     });
   }
   ents.push({ y: TRUCK.y1, draw: () => truck(t) });
+  ents.push({ y: MY.bottom - 0.5, draw: () => myStall(t) });
   ents.push({
     y: 286,
     draw: () => {
