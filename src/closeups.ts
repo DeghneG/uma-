@@ -6,7 +6,7 @@
 import gsap from "gsap";
 import { R, customScenes, disc, layer, reduce, rnd, setScene, tuft, weedSoil, backdrop } from "./art";
 import { sfx } from "./sound";
-import { T, h, show, statusRow } from "./ui";
+import { T, getBack, getView, h, setBack, show, statusRow } from "./ui";
 
 /* ---------- shared plumbing ---------- */
 export type Handlers = {
@@ -97,6 +97,8 @@ const cuText = (k: string, f: "Head" | "Hint", ns: "cu" | "cc"): string => (T()[
 
 /** Start a close-up: switch the scene, show the panel (title, hint, one status chip) and listen for the hand. */
 export function begin(kind: string, key: string, status: () => string, handlers: Handlers, ns: "cu" | "cc" = "cu"): Run {
+  const prevView = getView();
+  const prevBack = getBack();
   setScene(kind);
   zoomIn();
   gameEl()?.classList.add("closeup");
@@ -106,6 +108,14 @@ export function begin(kind: string, key: string, status: () => string, handlers:
     p.appendChild(statusRow([status()]));
   });
   const stop = closeUp(".cuhint", handlers, pos);
+  // Back: give the job up (nothing is paid or changed) and return to the choices
+  setBack(() => {
+    stop();
+    gameEl()?.classList.remove("closeup", "grab", "nocursor");
+    backToField();
+    setBack(prevBack);
+    if (prevView.builder) show(prevView.builder, false, prevView.host ?? undefined);
+  });
   return {
     refresh: () => {
       const s = document.querySelector("#panel .status span");
@@ -113,6 +123,7 @@ export function begin(kind: string, key: string, status: () => string, handlers:
     },
     finish: (cb) => {
       stop();
+      setBack(prevBack);
       gameEl()?.classList.remove("closeup", "grab", "nocursor");
       setTimeout(() => {
         backToField();

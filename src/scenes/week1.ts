@@ -3,7 +3,7 @@ import { BUNDLE, field, fieldAtWeek, plantAt, pump, resetSow, seedsLeft, setScen
 import { sfx } from "../sound";
 import { patch } from "../state";
 import { backToField, closeUp, setReturnScene, zoomIn } from "../closeups";
-import { T, h, reduce, resultPanel, setLabel, shake, show, starsFor, statusRow, storyPanel, tweenField } from "../ui";
+import { T, h, reduce, setBack, resultPanel, setLabel, shake, show, starsFor, statusRow, storyPanel, tweenField } from "../ui";
 
 type Job = "weeds" | "water" | "plant";
 const ORDER: Job[] = ["weeds", "water", "plant"];
@@ -83,6 +83,11 @@ export function week1(next: () => void): void {
     };
 
     const equip = (): void => {
+      setBack(() => {
+        cleanup();
+        setBack(null);
+        draw(false);
+      });
       show((p) => {
         p.appendChild(h("h2", undefined, T().w1.shearsHead));
         p.appendChild(h("p", undefined, T().w1.shearsSay));
@@ -102,6 +107,14 @@ export function week1(next: () => void): void {
       field.working = true;
       sfx("good");
       document.getElementById("game")?.classList.add("weeding");
+      setBack(() => {
+        cleanup();
+        shears.on = false;
+        field.working = false;
+        backToField();
+        setBack(null);
+        draw(false);
+      });
       const cv = document.getElementById("cv") as HTMLCanvasElement;
       let finished = false;
       const live = (): boolean => !!document.querySelector("#panel .weedhint");
@@ -131,6 +144,7 @@ export function week1(next: () => void): void {
             if (!reduce) gsap.fromTo("#cv", { scale: 1.1 }, { scale: 1, duration: 0.5, ease: "power2.out", clearProps: "transform" });
             field.working = false;
             field.weeds = 0;
+            setBack(null);
             done.push("weeds");
             sfx("good");
             fb = { text: T().w1.ok.weeds, bad: false };
@@ -183,6 +197,7 @@ export function week1(next: () => void): void {
 
   /** A job is finished: show the whole field again, then the job list. */
   function jobDone(job: Job): void {
+    setBack(null);
     backToField();
     field.working = false;
     done.push(job);
@@ -205,6 +220,15 @@ export function week1(next: () => void): void {
     let raf = 0;
     let last = 0;
     let busy = false;
+    setBack(() => {
+      cancelAnimationFrame(raf);
+      document.removeEventListener("keydown", onKey);
+      pump.on = false;
+      gsap.killTweensOf(pump);
+      backToField();
+      setBack(null);
+      draw(false);
+    });
 
     const render = (): void =>
       show((p) => {
@@ -285,6 +309,16 @@ export function week1(next: () => void): void {
       const s = document.querySelector("#panel .status span");
       if (s) s.textContent = `${T().w1.seedsLeft}: ${seedsLeft()}`;
     };
+    setBack(() => {
+      stop();
+      sow.on = false;
+      sow.held = false;
+      game?.classList.remove("grab", "planting");
+      field.working = false;
+      backToField();
+      setBack(null);
+      draw(false);
+    });
     show((p) => {
       p.appendChild(h("h2", undefined, T().w1.sowHead));
       p.appendChild(h("p", "note sowhint", T().w1.sowHint));

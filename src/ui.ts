@@ -269,6 +269,9 @@ export function show(build: (p: HTMLElement) => void, animate = true, into?: HTM
   else if (animate && !reduce) gsap.fromTo(p, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.35, clearProps: "transform" });
   else gsap.set(p, { autoAlpha: 1, y: 0 });
 }
+/** The panel currently shown, so a close-up can put it back when the player backs out. */
+export const getView = (): { builder: ((p: HTMLElement) => void) | null; host: HTMLElement | null } => ({ builder, host });
+export const getBack = (): (() => void) | null => backFn;
 export function rerender(): void {
   if (builder) show(builder, false, host ?? undefined);
 }
