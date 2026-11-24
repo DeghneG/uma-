@@ -9,6 +9,9 @@ export const COOP_FEE = 200;
 export const TON_PRICE = 1100;
 export const MILL_PRICE = 1550;
 export const MILL_FEE = 400;
+/** After milling, the cane is sold as sacks of sugar: the trader pays on the spot, the mill pays more minus its fee. */
+export const SUGAR_TRADER = 1400;
+export const SUGAR_MILL = 1900;
 
 export interface State {
   lang: Lang;
@@ -34,6 +37,8 @@ export interface State {
   ccap: number;
   cnb: boolean;
   tons: number;
+  /** How good the boiled sugar came out, 0.7 (burnt) to 1 (golden). */
+  sugarQ: number;
   soldCane: number | null;
   /** Money at the start of the month, for the month's summary. */
   monthStart: number;
@@ -62,6 +67,7 @@ function fresh(lang: Lang): State {
     ccap: 6,
     cnb: false,
     tons: 0,
+    sugarQ: 1,
     soldCane: null,
     monthStart: START_MONEY,
     ledger: [],

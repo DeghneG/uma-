@@ -54,8 +54,8 @@ function newTarget(n: Npc): void {
 }
 
 /** What the truck carries: sacks of rice, or bundles of sugarcane in month 2. */
-let cargo: "rice" | "cane" = "rice";
-export function enterMarket(count: number, load: "rice" | "cane" = "rice"): void {
+let cargo: "rice" | "cane" | "sugar" = "rice";
+export function enterMarket(count: number, load: "rice" | "cane" | "sugar" = "rice"): void {
   cargo = load;
   totalSacks = count;
   truckLeft = count;
@@ -189,20 +189,26 @@ function caneBundleArt(x: number, y: number, squash: number): void {
 }
 function sackArt(x: number, y: number, squash: number): void {
   if (cargo === "cane") return caneBundleArt(x, y, squash);
+  const sugar = cargo === "sugar";
+  const body = sugar ? "#b8844a" : "#e7d9a8";
+  const hi = sugar ? "#d8a868" : "#f4ead0";
+  const shade = sugar ? "#8a6234" : "#cdbf8c";
+  const stripe = sugar ? "#a8743c" : "#d8c994";
+  const label = sugar ? "#f0e2b8" : "#9a8a58";
   const sq = Math.round(squash * 2);
   const w = SW + sq * 2;
   const h = SH - sq;
   const x0 = Math.round(x - w / 2);
   const y0 = Math.round(y - h);
   R(x0 - 1, y0 - 1, w + 2, h + 2, "#3a2a14");
-  R(x0, y0, w, h, "#e7d9a8");
-  R(x0, y0, w, 3, "#f4ead0");
-  R(x0, y0 + h - 4, w, 4, "#cdbf8c");
-  R(x0 + 2, y0 + 4, 3, h - 7, "#d8c994");
-  R(x0 + w - 6, y0 + 4, 3, h - 7, "#d8c994");
-  R(x0 + w / 2 - 5, y0 + 5, 10, 3, "#9a8a58");
+  R(x0, y0, w, h, body);
+  R(x0, y0, w, 3, hi);
+  R(x0, y0 + h - 4, w, 4, shade);
+  R(x0 + 2, y0 + 4, 3, h - 7, stripe);
+  R(x0 + w - 6, y0 + 4, 3, h - 7, stripe);
+  R(x0 + w / 2 - 5, y0 + 5, 10, 3, label);
   R(x0 + 4, y0 - 4, w - 8, 4, "#3a2a14");
-  R(x0 + 5, y0 - 3, w - 10, 3, "#e7d9a8");
+  R(x0 + 5, y0 - 3, w - 10, 3, body);
   R(x0 + w / 2 - 1, y0 - 5, 2, 4, "#a02a1a");
 }
 function keyE(x: number, y: number, t: number): void {
@@ -321,7 +327,7 @@ function stallNames(): void {
     R(bx + w - 4, 124, 2, 4, "#3a2814");
     pixelText(name, x0 + STALL_W / 2, 112, 2, AWN[i][0]);
   }
-  const mine = cargo === "cane" ? T().cane.market.mine : T().market.mine;
+  const mine = cargo === "rice" ? T().market.mine : T().cane.market.mine;
   const mw = textWidth(mine, 2) + 14;
   const mx = Math.round((MY.x0 + MY.x1) / 2 - mw / 2);
   R(mx - 2, 170, mw + 4, 18, "#1c0d08");

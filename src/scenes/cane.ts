@@ -5,11 +5,11 @@
 import gsap from "gsap";
 import { setScene } from "../art";
 import { caneAtWeek, cf } from "../caneworld";
-import { playMulch, playSetts, playTrace } from "../canegames";
-import { playEggs, playRows, playSpray, playTraps, setReturnScene } from "../closeups";
+import { playBag, playBoil, playMulch, playPress, playSetts, playTrace } from "../canegames";
+import { playEggs, playRows, playSpray, setReturnScene } from "../closeups";
 import { enterMarket, stalledCount, startUnload, totalToUnload } from "../marketworld";
 import { sfx } from "../sound";
-import { GOAL, MILL_FEE, MILL_PRICE, TON_PRICE, addMoney, addMorale, computeTons, patch, peso, state } from "../state";
+import { GOAL, MILL_FEE, SUGAR_MILL, SUGAR_TRADER, addMoney, addMorale, computeTons, patch, peso, state } from "../state";
 import { T, h, reduce, resultPanel, setLabel, shake, show, starsFor, statusRow, storyPanel } from "../ui";
 
 const tweenCane = (vars: Record<string, number>, duration = 1): gsap.core.Tween => gsap.to(cf, { ...vars, duration: reduce ? 0 : duration, ease: "power1.inOut" });
@@ -94,7 +94,7 @@ export function cane1(next: () => void): void {
 /* ---------------- week 2: pests ---------------- */
 type Tool = "hand" | "trap" | "spray";
 const TOOLS: Tool[] = ["hand", "trap", "spray"];
-/** rank 0 = best fix, 2 = worst, per pest (borer eggs, rats, aphids). */
+/** rank 0 = best fix, 2 = worst, per problem (borer eggs, red rot, aphids); "trap" is the stalk treatment. */
 const RANK: Record<Tool, number>[] = [
   { hand: 0, spray: 1, trap: 2 },
   { trap: 0, hand: 1, spray: 2 },
@@ -139,7 +139,7 @@ export function cane2(next: () => void): void {
   }
   /** Each fix is done by hand in a close-up first; the result follows when the job is finished. */
   function pick(tool: Tool): void {
-    const job = tool === "hand" ? (d: () => void) => playEggs(d, "cane") : tool === "trap" ? (d: () => void) => playTraps(d, "cane") : (d: () => void) => playSpray(d, "cane");
+    const job = tool === "hand" ? (d: () => void) => playEggs(d, "cane") : tool === "trap" ? (d: () => void) => playSpray(d, "rot") : (d: () => void) => playSpray(d, "cane");
     job(() => apply(tool));
   }
   function apply(tool: Tool): void {
@@ -297,11 +297,70 @@ export function cane4(next: () => void): void {
   }
 }
 
-/* ---------------- the mill: unload by hand, then sell ---------------- */
+/* ---------------- the village mill: press, boil, bag ---------------- */
+type MillJob = "press" | "boil" | "bag";
+const MILL: MillJob[] = ["press", "boil", "bag"];
+
+export function cane5(next: () => void): void {
+  setReturnScene("cane");
+  setScene("cane");
+  caneAtWeek(3);
+  cf.cut = 1;
+  setLabel(() => T().cane.w5.tag);
+  const n = Math.max(0, state.tons);
+  if (n === 0) return next(); // nothing was cut, so there is nothing to mill
+  let done = 0;
+  let quality = 1;
+  let fb: { text: string; bad: boolean } | null = null;
+  show((p) => storyPanel(p, { tag: T().cane.w5.tag, h: T().cane.w5.h, p: T().cane.w5.p, s: T().cane.w5.s, quote: T().cane.w5.ben, go: T().cane.w5.go, onGo: () => draw(true) }));
+
+  function draw(animate: boolean): void {
+    show((p) => {
+      const t = T().cane.w5;
+      p.appendChild(h("h2", undefined, t.head));
+      p.appendChild(h("p", "note", t.hint));
+      p.appendChild(statusRow([`${t.left}: ${3 - done}`]));
+      const grid = h("div", "cards nonum");
+      MILL.forEach((job, i) => {
+        const b = h("button", "card", `<b>${t.jobs[job][0]}</b><small>${t.jobs[job][1]}</small>`) as HTMLButtonElement;
+        b.disabled = i !== done;
+        b.addEventListener("click", () => start(job));
+        grid.appendChild(b);
+      });
+      p.appendChild(grid);
+      if (fb) p.appendChild(h("p", `fb${fb.bad ? " bad" : ""}`, fb.text));
+    }, animate);
+  }
+  function start(job: MillJob): void {
+    if (job === "press") playPress(n, () => finishJob(job));
+    else if (job === "boil")
+      playBoil((q) => {
+        quality = q;
+        addMoney(-300, "cmill");
+        finishJob(job);
+      });
+    else playBag(n, () => finishJob(job));
+  }
+  function finishJob(job: MillJob): void {
+    done++;
+    sfx("good");
+    fb = { text: T().cane.w5.ok[job], bad: false };
+    if (done >= 3) return finish();
+    draw(true);
+  }
+  function finish(): void {
+    patch({ sugarQ: quality });
+    const stars = quality >= 0.95 ? 3 : quality >= 0.82 ? 2 : 1;
+    const label = T().cane.res.q[stars === 3 ? 0 : stars === 2 ? 1 : 2];
+    show((p) => resultPanel(p, { stars, mistakes: 3 - stars, extra: { text: T().cane.res.sugarLine(n, label), bad: stars < 2 }, btn: T().cane.res.toMarket, onNext: next }));
+  }
+}
+
+/* ---------------- the market: unload by hand, then sell ---------------- */
 export function caneMarket(next: () => void): void {
   setReturnScene("cane");
   setScene("market");
-  enterMarket(state.tons, "cane");
+  enterMarket(state.tons, "sugar");
   setLabel(() => `${T().hud.crops[1]} · ${T().cane.market.tag}`);
   const sell = (amount: number, morale: number): void => {
     addMoney(amount, "csale");
@@ -322,8 +381,8 @@ export function caneMarket(next: () => void): void {
         p.appendChild(b);
         return;
       }
-      const trader = state.tons * TON_PRICE;
-      const mill = Math.round(state.tons * MILL_PRICE) - MILL_FEE;
+      const trader = Math.round(state.tons * SUGAR_TRADER * state.sugarQ);
+      const mill = Math.round(state.tons * SUGAR_MILL * state.sugarQ) - MILL_FEE;
       p.appendChild(h("p", undefined, t.p(state.tons)));
       p.appendChild(h("div", "quote", `<b>Mang Ben:</b> “${t.ben}”`));
       const grid = h("div", "cards");
@@ -376,6 +435,7 @@ export function caneSummary(next: () => void): void {
         [t.lines.week2, String(state.cMist2)],
         [t.lines.week4, String(state.cMist4)],
         [t.lines.tons, `${state.tons} / 6`],
+        [t.lines.quality, `${Math.round(state.sugarQ * 100)}%`],
       ]),
     );
     const sums = new Map<string, number>();

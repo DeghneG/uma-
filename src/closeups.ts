@@ -4,7 +4,7 @@
  * and calls back when the job is done.
  */
 import gsap from "gsap";
-import { R, customScenes, disc, layer, reduce, rnd, setScene, tuft, weedSoil, backdrop } from "./art";
+import { R, backdrop, customScenes, disc, frogJump, layer, reduce, rnd, setScene, tuft, weedSoil, zoom } from "./art";
 import { sfx } from "./sound";
 import { T, getBack, getView, h, setBack, show, statusRow } from "./ui";
 
@@ -182,6 +182,19 @@ function cluster(x: number, y: number): void {
   // a grape-like bunch of small bright-pink eggs with a wet shine
   const dots: [number, number][] = [[-9, -8], [-3, -9], [3, -9], [9, -8], [-12, -2], [-6, -3], [0, -3], [6, -3], [12, -2], [-9, 3], [-3, 3], [3, 3], [9, 3], [-6, 9], [0, 9], [6, 9], [0, 14]];
   const cane = eggTheme === "cane";
+  if (cane) {
+    for (let row = 0; row < 3; row++) {
+      for (let col = 0; col < 6 - (row % 2); col++) {
+        const sx = x - 18 + col * 6 + (row % 2) * 3;
+        const sy = y - 8 + row * 5;
+        R(sx, sy, 8, 6, "#6a5a1a");
+        R(sx + 1, sy + 1, 6, 4, "#ece0a0");
+        R(sx + 1, sy + 1, 4, 1, "#fff8d0");
+        R(sx + 5, sy + 3, 2, 1, "#c8b868");
+      }
+    }
+    return;
+  }
   for (const [dx, dy] of dots) {
     R(x + dx - 3, y + dy - 3, 7, 7, cane ? "#6a5a1a" : "#8a1f45");
     R(x + dx - 2, y + dy - 2, 5, 5, cane ? "#e8d890" : "#ec5a8e");
@@ -226,22 +239,68 @@ function riceHill(bx: number, seed: number, t: number): void {
   R(bx - 13, 301, 26, 6, "#2f6a1f");
   R(bx - 9, 303, 18, 3, "#59b32f");
 }
-/** Tall cane seen close up: thick jointed stalks with long arching leaves, dry furrowed soil below. */
-function drawCaneEggs(t: number): void {
-  gradient(0, 300, "#f4e2b0", "#c0a860");
-  for (let i = 0; i < 30; i++) disc(rnd(i + 3) * 640, rnd(i + 8) * 290, 3 + Math.round(rnd(i) * 7), "rgba(255,250,220,0.12)");
-  for (let i = 0; i < 8; i++) {
-    const x = 36 + i * 84 + Math.round(rnd(i + 4) * 22);
+/** The rest of the paddy, out of focus behind the close-up: rows of rice hills receding to the mountains. */
+function paddyFar(t: number): void {
+  backdrop(t, 92);
+  layer("far-paddy", () => {
+    R(0, 96, 640, 270, "#6fb0be");
+    for (let r = 0; r < 11; r++) {
+      const y = 104 + Math.round(Math.pow(r / 11, 1.5) * 200);
+      const sc = 0.32 + r * 0.085;
+      R(0, y + Math.round(sc * 3), 640, Math.max(1, Math.round(sc * 2)), "#55703a");
+      const step = 15 * sc + 5;
+      for (let x = (r % 2) * step * 0.5; x < 650; x += step)
+        zoom(Math.round(x), y, sc, () => {
+          R(-5, -1, 11, 2, "#14340e");
+          R(-4, -9, 2, 9, "#3f9a2a");
+          R(-1, -12, 2, 12, "#59b32f");
+          R(2, -9, 2, 9, "#86d13a");
+          R(-6, -5, 2, 5, "#2f8a28");
+          R(4, -6, 2, 6, "#2f8a28");
+        });
+    }
+    for (let y = 96; y < 304; y += 4) R(0, y, 640, 4, `rgba(214,238,230,${(0.34 - (y - 96) / 900).toFixed(2)})`);
+  });
+}
+/** The rest of the sugarcane field, out of focus: dry furrows with rows of tall cane running back to the hills. */
+function caneFar(t: number): void {
+  backdrop(t, 92);
+  layer("far-cane", () => {
+    R(0, 96, 640, 270, "#a8864c");
+    for (let r = 0; r < 11; r++) {
+      const y = 108 + Math.round(Math.pow(r / 11, 1.5) * 200);
+      const sc = 0.34 + r * 0.09;
+      R(0, y, 640, Math.max(1, Math.round(sc * 2)), "#5a3d22");
+      const step = 9 * sc + 3;
+      for (let x = (r % 2) * step * 0.5; x < 650; x += step)
+        zoom(Math.round(x), y, sc, () => {
+          R(-1, -36, 4, 36, "#3a2e08");
+          R(0, -36, 2, 36, "#cdbd48");
+          R(-8, -37, 9, 3, "#2f7a1f");
+          R(2, -40, 9, 3, "#3f9a2a");
+          R(-3, -47, 2, 10, "#59b32f");
+          R(1, -45, 2, 8, "#3f9a2a");
+        });
+    }
+    for (let y = 96; y < 304; y += 4) R(0, y, 640, 4, `rgba(240,226,184,${(0.34 - (y - 96) / 900).toFixed(2)})`);
+  });
+}
+const caneStalkX = (i: number): number => 36 + i * 112 + Math.round(rnd(i + 4) * 22);
+/** Tall cane seen close up: thick jointed stalks with long arching leaves in front of the rest of the field. */
+function drawCaneBase(t: number): void {
+  caneFar(t);
+  for (let i = 0; i < 6; i++) {
+    const x = caneStalkX(i);
     const sway = reduce ? 0 : Math.sin(t / 1400 + i) * 2;
-    R(x - 2, 0, 16, 306, "#4a3a0c");
-    R(x, 0, 12, 306, i % 2 ? "#cdbd48" : "#bfae38");
-    R(x, 0, 4, 306, "#e8dc78");
-    R(x + 9, 0, 3, 306, "#8a7a24");
-    for (let n = 26; n < 306; n += 52) {
+    R(x - 2, 90, 16, 216, "#4a3a0c");
+    R(x, 90, 12, 216, i % 2 ? "#cdbd48" : "#bfae38");
+    R(x, 90, 4, 216, "#e8dc78");
+    R(x + 9, 90, 3, 216, "#8a7a24");
+    for (let n = 120; n < 306; n += 52) {
       R(x - 2, n, 16, 5, "#4a3a0c");
       R(x - 1, n + 1, 14, 3, "#a8962c");
     }
-    for (const [lx, ly, dir] of [[x + 12, 110 + (i % 3) * 40, 1], [x, 190 - (i % 2) * 36, -1]] as [number, number, number][]) {
+    for (const [lx, ly, dir] of [[x + 12, 150 + (i % 3) * 30, 1], [x, 220 - (i % 2) * 30, -1]] as [number, number, number][]) {
       blade(lx, ly, lx + dir * 34, ly - 60 + sway, lx + dir * (66 + (i % 3) * 10), ly + 16 + sway, 9, "#59b32f", "#9bdc4a");
     }
   }
@@ -252,33 +311,55 @@ function drawCaneEggs(t: number): void {
   }
   for (let i = 0; i < 50; i++) R(rnd(i + 11) * 640, 308 + rnd(i * 3) * 48, 8, 1, "#7a5a36");
 }
+/** A stem borer grub inching up a stalk: a cream, segmented body with a brown head. */
+function borer(t: number): void {
+  const bx = caneStalkX(3) + 6;
+  const top = 270 - ((reduce ? 40 : t / 70) % 190);
+  R(bx + 2, top + 20, 3, 4, "#1c0d08");
+  for (let k = 6; k >= 1; k--) {
+    const sq = reduce ? 0 : Math.round(Math.sin(t / 150 + k) * 1.5);
+    const yy = top + k * 7;
+    R(bx - 5 + sq, yy, 11, 8, "#4a3a14");
+    R(bx - 4 + sq, yy + 1, 9, 6, k % 2 ? "#f4ecc0" : "#e6dba0");
+    R(bx + sq, yy + 3, 2, 2, "#9a8a4a");
+  }
+  R(bx - 5, top - 6, 11, 9, "#3a1a08");
+  R(bx - 4, top - 5, 9, 7, "#8a4a1a");
+  R(bx - 3, top - 3, 2, 2, "#1a1a1a");
+  R(bx + 1, top - 3, 2, 2, "#1a1a1a");
+}
+function drawCaneEggs(t: number): void {
+  drawCaneBase(t);
+  borer(t);
+}
 function drawEggs(t: number): void {
   if (eggTheme === "cane") return drawCaneEggs(t), drawEggFront(t);
   drawRiceEggs(t);
   drawEggFront(t);
 }
 function drawRiceEggs(t: number): void {
-  gradient(0, 300, "#c6e4dc", "#7ab4b8");
-  // far paddies fading into haze, then soft light spots
-  for (let y = 0; y < 110; y += 4) {
-    R(0, y, 640, 4, `rgba(140,196,120,${0.35 - y / 400})`);
-  }
-  for (let i = 0; i < 36; i++) disc(rnd(i + 3) * 640, rnd(i + 8) * 290, 3 + Math.round(rnd(i) * 7), "rgba(255,255,255,0.1)");
-  // the water and the hills' reflections
+  paddyFar(t);
+  // the water in front, with ripples
   R(0, 304, 640, 56, "#4d8fa0");
-  for (let y = 304; y < 360; y += 4) R(0, y, 640, 4, `rgba(26,70,80,${(y - 304) / 120})`);
+  for (let y = 304; y < 360; y += 4) R(0, y, 640, 4, `rgba(26,70,80,${((y - 304) / 120).toFixed(2)})`);
   ripples(t, 310, 356, 18, "#a8dde8");
   [60, 190, 330, 470, 590].forEach((bx, i) => riceHill(bx, i + 1, t));
   for (const bx of [60, 190, 330, 470, 590]) {
     cxAlphaRect(bx - 18, 312, 36, 22);
   }
+  // frogs leaping out of the water and diving back in
+  frogJump(128, 324, t, 1, 3);
+  frogJump(262, 334, t, 3, 3);
+  frogJump(410, 326, t, 5, 3);
+  frogJump(548, 336, t, 2, 3);
 }
 function drawEggFront(t: number): void {
   // each cluster is stuck to its own stalk
   eggs.forEach((e, i) => {
     if (e.done) return;
     const g = GREENS[i % 4];
-    blade(e.x + (e.x > 320 ? -6 : 6), 306, e.x + (e.x > 320 ? 4 : -4), (306 + e.y) / 2, e.x, e.y - 34, 5, g[0], g[1]);
+    if (eggTheme === "cane") blade(e.x - 50, e.y + 18, e.x - 4, e.y - 26, e.x + 54, e.y + 20, 15, "#59b32f", "#9bdc4a");
+    else blade(e.x + (e.x > 320 ? -6 : 6), 306, e.x + (e.x > 320 ? 4 : -4), (306 + e.y) / 2, e.x, e.y - 34, 5, g[0], g[1]);
   });
   // the flat stone, with what is left of the crushed clusters
   R(STONE.x - 3, STONE.y - 3, STONE.w + 6, STONE.h + 6, "#1c1c20");
@@ -544,9 +625,45 @@ type Patch = { x: number; y: number; r: number; heal: number };
 let patches: Patch[] = [];
 let spraying = false;
 
-let sprayTheme: "rice" | "cane" = "rice";
+let sprayTheme: "rice" | "cane" | "rot" = "rice";
+/** The brush with its green paste: drag it over the red streaks. */
+function drawBrush(t: number): void {
+  const x = Math.round(pos.x);
+  const y = Math.round(pos.y);
+  const on = spraying;
+  if (on) for (let k = 0; k < 8; k++) R(x - 5 + ((k * 5) % 14), y - 4 + (k % 3) * 3, 3, 3, k % 2 ? "#9be070" : "#7fd04a");
+  R(x - 6, y - 7, 16, 11, "#1c0d08");
+  R(x - 5, y - 6, 14, 9, "#efe2b8");
+  R(x - 5, y - 1, 14, 4, on ? "#7fd04a" : "#a8e070");
+  R(x + 4, y - 48, 7, 44, "#1c0d08");
+  R(x + 5, y - 47, 5, 42, "#a8742e");
+  R(x + 3, y - 12, 9, 7, "#aeb6bc");
+  const b = reduce ? 0 : Math.round(Math.sin(t / 180) * 2);
+  R(x + 12, y - 42 + b, 18, 18, "#1c0d08");
+  R(x + 13, y - 41 + b, 16, 16, on ? "#9be070" : "#f4f1e4");
+  R(x + 17, y - 38 + b, 2, 9, "#1c0d08");
+  R(x + 17, y - 38 + b, 7, 2, "#1c0d08");
+  R(x + 17, y - 34 + b, 6, 2, "#1c0d08");
+  R(x + 17, y - 30 + b, 7, 2, "#1c0d08");
+}
 function drawSpray(t: number): void {
+  if (sprayTheme === "rot") drawCaneBase(t);
+  const rot = sprayTheme === "rot";
   const cane = sprayTheme === "cane";
+  if (rot) {
+    for (const p of patches) {
+      // a red-rot streak on the stalk: dark red with a white fuzz, painted over with green paste as it is treated
+      R(p.x - 6, p.y - p.r, 12, p.r * 2, "#3a0a10");
+      R(p.x - 5, p.y - p.r + 1, 10, p.r * 2 - 2, "#8a1f2a");
+      for (let k = 0; k < 7; k++) R(p.x - 4 + (k % 3) * 3, p.y - p.r + 4 + k * ((p.r * 2 - 8) / 7), 3, 2, "#f0e8e0");
+      const cover = Math.round((p.r * 2 + 4) * p.heal);
+      R(p.x - 7, p.y + p.r + 2 - cover, 14, cover, "#7fd04a");
+      R(p.x - 7, p.y + p.r + 2 - cover, 14, Math.min(2, cover), "#c8f090");
+      if (p.heal >= 1 && !reduce) R(p.x + Math.round(Math.sin(t / 200 + p.x) * 6), p.y - p.r - 8, 3, 3, "#f4f1e4");
+    }
+    drawBrush(t);
+    return;
+  }
   gradient(0, 360, cane ? "#1d4a14" : "#27553a", cane ? "#3f8a2a" : "#4f9a5e", 8);
   if (cane) {
     // broad cane leaves with a pale midrib
@@ -646,9 +763,12 @@ function drawSpray(t: number): void {
   R(x + 30, y - 26 + b, 6, 2, "#1c0d08");
   R(x + 30, y - 22 + b, 7, 2, "#1c0d08");
 }
-export function playSpray(done: () => void, theme: "rice" | "cane" = "rice"): void {
+export function playSpray(done: () => void, theme: "rice" | "cane" | "rot" = "rice"): void {
   sprayTheme = theme;
-  patches = [[110, 180, 24], [220, 190, 28], [330, 80, 22], [430, 230, 30], [540, 120, 26], [150, 280, 24], [560, 300, 22]].map(([x, y, r]) => ({ x, y, r, heal: 0 }));
+  const rot = theme === "rot";
+  patches = rot
+    ? [190, 140, 230, 170, 210, 150].map((y, i) => ({ x: caneStalkX(i) + 6, y, r: 22, heal: 0 }))
+    : [[110, 180, 24], [220, 190, 28], [330, 80, 22], [430, 230, 30], [540, 120, 26], [150, 280, 24], [560, 300, 22]].map(([x, y, r]) => ({ x, y, r, heal: 0 }));
   spraying = false;
   let finished = false;
   const left = (): number => patches.filter((p) => p.heal < 1).length;
@@ -662,16 +782,29 @@ export function playSpray(done: () => void, theme: "rice" | "cane" = "rice"): vo
   };
   document.addEventListener("keyup", eUp);
   window.addEventListener("blur", () => (spraying = false));
-  const run = begin("cuSpray", "spray", () => `${T().cu.sprayLeft}: ${left()}`, {
-    key: (e) => {
-      if (e.key.toLowerCase() !== "e") return false;
-      if (!e.repeat) {
-        spraying = true;
-        sfx("click");
-      }
-      return true;
+  const run = begin(
+    "cuSpray",
+    rot ? "rot" : "spray",
+    () => `${rot ? T().cc.rotLeft : T().cu.sprayLeft}: ${left()}`,
+    {
+      // the brush also works with the mouse button held; the sprayer is E only
+      down: () => {
+        if (rot) spraying = true;
+      },
+      up: () => {
+        if (rot) spraying = false;
+      },
+      key: (e) => {
+        if (e.key.toLowerCase() !== "e") return false;
+        if (!e.repeat) {
+          spraying = true;
+          sfx("click");
+        }
+        return true;
+      },
     },
-  });
+    rot ? "cc" : "cu",
+  );
   const stopLoop = loop((dt) => {
     if (!spraying) return;
     let healed = false;

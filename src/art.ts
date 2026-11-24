@@ -353,7 +353,7 @@ const bamboo = (x: number, g: number, h: number, t: number): void => {
     for (let l = 0; l < 8; l++) R(bx + (l % 2 ? 4 : -9) + sway + l * (l % 2 ? 1 : -1), g - hh + l * 2, 9, 2, l % 2 ? "#5fb84a" : "#4f9a3f");
   }
 };
-const carabao = (x: number, g: number, t: number): void => {
+export const carabao = (x: number, g: number, t: number): void => {
   const bob = reduce ? 0 : Math.round(Math.sin(t / 900));
   R(x + 6, g - 1, 58, 3, "#00000030");
   // legs, thick with dark hooves
@@ -492,7 +492,7 @@ const wander = (t: number, seed: number, range: number): [number, number] => {
 export const hen = (x: number, g: number, t: number, seed: number, col = "#c9783a"): void => {
   const [dx, dir] = wander(t, seed, 10);
   const hx = Math.round(x + dx);
-  flipAt(hx, dir, () => {
+  flipAt(hx, -dir, () => {
     const hy = reduce ? 0 : Math.round(Math.pow(Math.max(0, Math.sin(t / 260 + seed * 3)), 3) * 4);
     R(hx, g - 8, 9, 6, col);
     R(hx + 1, g - 8, 7, 2, "#e0a060");
@@ -508,7 +508,7 @@ export const hen = (x: number, g: number, t: number, seed: number, col = "#c9783
 const rooster = (x: number, g: number, t: number, seed: number): void => {
   const [dx, dir] = wander(t, seed, 8);
   const hx = Math.round(x + dx);
-  flipAt(hx, dir, () => {
+  flipAt(hx, -dir, () => {
     R(hx, g - 11, 11, 8, "#b8582f");
     R(hx + 1, g - 11, 9, 3, "#e0883a");
     R(hx - 5, g - 20, 3, 12, "#2f7a4c");
@@ -567,10 +567,51 @@ export const goat = (x: number, g: number, t: number, seed: number, col = "#e8e2
     R(gx + 24, g - 20, 2, 4, col);
   });
 };
+/** A frog that sits hidden in the water with only its eyes showing, leaps out in an arc, and dives back with a splash. */
+export const frogJump = (x: number, y: number, t: number, seed: number, s = 1): void => {
+  const T = 4600;
+  const ph = (((t + seed * 1700) % T) + T) % T / T;
+  const dir = Math.floor((t + seed * 1700) / T) % 2 === 0 ? 1 : -1;
+  const frog = (fx: number, fy: number, pose: number): void => {
+    flipAt(fx, dir > 0 ? -1 : 1, () => {
+      zoom(fx, fy, s, () => {
+        R(-5, -2, 3, 2, "#2a6a24"); // hind leg
+        if (pose === 0) R(-8, -1, 4, 1, "#2a6a24");
+        else R(-6, 0, 3, 1, "#2a6a24");
+        R(-4, -6, 10, 5, "#2a6a24");
+        R(-3, -5, 8, 4, "#4fb034");
+        R(-2, -3, 6, 2, "#d8e8a0");
+        R(3, -8, 5, 4, "#2a6a24");
+        R(4, -7, 3, 3, "#4fb034");
+        R(3, -10, 3, 3, "#2a6a24");
+        R(4, -10, 2, 2, "#f2e04a");
+        R(5, -10, 1, 1, "#1a1a1a");
+        R(6, 0, 2, pose === 0 ? 2 : 1, "#2a6a24");
+      });
+    });
+  };
+  const now = ph;
+  if (now < 0.6) {
+    // only the eyes above the surface, and a ripple now and then
+    R(x - 1, y - 2 * s, 2 * s, 2 * s, "#2a6a24");
+    R(x, y - 2 * s, s, s, "#f2e04a");
+    if (now > 0.3 && now < 0.5) R(x - (4 + (now - 0.3) * 30) * s, y, (8 + (now - 0.3) * 60) * s, 1, "rgba(255,255,255,0.55)");
+  } else if (now < 0.88) {
+    const u = (now - 0.6) / 0.28;
+    const hgt = Math.sin(Math.PI * u) * 30 * s;
+    frog(Math.round(x + (u - 0.5) * 26 * s * dir), Math.round(y - hgt), u < 0.5 ? 0 : 1);
+  } else {
+    // the splash: rings spreading and droplets
+    const u = (now - 0.88) / 0.12;
+    const sx = x + 13 * s * dir;
+    R(sx - (4 + u * 12) * s, y, (8 + u * 24) * s, 1, `rgba(255,255,255,${(0.8 - u * 0.7).toFixed(2)})`);
+    for (let k = 0; k < 5; k++) R(sx + (k - 2) * 3 * s, y - (1 - u) * (6 + (k % 2) * 4) * s - 1, Math.max(1, s), Math.max(1, s), "#e4f6fa");
+  }
+};
 const duck = (x: number, y: number, t: number, seed: number, kids = 0): void => {
   const [dx, dir] = wander(t, seed, 38);
   const px = Math.round(x + dx);
-  flipAt(px, dir, () => {
+  flipAt(px, -dir, () => {
     R(px - 4, y - 2, 12, 1, "rgba(255,255,255,0.45)");
     disc(px, y - 4, 5, "#f4f1e6");
     R(px - 7, y - 7, 4, 3, "#f4f1e6");
@@ -1261,6 +1302,8 @@ function fieldScene(t: number): void {
   scarecrow(384, 236);
   carabao(318, 194, t);
   if (field.water > 0.5) {
+    frogJump(60, ROW0 + ROWH * 2 + 17, t, 2, 1);
+    frogJump(360, ROW0 + ROWH * 4 + 17, t, 5, 1);
     duck(140, ROW0 + ROWH + 18, t, 1, 2);
     duck(210, ROW0 + ROWH + 19, t, 4);
     duck(270, ROW0 + ROWH * 3 + 18, t, 7, 3);

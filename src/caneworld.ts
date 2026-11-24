@@ -49,17 +49,20 @@ function stalk(x: number, base: number, hgt: number, t: number, j: number, borer
     return;
   }
   const sw = reduce ? 0 : Math.round(Math.sin(t / 900 + x * 0.3 + j) * 1.4);
-  R(x - 1, base - hgt, 4, hgt, "#4a3a0c");
-  R(x, base - hgt, 2, hgt, j % 2 ? "#cdbd48" : "#bfae38");
+  R(x - 1, base - hgt, 5, hgt, "#4a3a0c");
+  R(x, base - hgt, 3, hgt, j % 2 ? "#cdbd48" : "#bfae38");
   R(x, base - hgt, 1, hgt, "#e4d870");
-  for (let n = 6; n < hgt; n += 7) R(x - 1, base - n, 4, 1, "#7a6a20");
+  for (let n = 7; n < hgt; n += 9) R(x - 1, base - n, 5, 1, "#7a6a20");
   const top = base - hgt;
-  R(x - 7 + sw, top - 1, 8, 2, "#1f5a14");
-  R(x - 6 + sw, top - 1, 6, 1, "#59b32f");
-  R(x + 2 + sw, top - 3, 8, 2, "#1f5a14");
-  R(x + 3 + sw, top - 3, 6, 1, "#86d13a");
-  R(x - 2 + sw, top - 7, 2, 7, "#3f9a2a");
-  R(x + 1 + sw, top - 6, 2, 6, "#59b32f");
+  // long leaves arching out of the crown and drooping down the stalk
+  R(x - 11 + sw, top, 12, 2, "#1f5a14");
+  R(x - 10 + sw, top, 10, 1, "#59b32f");
+  R(x + 3 + sw, top - 3, 12, 2, "#1f5a14");
+  R(x + 4 + sw, top - 3, 10, 1, "#86d13a");
+  R(x - 14 + sw, top + 2, 4, 6, "#3f9a2a");
+  R(x + 14 + sw, top - 1, 3, 6, "#59b32f");
+  R(x - 2 + sw, top - 9, 2, 9, "#3f9a2a");
+  R(x + 1 + sw, top - 8, 2, 8, "#59b32f");
   if (borer) R(x, top + hgt * 0.4, 2, 2, "#1c0d08");
   if (aphid) R(x - 5 + sw, top - 1, 5, 3, "#e6d24a");
 }
@@ -76,7 +79,7 @@ function caneScene(t: number): void {
   const w = cf;
   const cols = Math.round(52 * w.plant);
   const rowsCut = Math.round(w.cut * ROWS);
-  const hgt = Math.round(3 + w.grow * 36);
+  const hgt = Math.round(4 + w.grow * 72);
   const borers = Math.round(8 * w.pests[0]);
   for (let j = 0; j < ROWS; j++) {
     const top = ROW0 + j * ROWH;
