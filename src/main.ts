@@ -4,6 +4,7 @@ import { toggleSound } from "./sound";
 import { armMusic, refreshMusic, setMood, type Mood } from "./music";
 import { initDisplay } from "./display";
 import { initTouch } from "./touch";
+import { initSettings } from "./settings";
 import { patch, resetGame, type Lang } from "./state";
 import { $, initHud, initPanelInput, renderHud, rerender, setBack, setMode } from "./ui";
 import { prologue, title } from "./scenes/intro";
@@ -98,4 +99,5 @@ $("snd").addEventListener("click", () => {
   renderHud();
 });
 setLang(saved);
+initSettings();
 run();

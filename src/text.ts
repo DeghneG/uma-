@@ -31,6 +31,9 @@ const en = {
     stars: "stars",
     mistakes: "Mistakes",
     playAgain: "Play again",
+    resume: "Resume",
+    why: "Why this matters",
+    more: "Show the controls",
     tap: "Tap now",
   },
   start: {
@@ -399,6 +402,9 @@ const fil: typeof en = {
     stars: "bituin",
     mistakes: "Mali",
     playAgain: "Maglaro ulit",
+    resume: "Ituloy",
+    why: "Bakit mahalaga",
+    more: "Ipakita ang kontrol",
     tap: "Pindutin",
   },
   start: {

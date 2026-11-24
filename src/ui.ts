@@ -71,6 +71,7 @@ export function initPanelInput(): void {
   });
   document.addEventListener("keydown", (e) => {
     if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return; // a held key must not pick every card
+    if (document.getElementById("settings")?.classList.contains("open")) return;
     const n = Number(e.key);
     if (!Number.isInteger(n) || n < 1 || n > 9) return;
     const cards = [...document.querySelectorAll<HTMLButtonElement>("#panel .card")];
@@ -201,7 +202,33 @@ function arrange(p: HTMLElement): void {
       if (s) say.appendChild(balloon(s.who, s.text));
       else cap.appendChild(el);
     } else if (["fb", "cards", "timing", "btn"].some((c) => cl.contains(c))) ask.appendChild(el);
-    else cap.appendChild(el);
+    else if (cl.contains("struggle")) {
+      // the longer "why this matters" note stays folded away until the player asks for it
+      el.classList.add("folded");
+      const chip = h("button", "why", `${T().common.why} ▸`);
+      chip.addEventListener("click", () => {
+        const open = el.classList.toggle("folded") === false;
+        chip.textContent = `${T().common.why} ${open ? "▾" : "▸"}`;
+      });
+      cap.append(chip, el);
+    } else if (cl.contains("note") && !p.classList.contains("sheet")) {
+      // hints show their first sentence; the rest (controls and details) sits behind a small ? chip
+      const full = el.textContent ?? "";
+      const m = /^(.+?[.!?])\s+([\s\S]+)$/.exec(full);
+      if (m && full.length > 64) {
+        el.textContent = m[1];
+        const q = h("button", "more", "?");
+        q.setAttribute("aria-label", T().common.more);
+        let shown = false;
+        q.addEventListener("click", () => {
+          shown = !shown;
+          el.textContent = shown ? full : m[1];
+          el.appendChild(q);
+        });
+        el.appendChild(q);
+      }
+      cap.appendChild(el);
+    } else cap.appendChild(el);
   }
   p.replaceChildren(...[cap, say, ask].filter((z) => z.childElementCount));
   p.classList.toggle("sheet", !!cap.querySelector(".ledger"));

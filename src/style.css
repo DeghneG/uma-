@@ -277,3 +277,34 @@ html.is-touch #game:not(.title):not(.intro-on) #touch{display:block}
 @media (orientation:portrait){html.is-touch #rotate:not(.gone){position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
   background:rgba(12,18,14,.9);color:#f4f0e0;text-align:center;padding:30px;font:400 22px/1.3 var(--font-body)}
   #rotate b{font-size:80px}#rotate small{opacity:.7}}
+
+/* ---- a lighter HUD: three small readouts, no captions, and a gear instead of the header controls ---- */
+.ctrls{display:none!important}
+.hud{height:78px;padding:0 112px 0 40px;grid-template-columns:1fr 280px 330px;gap:34px;border-bottom:2px solid rgba(0,0,0,.6);background:linear-gradient(rgba(11,19,13,.92),rgba(11,19,13,.78))}
+.brand,.goal-sub,.sub2,.hud .sub{display:none}
+.goal{gap:3px}
+.goal-row b{font-size:30px}
+.goal-row span,.meter span{font-size:15px}
+.bar,.pips i{height:12px;border-width:2px}
+.goalbar s{display:none}
+.meter span{margin-bottom:4px}
+.gear{position:absolute;right:34px;top:15px;z-index:6;width:48px;height:48px;border-radius:12px;border:2px solid rgba(255,255,255,.2);
+  background:rgba(22,32,26,.72) var(--gear) center/28px no-repeat;image-rendering:pixelated;cursor:pointer;padding:0}
+.gear:hover{background-color:rgba(63,122,92,.85)}
+#game.title .gear,#game.intro-on .gear{display:none}
+.stage-label{top:96px}
+.settings{position:absolute;inset:0;z-index:20;display:none;place-items:center;background:rgba(8,14,10,.58)}
+.settings.open{display:grid}
+.sbox{width:560px;padding:30px 34px 34px;background:rgba(22,32,26,.96);border:2px solid rgba(255,255,255,.18);border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.5);color:#f1eee0}
+.sbox h3{margin:0 0 18px;padding:0;background:none;color:var(--calm-gold);font:400 34px/1 var(--font-sfx);letter-spacing:.05em;text-align:center}
+.slist{display:flex;flex-direction:column;gap:12px}
+.slist button{padding:14px 20px;border-radius:12px;border:2px solid rgba(255,255,255,.18);background:rgba(244,240,224,.08);color:#f1eee0;font:600 24px var(--font-body);cursor:pointer;text-align:center}
+.slist button:hover{background:rgba(244,240,224,.18)}
+.slist .s-resume{background:var(--calm-green);margin-top:8px}
+.struggle.folded{display:none}
+.why{align-self:flex-start;padding:5px 16px 6px;border-radius:999px;border:2px solid var(--calm-line);background:var(--calm-bg);color:var(--calm-dim);font:400 18px/1 var(--font-body);cursor:pointer;pointer-events:auto}
+.why:hover{color:var(--calm-gold)}
+.more{margin-left:10px;width:30px;height:30px;border-radius:50%;border:2px solid var(--calm-line);background:rgba(244,240,224,.12);color:var(--calm-gold);font:700 18px/1 var(--font-body);cursor:pointer;pointer-events:auto}
+/* Back sits just under the slim HUD, with the stage label beside it */
+.backbtn{top:92px;left:40px;padding:6px 16px 6px 44px;font-size:21px;border-radius:10px;background:rgba(22,32,26,.7);border:2px solid rgba(255,255,255,.2)}
+.stage-label{left:176px;top:94px}
