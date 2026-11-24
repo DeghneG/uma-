@@ -308,3 +308,6 @@ html.is-touch #game:not(.title):not(.intro-on) #touch{display:block}
 /* Back sits just under the slim HUD, with the stage label beside it */
 .backbtn{top:92px;left:40px;padding:6px 16px 6px 44px;font-size:21px;border-radius:10px;background:rgba(22,32,26,.7);border:2px solid rgba(255,255,255,.2)}
 .stage-label{left:176px;top:94px}
+
+/* the pixel font fuses f and i; a little tracking keeps "five" readable on the intro cards and settings */
+.intro .line,.intro .head,.sbox,.settings button,.why,.more{letter-spacing:.07em}

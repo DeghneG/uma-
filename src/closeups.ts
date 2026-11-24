@@ -5,7 +5,7 @@
  */
 import gsap from "gsap";
 import { R, backdrop, customScenes, disc, frogJump, layer, reduce, rnd, setScene, tuft, weedSoil, zoom } from "./art";
-import { sfx } from "./sound";
+import { setMotor, sfx } from "./sound";
 import { T, getBack, getView, h, setBack, show, statusRow } from "./ui";
 
 /* ---------- shared plumbing ---------- */
@@ -950,7 +950,8 @@ export function playFuel(done: () => void): void {
           if (fuelState.pulls >= 3) {
             finished = true;
             fuelState.running = true;
-            sfx("good");
+            setMotor(true);
+            setTimeout(() => setMotor(false), 1800);
             run.finish(done);
           }
         }

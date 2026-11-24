@@ -1,6 +1,6 @@
 import gsap from "gsap";
 import { BUNDLE, field, fieldAtWeek, plantAt, pump, resetSow, seedsLeft, setScene, shears, snipWeeds, sow, weedsLeft } from "../art";
-import { sfx } from "../sound";
+import { setMotor, sfx } from "../sound";
 import { patch } from "../state";
 import { backToField, closeUp, setReturnScene, zoomIn } from "../closeups";
 import { T, h, reduce, setBack, resultPanel, setLabel, shake, show, starsFor, statusRow, storyPanel, tweenField } from "../ui";
@@ -132,8 +132,9 @@ export function week1(next: () => void): void {
       const snip = (r: number): void => {
         shears.snip = 1;
         gsap.to(shears, { snip: 0, duration: 0.18, ease: "power2.out", overwrite: true });
+        sfx("snip");
         const n = snipWeeds(shears.x, shears.y, r);
-        if (n) sfx("cut");
+        if (n) sfx("rustle");
         refresh();
         if (weedsLeft() === 0 && !finished) {
           finished = true;
@@ -224,6 +225,7 @@ export function week1(next: () => void): void {
       cancelAnimationFrame(raf);
       document.removeEventListener("keydown", onKey);
       pump.on = false;
+      setMotor(false);
       gsap.killTweensOf(pump);
       backToField();
       setBack(null);
@@ -245,6 +247,7 @@ export function week1(next: () => void): void {
     const tick = (now: number): void => {
       if (!document.querySelector(".pumphint")) {
         pump.on = false;
+        setMotor(false);
         document.removeEventListener("keydown", onKey);
         return;
       }
@@ -258,11 +261,12 @@ export function week1(next: () => void): void {
       if (!pump.on) {
         pump.on = true;
         msg = null;
-        sfx("good");
+        setMotor(true);
         render();
         return;
       }
       pump.on = false;
+      setMotor(false);
       sfx("click");
       if (pump.level < pump.lo) {
         wrong++;
@@ -335,7 +339,7 @@ export function week1(next: () => void): void {
       sow.held = false;
       game?.classList.remove("grab");
       if (!plantAt(x, y)) return;
-      sfx("cut");
+      sfx("plant");
       refresh();
       if (seedsLeft() === 0 && !finished) {
         finished = true;
