@@ -122,3 +122,42 @@ export function computeTons(): { tons: number; mistakes: number } {
   const base = mistakes <= 1 ? 6 : mistakes <= 4 ? 4 : mistakes <= 8 ? 2 : 0;
   return { tons: Math.min(base, state.ccap), mistakes };
 }
+
+/* ---------- progress saved in this browser ---------- */
+const SAVE_KEY = "uma-save";
+export interface Save {
+  v: 1;
+  /** the scene to come back to (each week starts from its story panel) */
+  step: string;
+  state: Omit<State, "lang">;
+}
+export function saveGame(step: string): void {
+  try {
+    const { lang: _lang, ...rest } = state;
+    void _lang;
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ v: 1, step, state: rest } satisfies Save));
+  } catch {
+    /* storage blocked: the game still plays, it just cannot be continued later */
+  }
+}
+export function readSave(): Save | null {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw) as Save;
+    return s && s.v === 1 && typeof s.step === "string" && s.state && typeof s.state.money === "number" ? s : null;
+  } catch {
+    return null;
+  }
+}
+export function clearSave(): void {
+  try {
+    localStorage.removeItem(SAVE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+export function applySave(s: Save): void {
+  Object.assign(state, s.state);
+  emit();
+}

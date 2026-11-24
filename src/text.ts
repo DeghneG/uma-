@@ -50,7 +50,7 @@ const en = {
     ],
     press: "Press Space or click to begin",
     skip: "Click or Space to continue · Esc to skip",
-    menu: { play: "Play Game", settings: "Settings", back: "Back", language: "Language" },
+    menu: { play: "Play Game", cont: "Continue", settings: "Settings", back: "Back", language: "Language" },
   },
   prologue: {
     tag: "Prologue",
@@ -457,7 +457,7 @@ const fil: typeof en = {
     ],
     press: "Pindutin ang Space o i-click para magsimula",
     skip: "I-click o Space para magpatuloy · Esc para laktawan",
-    menu: { play: "Maglaro", settings: "Mga Setting", back: "Bumalik", language: "Wika" },
+    menu: { play: "Maglaro", cont: "Magpatuloy", settings: "Mga Setting", back: "Bumalik", language: "Wika" },
   },
   prologue: {
     tag: "Pambungad",

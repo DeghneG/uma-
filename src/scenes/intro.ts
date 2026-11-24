@@ -1,5 +1,5 @@
 import gsap from "gsap";
-import { addMorale, patch, state } from "../state";
+import { addMorale, patch, readSave, state } from "../state";
 import { setScene, view as artView } from "../art";
 import { soundOn, sfx } from "../sound";
 import { cycleDisplay, displayMode } from "../display";
@@ -11,6 +11,12 @@ type Item = { label: string; run: () => void };
 
 /** Dev shortcut /#intro plays the intro once; the Back button must not re-trigger it. */
 let devIntro = location.hash === "#intro";
+
+/** Set by main: resume the saved game from where it was left. */
+let continueFn: (() => void) | null = null;
+export const setContinue = (f: () => void): void => {
+  continueFn = f;
+};
 
 /** Title screen: logo and a two-item menu drawn over the scene, then the intro caption cards. */
 export function title(next: () => void): void {
@@ -38,6 +44,17 @@ export function title(next: () => void): void {
     items =
       view === "main"
         ? [
+            ...(continueFn && readSave()
+              ? [
+                  {
+                    label: t.start.menu.cont,
+                    run: () => {
+                      leave();
+                      continueFn?.();
+                    },
+                  },
+                ]
+              : []),
             { label: t.start.menu.play, run: startGame },
             { label: t.start.menu.settings, run: () => go("settings") },
           ]

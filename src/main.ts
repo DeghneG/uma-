@@ -5,9 +5,9 @@ import { armMusic, refreshMusic, setMood, type Mood } from "./music";
 import { initDisplay } from "./display";
 import { initTouch } from "./touch";
 import { initSettings } from "./settings";
-import { patch, resetGame, type Lang } from "./state";
+import { applySave, clearSave, patch, readSave, resetGame, saveGame, type Lang } from "./state";
 import { $, initHud, initPanelInput, renderHud, rerender, setBack, setMode } from "./ui";
-import { prologue, title } from "./scenes/intro";
+import { prologue, setContinue, title } from "./scenes/intro";
 import { week1 } from "./scenes/week1";
 import { week2 } from "./scenes/week2";
 import { week3 } from "./scenes/week3";
@@ -22,6 +22,7 @@ const names = ["title", "prologue", "week1", "week2", "week3", "week4", "market"
 /** The score follows the story: warm at home, steady at work, tense in the dry spell, lively at the harvest. */
 const MOOD: Record<string, Mood> = { title: "home", prologue: "home", week1: "work", week2: "work", week3: "tense", week4: "harvest", market: "market", summary: "reflect", cane1: "work", cane2: "work", cane3: "tense", cane4: "harvest", cane5: "work", caneMarket: "market", caneSummary: "reflect" };
 // Dev shortcut: open /#week3 to start at that scene.
+const devJump = location.hash.length > 1;
 let i = Math.max(0, names.indexOf(location.hash.slice(1)));
 const wk = /^week(\d)$/.exec(names[i]);
 if (wk) fieldAtWeek(Number(wk[1]) - 1);
@@ -38,11 +39,14 @@ function run(): void {
   setMode({ title: i === 0, story: i >= names.indexOf("week1") });
   setBack(null);
   setMood(MOOD[names[i]]);
+  // progress is kept in this browser: each week starts from a saved state (dev jumps are not saved)
+  if (!devJump && i >= names.indexOf("week1")) saveGame(names[i]);
   steps[i](
     () => {
       i++;
       if (i >= steps.length) {
         resetGame();
+        clearSave();
         i = 0;
       }
       run();
@@ -75,6 +79,14 @@ try {
   /* storage blocked */
 }
 
+/** Continue from the saved scene with the saved money, morale and choices. */
+setContinue(() => {
+  const s = readSave();
+  if (!s) return;
+  applySave(s);
+  i = Math.max(names.indexOf("week1"), names.indexOf(s.step));
+  run();
+});
 initDisplay();
 
 // the glove cursor closes into a fist while the mouse button is held
