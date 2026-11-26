@@ -311,3 +311,15 @@ html.is-touch #game:not(.title):not(.intro-on) #touch{display:block}
 
 /* the pixel font fuses f and i; a little tracking keeps "five" readable on the intro cards and settings */
 .intro .line,.intro .head,.sbox,.settings button,.why,.more{letter-spacing:.07em}
+
+/* title cards between stages */
+#trans{position:absolute;inset:0;z-index:40;background:#080f0b;display:flex;align-items:center;justify-content:center;text-align:center;opacity:0;transition:opacity .5s ease;cursor:pointer}
+#trans.on{opacity:1}
+#trans .tc{display:flex;flex-direction:column;align-items:center;gap:22px;max-width:1100px;padding:0 60px}
+#trans .ti{width:192px;height:168px;animation:tbob .5s steps(2) infinite}
+#trans .ti.truck{animation:tbob .25s steps(2) infinite}
+#trans .road{width:420px;height:6px;background:repeating-linear-gradient(90deg,#f2e9c4 0 24px,transparent 24px 48px);animation:troad .6s linear infinite;opacity:.8;margin-top:-10px}
+#trans h2{font:700 64px var(--font-display);color:#f4efe0;margin:6px 0 0;text-shadow:3px 3px 0 #000;letter-spacing:.02em}
+#trans p{font:400 30px/1.4 var(--font-body);color:#cfdcc4;margin:0}
+@keyframes tbob{0%{transform:translateY(0)}100%{transform:translateY(-6px)}}
+@keyframes troad{to{background-position-x:-48px}}

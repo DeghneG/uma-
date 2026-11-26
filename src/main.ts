@@ -5,6 +5,7 @@ import { armMusic, refreshMusic, setMood, type Mood } from "./music";
 import { initDisplay } from "./display";
 import { initTouch } from "./touch";
 import { initSettings } from "./settings";
+import { transition } from "./transition";
 import { applySave, clearSave, patch, readSave, resetGame, saveGame, type Lang } from "./state";
 import { $, initHud, initPanelInput, renderHud, rerender, setBack, setMode } from "./ui";
 import { prologue, setContinue, title } from "./scenes/intro";
@@ -48,8 +49,11 @@ function run(): void {
         resetGame();
         clearSave();
         i = 0;
+        run();
+        return;
       }
-      run();
+      // a short title card carries the story from one stage to the next
+      transition(names[i], run);
     },
     () => {
       i = 0;

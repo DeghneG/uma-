@@ -3,6 +3,21 @@ import type { Lang } from "./state";
 const en = {
   title: "Uma",
   subtitle: "A farming family has five months.",
+  trans: {
+    week1: ["Week 1", "Before sunrise, the family walks to the rice field."],
+    week2: ["Week 2", "The seedlings stand in the mud. Now the pests come."],
+    week3: ["Week 3", "The sun climbs higher, and the rain stays away."],
+    week4: ["Week 4", "The grain turns golden. The harvest is here."],
+    market: ["To the market", "The sacks are loaded on the truck, and the family rides into town."],
+    summary: ["Home again", "The rice is sold. Time to count what is left."],
+    cane1: ["Month 2: Sugarcane", "With the rice sold, the family turns to the cane."],
+    cane2: ["A few weeks later", "The young shoots push up through the soil."],
+    cane3: ["The dry weeks", "The cane grows tall, and trouble creeps into the rows."],
+    cane4: ["Cutting day", "The cane stands taller than a man. The knives are ready."],
+    cane5: ["To the mill", "The cut cane is carried to the village press."],
+    caneMarket: ["To the market", "The sugar is bagged and loaded on the truck."],
+    caneSummary: ["Home again", "The sugar is sold. Time to count what is left."],
+  } as Record<string, [string, string]>,
   hud: {
     savings: "Family savings",
     needed: (n: string) => `${n} still needed to start over in the city.`,
@@ -410,6 +425,21 @@ const en = {
 const fil: typeof en = {
   title: "Uma",
   subtitle: "Limang buwan ang pamilya ng magsasaka.",
+  trans: {
+    week1: ["Linggo 1", "Bago sumikat ang araw, naglalakad ang pamilya papunta sa palayan."],
+    week2: ["Linggo 2", "Nakatayo na ang mga punla sa putik. Dumarating na ang mga peste."],
+    week3: ["Linggo 3", "Tumataas ang araw, at hindi umuulan."],
+    week4: ["Linggo 4", "Naging ginto ang palay. Panahon na ng ani."],
+    market: ["Sa palengke", "Isinakay ang mga sako sa trak, at bumiyahe ang pamilya papunta sa bayan."],
+    summary: ["Pag-uwi", "Naibenta na ang palay. Bilangin natin ang natira."],
+    cane1: ["Buwan 2: Tubo", "Naibenta na ang palay, kaya tubo naman ang susunod."],
+    cane2: ["Ilang linggo ang lumipas", "Sumusulpot na ang mga murang usbong mula sa lupa."],
+    cane3: ["Ang tuyong mga linggo", "Tumataas ang tubo, at may problemang pumapasok sa mga hanay."],
+    cane4: ["Araw ng pagputol", "Mas matangkad pa sa tao ang tubo. Handa na ang mga itak."],
+    cane5: ["Sa gilingan", "Dinala ang pinutol na tubo sa gilingan ng barrio."],
+    caneMarket: ["Sa palengke", "Nakasako na ang asukal at isinakay sa trak."],
+    caneSummary: ["Pag-uwi", "Naibenta na ang asukal. Bilangin natin ang natira."],
+  } as Record<string, [string, string]>,
   hud: {
     savings: "Ipon ng pamilya",
     needed: (n: string) => `${n} pa ang kailangan para magsimulang muli sa lungsod.`,
