@@ -360,6 +360,11 @@ export function playPress(n: number, done: () => void): void {
   const slots: Slot[] = Array.from({ length: n }, () => ({ x: 300, y: 130, t: 0 }));
   const placed = (): number => slots.filter((q) => q.t !== 0).length;
   let lastPut = 0;
+  // the carabao is the engine: it walks (and the rollers turn) only while cane is being pressed
+  let phi = 1.2;
+  let speed = 0;
+  let walkT = 0;
+  let lastT = 0;
   dragGame("ccPress", "press", {
     slots,
     src: { x: 96, y: 300 },
@@ -368,8 +373,15 @@ export function playPress(n: number, done: () => void): void {
       millYard(t);
       const now = performance.now();
       // the carabao walks a slow circle round the press, hitched to a long pole (behind it, then in front)
-      const phi = reduce ? 1.2 : t / 2400;
-      const cxn = Math.round(340 + 128 * Math.cos(phi));
+      const dt = lastT ? Math.min(60, Math.max(0, t - lastT)) : 0;
+      lastT = t;
+      const driving = placed() > 0 && now - lastPut < 3200 && !reduce;
+      speed += ((driving ? 1 : 0) - speed) * Math.min(1, dt / 350);
+      if (speed < 0.01) speed = 0;
+      phi += (dt / 2400) * speed;
+      walkT += dt * speed;
+      const roll = Math.round(phi * 46);
+      const cxn = Math.round(300 + 128 * Math.cos(phi));
       const cyn = Math.round(244 + 34 * Math.sin(phi));
       const front = Math.sin(phi) > 0;
       const walk = (): void => {
@@ -378,12 +390,12 @@ export function playPress(n: number, done: () => void): void {
         const sy = cyn - 26;
         const n = 60;
         for (let k = 0; k <= n; k++) {
-          const px = 340 + ((sx - 340) * k) / n;
+          const px = 300 + ((sx - 300) * k) / n;
           const py = 192 + ((sy - 192) * k) / n;
           R(px - 2, py - 2, 5, 5, "#1c0d08");
           R(px - 1, py - 1, 3, 3, "#a8742e");
         }
-        flipAt(cxn, Math.sin(phi) < 0 ? 1 : -1, () => carabao(cxn, cyn, t));
+        flipAt(cxn, Math.sin(phi) < 0 ? 1 : -1, () => carabao(cxn, cyn, walkT));
         R(cxn - 5, cyn - 32, 10, 4, "#6a4a22");
       };
       if (!front) walk();
@@ -395,6 +407,11 @@ export function playPress(n: number, done: () => void): void {
         R(cx - 12, 148, 24, 92, "#1c0d08");
         R(cx - 11, 149, 22, 90, "#8a5a2e");
         R(cx - 10, 149, 5, 90, "#c49a5c");
+        // grooves turn round the roller (neighbouring rollers turn opposite ways)
+        for (let k = 0; k < 4; k++) {
+          const o = (((roll * (i === 1 ? -1 : 1) + k * 8) % 32) + 32) % 32;
+          if (o < 22) R(cx - 11 + o, 149, 2, 90, "#4a2a10");
+        }
         R(cx - 11, 172, 22, 4, "#3a2a14");
         R(cx - 11, 214, 22, 4, "#3a2a14");
         R(cx - 13, 144, 26, 6, "#5a3a1a");
@@ -407,7 +424,7 @@ export function playPress(n: number, done: () => void): void {
       // the juice vat below, filling as cane goes in
       const p = n ? placed() / n : 0;
       R(294, 264, 12, 12, "#aeb6bc");
-      if (now - lastPut < 900 && !reduce) for (let k = 0; k < 4; k++) R(298 + (k % 2) * 4, 268 + ((now / 20 + k * 6) % 14), 3, 4, "#b8e060");
+      if (speed > 0.3 && p > 0 && !reduce) for (let k = 0; k < 4; k++) R(298 + (k % 2) * 4, 268 + ((now / 20 + k * 6) % 14), 3, 4, "#b8e060");
       R(258, 276, 84, 48, "#1c0d08");
       R(260, 278, 80, 44, "#8a5a2e");
       R(260, 286, 80, 3, "#5a3a1a");
