@@ -235,17 +235,25 @@ export function sfx(name: Name): void {
       tone(230, 0.12, "sine", 0.07, 0, 90);
       tone(560, 0.05, "sine", 0.04, 0.1, 320);
       break;
-    case "splash":
-      // a frog hits the water: a wet slap, a gulp and spray
-      noise(0.28, 0.13, 0, "lowpass", 1800);
-      noise(0.18, 0.07, 0.03, "highpass", 3500);
-      tone(300, 0.14, "sine", 0.07, 0, 90);
-      tone(520, 0.06, "sine", 0.04, 0.12, 260);
+    case "splash": {
+      // water, not a thud: a quick slap of spray, then rising bubble "bloops" and scattered droplets
+      noise(0.09, 0.09, 0, "bandpass", 3200);
+      noise(0.4, 0.05, 0.02, "highpass", 2800);
+      noise(0.25, 0.04, 0.05, "bandpass", 1400);
+      const blip = (f: number, d: number, v: number, at: number): void => {
+        tone(f, d, "sine", v, at, f * 2.2);
+      };
+      blip(380 + Math.random() * 80, 0.1, 0.07, 0.02);
+      blip(520 + Math.random() * 100, 0.09, 0.055, 0.09);
+      blip(300 + Math.random() * 60, 0.13, 0.05, 0.16);
+      for (let i = 0; i < 5; i++) tone(1800 + Math.random() * 1600, 0.025, "sine", 0.025, 0.08 + i * 0.07 + Math.random() * 0.04, 900);
       break;
+    }
     case "splashSmall":
-      // a frog pushes off: a soft plip
-      noise(0.1, 0.05, 0, "bandpass", 1600);
-      tone(420, 0.07, "sine", 0.04, 0, 700);
+      // a frog pushes off the surface: a small plip
+      noise(0.07, 0.04, 0, "bandpass", 2800);
+      tone(500, 0.07, "sine", 0.05, 0.01, 1100);
+      tone(900, 0.05, "sine", 0.03, 0.06, 1800);
       break;
     case "squish":
       // egg masses crushed: wet pops under a heavy stone
