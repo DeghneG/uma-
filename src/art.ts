@@ -1841,6 +1841,12 @@ function factoryBody(): void {
   for (let x = 206; x < 506; x += 6) R(x, FGY - 7, 1, 7, "#2f333a");
 }
 function factory(): void {
+  // a grassy embankment under the plant, so it stands on the land and does not hang above the valley haze
+  const baseY = FGY + FSHIFT_Y;
+  for (let r = 0; r < 60; r++) {
+    const e = Math.round(r * 1.6);
+    R(206 + FSHIFT_X - 12 - e, baseY - 1 + r, 324 + e * 2, 1, r < 3 ? "#6aa85a" : r % 7 < 3 ? "#5a9a52" : "#4f8f55");
+  }
   cx.save();
   cx.translate(FSHIFT_X, FSHIFT_Y);
   factoryBody();
