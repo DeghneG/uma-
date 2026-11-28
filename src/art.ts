@@ -1957,9 +1957,23 @@ function titleScene(t: number): void {
   kid(kx, 232, t, km, 3);
   bigTree(630, 366, 220, 60, t, 4);
   palm(-4, 396, 250, t, 1, 34);
-  // dark grass in the foreground
-  for (let x = 0; x < W; x += 2) R(x, H - 10 - rnd(x) * 14, 2, 24, "#0c2414");
-  for (let x = 0; x < W; x += 6) R(x + 1, H - 24 - rnd(x + 9) * 10, 1, 10, "#0c2414");
+  // lush grass across the whole foreground, in three layers, so there is no empty strip at the bottom
+  layer("title-fg", () => {
+    R(0, H - 22, W, 22, "#2f7a34");
+    for (let x = 0; x < W; x += 2) R(x, H - 24 - rnd(x) * 10, 2, 30, "#1f5a2a");
+    for (let x = 0; x < W; x += 3) R(x + 1, H - 18 - rnd(x + 9) * 12, 2, 24, rnd(x + 3) > 0.5 ? "#2f7a34" : "#3f8f3f");
+    for (let x = 0; x < W; x += 4) {
+      const hh = 8 + rnd(x + 21) * 12;
+      R(x, H - hh, 2, hh, rnd(x + 7) > 0.5 ? "#59b32f" : "#4aa045");
+      R(x, H - hh, 2, 2, "#9bdc4a");
+    }
+    for (let i = 0; i < 26; i++) {
+      const fx = 6 + rnd(i + 300) * 628;
+      const fy = H - 6 - rnd(i + 400) * 12;
+      R(fx, fy, 3, 3, i % 3 ? "#f2c94c" : i % 3 === 1 ? "#ffffff" : "#e07aa8");
+      R(fx + 1, fy + 3, 1, 4, "#2f7a34");
+    }
+  });
   logo(t);
 }
 
