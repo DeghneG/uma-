@@ -12,6 +12,10 @@ export const MILL_FEE = 400;
 /** After milling, the cane is sold as sacks of sugar: the trader pays on the spot, the mill pays more minus its fee. */
 export const SUGAR_TRADER = 1400;
 export const SUGAR_MILL = 1900;
+/** Livestock (month 3): eggs, milk, goats and pigs go to market in lots; the trader pays on the spot, the cooperative pays more minus its fee. */
+export const LIVE_TRADER = 800;
+export const LIVE_COOP = 1100;
+export const LIVE_FEE = 300;
 
 export interface State {
   lang: Lang;
@@ -40,6 +44,16 @@ export interface State {
   /** How good the boiled sugar came out, 0.7 (burnt) to 1 (golden). */
   sugarQ: number;
   soldCane: number | null;
+  /** Month 3, livestock: mistakes in the morning round, the goats, the pig pen and loading, and what the choices changed. */
+  lMist1: number;
+  lMist2: number;
+  lMist3: number;
+  lMist4: number;
+  lbuf: number;
+  lcap: number;
+  lnb: boolean;
+  lots: number;
+  soldLive: number | null;
   /** Money at the start of the month, for the month's summary. */
   monthStart: number;
   /** Itemized money changes this month, shown in the summary. */
@@ -69,6 +83,15 @@ function fresh(lang: Lang): State {
     tons: 0,
     sugarQ: 1,
     soldCane: null,
+    lMist1: 0,
+    lMist2: 0,
+    lMist3: 0,
+    lMist4: 0,
+    lbuf: 0,
+    lcap: 6,
+    lnb: false,
+    lots: 0,
+    soldLive: null,
     monthStart: START_MONEY,
     ledger: [],
   };
@@ -121,6 +144,17 @@ export function computeTons(): { tons: number; mistakes: number } {
   const mistakes = Math.max(0, raw - state.cbuf);
   const base = mistakes <= 1 ? 6 : mistakes <= 4 ? 4 : mistakes <= 8 ? 2 : 0;
   return { tons: Math.min(base, state.ccap), mistakes };
+}
+
+/**
+ * Lots of eggs, milk and animals from mistakes across the month (the morning round, the goats, the pig pen, loading).
+ * 0-1 mistakes = 6 lots, 2-4 = 4, 5-8 = 2, more = 0; a supplement forgives one, selling pigs early caps it at 4.
+ */
+export function computeLots(): { lots: number; mistakes: number } {
+  const raw = Math.min(3, state.lMist1) + Math.min(3, state.lMist2) + Math.min(3, state.lMist3) + state.lMist4;
+  const mistakes = Math.max(0, raw - state.lbuf);
+  const base = mistakes <= 1 ? 6 : mistakes <= 4 ? 4 : mistakes <= 8 ? 2 : 0;
+  return { lots: Math.min(base, state.lcap), mistakes };
 }
 
 /* ---------- progress saved in this browser ---------- */

@@ -447,7 +447,7 @@ export function caneSummary(next: () => void): void {
     p.appendChild(h("h3", undefined, t.money));
     p.appendChild(table(rows));
     p.appendChild(h("p", "note", t.next));
-    const b = h("button", "btn alt", T().common.playAgain);
+    const b = h("button", "btn alt", T().common.continue);
     b.addEventListener("click", next);
     p.appendChild(b);
   });

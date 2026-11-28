@@ -98,6 +98,7 @@ const WALK: Record<string, [number, number, number, number, number, number]> = {
   home: [14, 626, 252, 302, 300, 300],
   market: [14, 626, 216, 304, 320, 294],
   cane: [14, 626, 196, 302, 150, 290],
+  live: [14, 626, 196, 302, 150, 290],
 };
 export const setScene = (k: SceneKind): void => {
   const prev = view.scene;
@@ -506,7 +507,7 @@ export const hen = (x: number, g: number, t: number, seed: number, col = "#c9783
     R(hx + 6, g - 2, 1, 2, "#e0a030");
   });
 };
-const rooster = (x: number, g: number, t: number, seed: number): void => {
+export const rooster = (x: number, g: number, t: number, seed: number): void => {
   const [dx, dir] = wander(t, seed, 8);
   const hx = Math.round(x + dx);
   flipAt(hx, -dir, () => {
@@ -530,7 +531,7 @@ export const chick = (x: number, g: number, t: number, seed: number): void => {
   R(x + 4, g - 3 - hop, 1, 1, "#f2994a");
   R(x + 2, g - 3 - hop, 1, 1, "#1a1a1a");
 };
-const pig = (x: number, g: number, t: number, seed: number, scale = 1): void => {
+export const pig = (x: number, g: number, t: number, seed: number, scale = 1): void => {
   const [dx, dir] = wander(t, seed, 6);
   const px = Math.round(x + dx);
   const s = scale;

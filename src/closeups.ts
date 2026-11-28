@@ -93,10 +93,10 @@ export const backToField = (): void => {
 export const pos = { x: 320, y: 230 };
 export const gameEl = (): HTMLElement | null => document.getElementById("game");
 export type Run = { refresh: () => void; finish: (cb: () => void) => void };
-const cuText = (k: string, f: "Head" | "Hint", ns: "cu" | "cc"): string => (T()[ns] as Record<string, string>)[k + f];
+const cuText = (k: string, f: "Head" | "Hint", ns: "cu" | "cc" | "lv"): string => (T()[ns] as Record<string, string>)[k + f];
 
 /** Start a close-up: switch the scene, show the panel (title, hint, one status chip) and listen for the hand. */
-export function begin(kind: string, key: string, status: () => string, handlers: Handlers, ns: "cu" | "cc" = "cu"): Run {
+export function begin(kind: string, key: string, status: () => string, handlers: Handlers, ns: "cu" | "cc" | "lv" = "cu"): Run {
   const prevView = getView();
   const prevBack = getBack();
   setScene(kind);

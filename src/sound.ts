@@ -1,5 +1,5 @@
 /** Tiny procedural sound effects (no audio files). Starts only after a user gesture. */
-type Name = "click" | "good" | "bad" | "cut" | "coin" | "star" | "snip" | "rustle" | "plant" | "splash" | "splashSmall" | "squish" | "pluck" | "snap" | "swish" | "thud" | "crunch" | "pull" | "gate" | "lift" | "step" | "pop" | "drop";
+type Name = "click" | "good" | "bad" | "cut" | "coin" | "star" | "snip" | "rustle" | "plant" | "splash" | "splashSmall" | "squish" | "pluck" | "snap" | "swish" | "thud" | "crunch" | "pull" | "gate" | "lift" | "step" | "pop" | "drop" | "cluck" | "egg" | "bleat" | "munch" | "squirt" | "oink" | "scoop";
 
 let ctx: AudioContext | null = null;
 let enabled = true;
@@ -308,6 +308,41 @@ export function sfx(name: Name): void {
     case "drop":
       tone(260, 0.09, "triangle", 0.07, 0, 120);
       noise(0.06, 0.05, 0, "lowpass", 800);
+      break;
+    case "cluck":
+      // a hen's startled bock
+      tone(520, 0.05, "square", 0.04, 0, 780);
+      tone(430, 0.07, "square", 0.04, 0.07, 640);
+      tone(560, 0.05, "square", 0.035, 0.16, 820);
+      break;
+    case "egg":
+      // a smooth egg set in a basket
+      tone(340, 0.05, "sine", 0.07, 0, 220);
+      noise(0.04, 0.03, 0, "lowpass", 900);
+      break;
+    case "bleat":
+      // a goat's wavering bleat
+      tone(420, 0.34, "sawtooth", 0.03, 0, 330);
+      tone(432, 0.34, "square", 0.015, 0, 340);
+      tone(380, 0.18, "sawtooth", 0.025, 0.2, 300);
+      break;
+    case "munch":
+      noise(0.05, 0.05, 0, "bandpass", 1900);
+      noise(0.05, 0.04, 0.09, "bandpass", 1500);
+      break;
+    case "squirt":
+      // a jet of milk into a pail
+      noise(0.09, 0.06, 0, "highpass", 3800);
+      tone(900, 0.07, "sine", 0.03, 0, 520);
+      break;
+    case "oink":
+      tone(170, 0.16, "sawtooth", 0.05, 0, 120);
+      tone(210, 0.1, "square", 0.025, 0.1, 150);
+      noise(0.14, 0.03, 0, "lowpass", 700);
+      break;
+    case "scoop":
+      noise(0.14, 0.08, 0, "lowpass", 1100);
+      tone(150, 0.1, "triangle", 0.05, 0, 90);
       break;
     case "star":
       tone(660, 0.1, "triangle", 0.06);

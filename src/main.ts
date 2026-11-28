@@ -19,11 +19,13 @@ import { market } from "./scenes/market";
 import { summary } from "./scenes/summary";
 import { cane1, cane2, cane3, cane4, cane5, caneMarket, caneSummary } from "./scenes/cane";
 import { caneAtWeek } from "./caneworld";
+import { live1, live2, live3, live4, liveMarket, liveSummary } from "./scenes/live";
+import { liveAtWeek } from "./livestockworld";
 
-const steps: ((next: () => void, back?: () => void) => void)[] = [title, prologue, week1, week2, week3, week4, market, summary, cane1, cane2, cane3, cane4, cane5, caneMarket, caneSummary];
-const names = ["title", "prologue", "week1", "week2", "week3", "week4", "market", "summary", "cane1", "cane2", "cane3", "cane4", "cane5", "caneMarket", "caneSummary"];
+const steps: ((next: () => void, back?: () => void) => void)[] = [title, prologue, week1, week2, week3, week4, market, summary, cane1, cane2, cane3, cane4, cane5, caneMarket, caneSummary, live1, live2, live3, live4, liveMarket, liveSummary];
+const names = ["title", "prologue", "week1", "week2", "week3", "week4", "market", "summary", "cane1", "cane2", "cane3", "cane4", "cane5", "caneMarket", "caneSummary", "live1", "live2", "live3", "live4", "liveMarket", "liveSummary"];
 /** The score follows the story: warm at home, steady at work, tense in the dry spell, lively at the harvest. */
-const MOOD: Record<string, Mood> = { title: "home", prologue: "home", week1: "work", week2: "work", week3: "tense", week4: "harvest", market: "market", summary: "reflect", cane1: "work", cane2: "work", cane3: "tense", cane4: "harvest", cane5: "work", caneMarket: "market", caneSummary: "reflect" };
+const MOOD: Record<string, Mood> = { title: "home", prologue: "home", week1: "work", week2: "work", week3: "tense", week4: "harvest", market: "market", summary: "reflect", cane1: "work", cane2: "work", cane3: "tense", cane4: "harvest", cane5: "work", caneMarket: "market", caneSummary: "reflect", live1: "work", live2: "work", live3: "tense", live4: "harvest", liveMarket: "market", liveSummary: "reflect" };
 // Dev shortcut: open /#week3 to start at that scene.
 const devJump = location.hash.length > 1;
 let i = Math.max(0, names.indexOf(location.hash.slice(1)));
@@ -36,6 +38,12 @@ function prepare(name: string): void {
   if (ck) {
     caneAtWeek(Number(ck[1]) - 1);
     patch({ monthsLeft: 4 });
+  }
+  const lv = /^live(d)$/.exec(name);
+  if (lv) liveAtWeek(Number(lv[1]) - 1);
+  if (/^live/.test(name) && state.monthsLeft > 3) patch({ monthsLeft: 3 });
+  if (name === "liveMarket" || name === "liveSummary") {
+    if (state.lots === 0) patch({ lots: 4 }); // bring some goods
   }
   if ((name === "cane5" || name === "caneMarket" || name === "caneSummary") && state.tons === 0) patch({ tons: 4, monthsLeft: 4 }); // bring some cane
 }
