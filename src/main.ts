@@ -6,7 +6,9 @@ import { initDisplay } from "./display";
 import { initTouch } from "./touch";
 import { initSettings } from "./settings";
 import { transition } from "./transition";
-import { applySave, clearSave, patch, readSave, resetGame, saveGame, type Lang } from "./state";
+import { setMotor, stopHolds } from "./sound";
+import { T } from "./ui";
+import { applySave, clearSave, patch, readSave, resetGame, saveGame, state, type Lang } from "./state";
 import { $, initHud, initPanelInput, renderHud, rerender, setBack, setMode } from "./ui";
 import { prologue, setContinue, title } from "./scenes/intro";
 import { week1 } from "./scenes/week1";
@@ -25,15 +27,20 @@ const MOOD: Record<string, Mood> = { title: "home", prologue: "home", week1: "wo
 // Dev shortcut: open /#week3 to start at that scene.
 const devJump = location.hash.length > 1;
 let i = Math.max(0, names.indexOf(location.hash.slice(1)));
-const wk = /^week(\d)$/.exec(names[i]);
-if (wk) fieldAtWeek(Number(wk[1]) - 1);
-if (names[i] === "market") patch({ sacks: 4 }); // dev jump: bring some sacks to sell
-const ck = /^cane(d)$/.exec(names[i]);
-if (ck) {
-  caneAtWeek(Number(ck[1]) - 1);
-  patch({ monthsLeft: 4 });
+/** Dev jumps and the Skip button: put the world in the state the target scene expects. */
+function prepare(name: string): void {
+  const wk = /^week(d)$/.exec(name);
+  if (wk) fieldAtWeek(Number(wk[1]) - 1);
+  if (name === "market" && state.sacks === 0) patch({ sacks: 4 }); // bring some sacks to sell
+  const ck = /^cane(d)$/.exec(name);
+  if (ck) {
+    caneAtWeek(Number(ck[1]) - 1);
+    patch({ monthsLeft: 4 });
+  }
+  if ((name === "cane5" || name === "caneMarket" || name === "caneSummary") && state.tons === 0) patch({ tons: 4, monthsLeft: 4 }); // bring some cane
 }
-if (names[i] === "cane5" || names[i] === "caneMarket" || names[i] === "caneSummary") patch({ tons: 4, monthsLeft: 4 }); // dev jumps: bring some cane
+prepare(names[i]);
+let runId = 0;
 
 function run(): void {
   // story mode starts when the family goes to the field (week 1); the title and prologue have no stats bar
@@ -42,8 +49,11 @@ function run(): void {
   setMood(MOOD[names[i]]);
   // progress is kept in this browser: each week starts from a saved state (dev jumps are not saved)
   if (!devJump && i >= names.indexOf("week1")) saveGame(names[i]);
+  const id = ++runId;
+  updateSkip();
   steps[i](
     () => {
+      if (id !== runId) return; // this scene was skipped past
       i++;
       if (i >= steps.length) {
         resetGame();
@@ -62,6 +72,35 @@ function run(): void {
   );
 }
 
+/** Skip button for testing: jump straight to the next scene, from anywhere (even inside a close-up). */
+function updateSkip(): void {
+  const b = document.getElementById("skip");
+  if (b) b.textContent = T().common.skip + " >>";
+}
+function skip(): void {
+  const card = document.getElementById("trans");
+  if (card) {
+    card.click(); // a title card: just move on
+    return;
+  }
+  runId++; // anything the old scene still has pending is ignored
+  setMotor(false);
+  stopHolds();
+  document.getElementById("game")?.classList.remove("closeup", "grab", "nocursor", "planting");
+  document.querySelector(".cuhint")?.remove();
+  if (i + 1 >= steps.length) return;
+  i++;
+  prepare(names[i]);
+  run();
+}
+{
+  const b = document.createElement("button");
+  b.id = "skip";
+  b.type = "button";
+  b.addEventListener("click", skip);
+  document.getElementById("game")?.appendChild(b);
+}
+
 function setLang(lang: Lang): void {
   patch({ lang });
   document.documentElement.lang = lang === "en" ? "en" : "fil";
@@ -73,6 +112,7 @@ function setLang(lang: Lang): void {
     /* storage blocked */
   }
   renderHud();
+  updateSkip();
   rerender();
 }
 

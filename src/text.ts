@@ -40,6 +40,7 @@ const en = {
     week2: (n: number) => `Month 2 · Sugarcane · Week ${n} / 4`,
   },
   common: {
+    skip: "Skip",
     struggle: "The struggle",
     continue: "Continue",
     result: "Result",
@@ -462,6 +463,7 @@ const fil: typeof en = {
     week2: (n: number) => `Buwan 2 · Tubo · Linggo ${n} / 4`,
   },
   common: {
+    skip: "Laktawan",
     struggle: "Ang hirap",
     continue: "Magpatuloy",
     result: "Resulta",
