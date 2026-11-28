@@ -254,9 +254,27 @@ function drawMilk(t: number): void {
   R(298, 236, 82, 22, "#e8a8a0");
   R(298, 236, 82, 5, "#f4c4bc");
   for (const tx of TEATS) {
-    R(tx - 6, TEAT_TOP + 6, 12, 36, "#c27a72");
-    R(tx - 4, TEAT_TOP + 6, 8, 34, "#e8a8a0");
-    R(tx - 5, TEAT_TOP + 38, 10, 6, "#d68a84");
+    R(tx - 9, TEAT_TOP + 6, 18, 42, "#8a4a46");
+    R(tx - 7, TEAT_TOP + 6, 14, 40, "#e8a8a0");
+    R(tx - 7, TEAT_TOP + 6, 4, 38, "#f4c4bc");
+    R(tx - 8, TEAT_TOP + 44, 16, 8, "#b86a64");
+  }
+  // a clear cue: the teat to squeeze next glows, with arrows showing the pull
+  if (mk.gripped < 0 && mk.milk < 1) {
+    const pulse = reduce ? 1 : 0.5 + 0.5 * Math.sin(t / 220);
+    const next = mk.last === 0 ? [1] : mk.last === 1 ? [0] : [0, 1];
+    for (const i of next) {
+      const tx = TEATS[i];
+      const c = pulse > 0.5 ? "#fff6a8" : "#f2c94a";
+      R(tx - 17, TEAT_TOP + 2, 34, 3, c);
+      R(tx - 17, TEAT_TOP + 56, 34, 3, c);
+      R(tx - 17, TEAT_TOP + 2, 3, 57, c);
+      R(tx + 14, TEAT_TOP + 2, 3, 57, c);
+      const ay = TEAT_TOP + 4 + (reduce ? 8 : (t / 14) % 30);
+      R(tx + 22, ay, 14, 4, "#fff6a8");
+      R(tx + 25, ay + 4, 8, 4, "#fff6a8");
+      R(tx + 28, ay + 8, 2, 4, "#fff6a8");
+    }
   }
   // jets of milk into the pail
   for (let i = 0; i < 2; i++) {
