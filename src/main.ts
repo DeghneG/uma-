@@ -84,20 +84,22 @@ function run(): void {
 function updateSkip(): void {
   const b = document.getElementById("skip");
   if (b) b.textContent = T().common.skip + " >>";
+  const p = document.getElementById("prev");
+  if (p) p.textContent = "<< " + T().common.prev;
 }
-function skip(): void {
+function skip(delta = 1): void {
   const card = document.getElementById("trans");
   if (card) {
-    card.click(); // a title card: just move on
-    return;
+    card.click(); // a title card: let it finish
+    if (delta > 0) return;
   }
   runId++; // anything the old scene still has pending is ignored
   setMotor(false);
   stopHolds();
   document.getElementById("game")?.classList.remove("closeup", "grab", "nocursor", "planting");
   document.querySelector(".cuhint")?.remove();
-  if (i + 1 >= steps.length) return;
-  i++;
+  if (i + delta >= steps.length || i + delta < 0) return;
+  i += delta;
   prepare(names[i]);
   run();
 }
@@ -105,8 +107,14 @@ function skip(): void {
   const b = document.createElement("button");
   b.id = "skip";
   b.type = "button";
-  b.addEventListener("click", skip);
+  b.addEventListener("click", () => skip(1));
   document.getElementById("game")?.appendChild(b);
+  // and one to go back a scene (state such as money is kept as it was)
+  const pv = document.createElement("button");
+  pv.id = "prev";
+  pv.type = "button";
+  pv.addEventListener("click", () => skip(-1));
+  document.getElementById("game")?.appendChild(pv);
 }
 
 function setLang(lang: Lang): void {

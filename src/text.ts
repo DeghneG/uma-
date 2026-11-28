@@ -148,6 +148,7 @@ const en = {
   },
   common: {
     skip: "Skip",
+    prev: "Prev",
     struggle: "The struggle",
     continue: "Continue",
     result: "Result",
@@ -678,6 +679,7 @@ const fil: typeof en = {
   },
   common: {
     skip: "Laktawan",
+    prev: "Balik",
     struggle: "Ang hirap",
     continue: "Magpatuloy",
     result: "Resulta",
